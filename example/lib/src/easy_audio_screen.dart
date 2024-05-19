@@ -81,7 +81,8 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
             Padding(
               padding: EdgeInsets.only(bottom: isShowBottom ? sizeBottom : 0),
               child: Column(
-                children: kMockDataRecord
+                children:[
+                   ...kMockDataRecord
                     .map(
                       (item) => ListTile(
                         contentPadding: const EdgeInsets.symmetric(
@@ -106,7 +107,7 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
                         trailing: Text(item.totalTime.hhmmss),
                       ),
                     )
-                    .toList(),
+                    .toList(),]
               ),
             ),
             if (MediaQuery.of(context).viewInsets.bottom == 0) ...[
