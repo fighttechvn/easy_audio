@@ -14,6 +14,7 @@ abstract class EasyAudioInterface {
   Future<void> stopPlayer();
   Future<void> pause();
   Future<void> record();
+  Future<void> seek(Duration duration);
   Future<String?>? stopRecorder();
   void forceDispose();
   String get url;
@@ -108,6 +109,8 @@ class EasyAudioController extends ChangeNotifier implements EasyAudioInterface {
       }
 
       _url = urlAudio!;
+      notifyListeners();
+
       final audioSource =
           _url.contains('http') ? UrlSource(_url) : DeviceFileSource(_url);
 
@@ -183,6 +186,12 @@ class EasyAudioController extends ChangeNotifier implements EasyAudioInterface {
   @override
   Future<void> pause() async {
     await _audioPlayer.pause();
+    notifyListeners();
+  }
+
+  @override
+  Future<void> seek(Duration duration) async {
+    await _audioPlayer.seek(duration);
     notifyListeners();
   }
 }
