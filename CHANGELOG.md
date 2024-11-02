@@ -1,4 +1,4 @@
-## 0.0.9
+## 0.0.11
 + Show locale in buttomsheet transcript
 
 ## 0.0.8
