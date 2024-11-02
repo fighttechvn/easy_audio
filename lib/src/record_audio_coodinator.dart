@@ -27,6 +27,7 @@ extension BuildContextAnimatedWaveform on BuildContext {
           child: RecordModalWidget(
             onExits: onExits,
             title: transcript,
+            locale: locale,
           ),
         );
       },

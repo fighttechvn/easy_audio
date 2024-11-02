@@ -14,9 +14,12 @@ class RecordModalWidget extends StatefulWidget {
     super.key,
     this.onExits,
     this.title,
+    required this.locale,
   });
+  
   final String? title;
   final Future<bool?> Function()? onExits;
+  final String locale;
 
   @override
   State<RecordModalWidget> createState() => _RecordModalWidgetState();
@@ -139,7 +142,7 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 10),
                       child: Text(
-                        widget.title ?? 'Transcript:',
+                        widget.title ?? 'Transcript: [${widget.locale}]',
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
