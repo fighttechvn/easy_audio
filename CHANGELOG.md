@@ -1,3 +1,6 @@
+## 0.0.9
++ Show locale in buttomsheet transcript
+
 ## 0.0.8
 + EasyAudioController supports seek audio 
 
