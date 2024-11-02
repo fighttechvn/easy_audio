@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../core/services/easy_audio_controller.dart';
 import '../../domain/entities/record_data.dart';
+import '../../easy_audio_constants.dart';
 import '../../record_audio_constants.dart';
 import '../shared/widgets/waveforms_sound/fixed_wareform.dart';
 import 'bloc/speech_text_bloc.dart';
@@ -142,7 +143,7 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 10),
                       child: Text(
-                        widget.title ?? 'Transcript: [${widget.locale}]',
+                        widget.title ?? 'Transcript: [${languageMapping[widget.locale]}]',
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
