@@ -15,9 +15,15 @@ Please make sure have handle permission. (Can use: `https://pub.dev/packages/per
 
 ### Update `android/app/build.gradle`
 ```
-compileSdkVersion 33
+compileSdkVersion 34 (33 or lower if you use gradle 7.x)
 
 ```
+
+### key.properties 
+storePassword=123456
+keyPassword=123456
+keyAlias=keystore
+storeFile=<path into upload keystore file>
 
 ```
 
