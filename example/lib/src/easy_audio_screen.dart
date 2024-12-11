@@ -2,6 +2,13 @@ import 'package:easy_audio/easy_audio.dart';
 import 'package:example/src/constans.dart';
 import 'package:flutter/material.dart';
 
+mixin WidgetDidMountMixin<T extends StatefulWidget> on State<T> {
+  void setStateIfMounted() {
+    if (!context.mounted) return;
+    setState(() {});
+  }
+}
+
 class EasyAudioExampleScreen extends StatefulWidget {
   const EasyAudioExampleScreen({super.key});
 
@@ -9,15 +16,18 @@ class EasyAudioExampleScreen extends StatefulWidget {
   State<EasyAudioExampleScreen> createState() => _EasyAudioExampleScreenState();
 }
 
-class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
+class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen>
+    with WidgetDidMountMixin<EasyAudioExampleScreen> {
   final EasyAudioController _audioController = EasyAudioController();
   var _offset = kOffsetHide;
   var _urlPlay = '';
+  final currentMockDataRecord = kMockDataRecord;
 
   void _startRecord() {
     context.startRecord().then((value) {
       if (value != null) {
-        kMockDataRecord.add(value);
+        currentMockDataRecord.add(value);
+        setStateIfMounted();
         // _playAudio(value.url);
       }
     });
@@ -80,9 +90,8 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
           children: [
             Padding(
               padding: EdgeInsets.only(bottom: isShowBottom ? sizeBottom : 0),
-              child: Column(
-                children:[
-                   ...kMockDataRecord
+              child: Column(children: [
+                ...currentMockDataRecord
                     .map(
                       (item) => ListTile(
                         contentPadding: const EdgeInsets.symmetric(
@@ -107,8 +116,8 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
                         trailing: Text(item.totalTime.hhmmss),
                       ),
                     )
-                    .toList(),]
-              ),
+                    .toList(),
+              ]),
             ),
             if (MediaQuery.of(context).viewInsets.bottom == 0) ...[
               Positioned(
