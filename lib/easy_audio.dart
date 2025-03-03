@@ -1,4 +1,4 @@
-library easy_audio;
+library;
 
 export 'src/core/services/easy_audio_controller.dart';
 export 'src/domain/entities/process_player.dart';
