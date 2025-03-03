@@ -10,11 +10,11 @@ class FixedWaveform extends StatelessWidget {
   final double waveThickness;
 
   const FixedWaveform({
-    Key? key,
+    super.key,
     this.templates = const [3, 6, 9, 12, 15, 17, 12, 10, 8, 6, 2],
     this.size = const Size(double.infinity, 24),
     this.waveThickness = 2.2,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -113,13 +113,13 @@ class AnimatedWaveform extends StatefulWidget {
   final int divide;
 
   const AnimatedWaveform({
-    Key? key,
+    super.key,
     this.templates = kAudioTemplates,
     this.playing = true,
     this.form = WaveForm.contain,
     this.waveThickness = 4,
     this.divide = 1,
-  }) : super(key: key);
+  });
 
   @override
   State<AnimatedWaveform> createState() => _AnimatedWaveformState();
