@@ -1,3 +1,6 @@
+## 0.0.12
+* Upgrade `flutter_bloc: ^9.1.0`
+
 ## 0.0.11
 + Show locale in buttomsheet transcript
 
