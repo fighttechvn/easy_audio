@@ -10,8 +10,7 @@ final kMockDataRecord = [
     createdAt: DateTime(2022, 12, 5, 09, 25),
     id: '006',
     totalTime: const Duration(seconds: 91),
-    url:
-        'https://s3.amazonaws.com/scifri-episodes/scifri20181123-episode.mp3',
+    url: 'https://s3.amazonaws.com/scifri-episodes/scifri20181123-episode.mp3',
   ),
 ];
 

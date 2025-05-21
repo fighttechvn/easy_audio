@@ -35,7 +35,7 @@ class EasyAudioController extends ChangeNotifier implements EasyAudioInterface {
   final _process = ValueNotifier<ProcessPlayer>(ProcessPlayer());
 
   /// Audio Record
-  final _audioRecorder = Record();
+  final _audioRecorder = AudioRecorder();
   final _amplitude = ValueNotifier<Amp?>(null);
 
   DateTime? _startRecord;
@@ -134,8 +134,10 @@ class EasyAudioController extends ChangeNotifier implements EasyAudioInterface {
         final tempPath = tempDir.path;
 
         await _audioRecorder.start(
+          const RecordConfig(
+            encoder: AudioEncoder.aacLc,
+          ),
           path: '$tempPath/recor_${DateTime.now().millisecondsSinceEpoch}.m4a',
-          encoder: AudioEncoder.aacLc,
         );
 
         _startRecord = DateTime.now();
@@ -201,11 +203,11 @@ extension StringExtCodec on String {
     final extension = split('.').last;
     switch (extension) {
       case 'pcm':
-        return AudioEncoder.pcm16bit;
+        return AudioEncoder.pcm16bits;
       case 'aac':
         return AudioEncoder.aacLc;
       default:
-        return AudioEncoder.pcm16bit;
+        return AudioEncoder.pcm16bits;
     }
   }
 }

@@ -17,7 +17,7 @@ class RecordModalWidget extends StatefulWidget {
     this.title,
     required this.locale,
   });
-  
+
   final String? title;
   final Future<bool?> Function()? onExits;
   final String locale;
@@ -143,7 +143,8 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 10),
                       child: Text(
-                        widget.title ?? 'Transcript: [${languageMapping[widget.locale]}]',
+                        widget.title ??
+                            'Transcript: [${languageMapping[widget.locale]}]',
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,

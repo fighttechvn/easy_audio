@@ -1,6 +1,6 @@
 name: easy_audio
 description: Easy record audio file, and friendly convert `speech_to_text`
-version: 0.0.13
+version: 1.0.0
 homepage: https://github.com/fighttech-vn/easy_audio
 
 environment:
@@ -11,16 +11,16 @@ dependencies:
   flutter:
     sdk: flutter
 
-  record: ^4.4.3
-  audioplayers: ^6.1.0
-  path_provider: ^2.0.14
-  speech_to_text: ^6.1.1
+  record: 6.0.0
+  audioplayers: ^6.4.0
+  path_provider: ^2.1.5
+  speech_to_text: 7.0.0
   flutter_bloc: ^9.1.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^2.0.0
+  flutter_lints: ^5.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
