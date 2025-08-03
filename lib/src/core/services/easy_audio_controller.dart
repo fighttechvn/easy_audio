@@ -32,7 +32,7 @@ class EasyAudioController extends ChangeNotifier implements EasyAudioInterface {
   late StreamSubscription<void> _playerStateChangedSubscription;
   late StreamSubscription<Duration?> _durationChangedSubscription;
   late StreamSubscription<Duration> _positionChangedSubscription;
-  final _process = ValueNotifier<ProcessPlayer>(ProcessPlayer());
+  final _process = ValueNotifier<ProcessPlayer>(const ProcessPlayer());
 
   /// Audio Record
   final _audioRecorder = AudioRecorder();
@@ -195,19 +195,5 @@ class EasyAudioController extends ChangeNotifier implements EasyAudioInterface {
   Future<void> seek(Duration duration) async {
     await _audioPlayer.seek(duration);
     notifyListeners();
-  }
-}
-
-extension StringExtCodec on String {
-  AudioEncoder get getCodec {
-    final extension = split('.').last;
-    switch (extension) {
-      case 'pcm':
-        return AudioEncoder.pcm16bits;
-      case 'aac':
-        return AudioEncoder.aacLc;
-      default:
-        return AudioEncoder.pcm16bits;
-    }
   }
 }

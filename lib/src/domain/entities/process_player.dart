@@ -2,7 +2,7 @@ class ProcessPlayer {
   final Duration? duration;
   final Duration? position;
 
-  ProcessPlayer({
+  const ProcessPlayer({
     this.duration,
     this.position,
   });
