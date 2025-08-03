@@ -1,3 +1,6 @@
+## 1.0.1
++ Add wake screen while recoding
+
 ## 0.0.12
 * Upgrade `flutter_bloc: ^9.1.0`
 
