@@ -6,7 +6,7 @@ class RecordData {
   final DateTime createdAt;
   final String? content;
 
-  RecordData({
+  const RecordData({
     this.content,
     required this.url,
     this.id,

@@ -2,7 +2,7 @@ import 'package:record/record.dart';
 
 /// dBFS amplitude
 class Amp {
-  Amp({required this.current, required this.max});
+  const Amp({required this.current, required this.max});
 
   /// Current max amplitude
   final double current;
@@ -13,4 +13,18 @@ class Amp {
 
 extension AmplitudeExt on Amplitude {
   Amp toAmp() => Amp(current: current, max: max);
+}
+
+extension StringExtCodec on String {
+  AudioEncoder get getCodec {
+    final extension = split('.').last;
+    switch (extension) {
+      case 'pcm':
+        return AudioEncoder.pcm16bits;
+      case 'aac':
+        return AudioEncoder.aacLc;
+      default:
+        return AudioEncoder.pcm16bits;
+    }
+  }
 }

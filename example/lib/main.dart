@@ -11,12 +11,9 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Easy Audio Example Screen',
-      theme: ThemeData(
-        primarySwatch: Colors.amber,
-      ),
-      home: const EasyAudioExampleScreen(),
+    return const MaterialApp(
+      title: 'Easy Audio',
+      home: EasyAudioExampleScreen(),
     );
   }
 }

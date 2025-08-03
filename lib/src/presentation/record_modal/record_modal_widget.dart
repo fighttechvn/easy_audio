@@ -5,7 +5,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../core/services/easy_audio_controller.dart';
 import '../../domain/entities/record_data.dart';
-import '../../easy_audio_constants.dart';
 import '../../record_audio_constants.dart';
 import '../shared/widgets/waveforms_sound/fixed_wareform.dart';
 import 'bloc/speech_text_bloc.dart';
@@ -42,11 +41,13 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
       WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
         _audioController.record().then((value) {
           if (_audioController.isRecording) {
-            context.read<SpeechTextBloc>().add(
-              StartRecordEvent(callbackToText: (text) {
-                _textCtrl.text = text;
-              }),
-            );
+            if (mounted) {
+              context.read<SpeechTextBloc>().add(
+                StartRecordEvent(callbackToText: (text) {
+                  _textCtrl.text = text;
+                }),
+              );
+            }
           }
         });
       });
@@ -74,7 +75,9 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
           );
         }
 
-        Navigator.of(context).pop(record);
+        if (context.mounted) {
+          Navigator.of(context).pop(record);
+        }
       });
     }
   }
@@ -111,6 +114,8 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final title = widget.title ?? '[${widget.locale}] Transcripts: ';
+
     return GestureDetector(
       onTap: _onTapCloseButton,
       behavior: HitTestBehavior.translucent,
@@ -127,7 +132,7 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
                   color: Colors.white,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withOpacity(0.2),
+                      color: Colors.grey.withAlpha((0.2 * 255).toInt()),
                       blurRadius: 1.0,
                       offset: const Offset(0, -1),
                       spreadRadius: 1.0,
@@ -143,8 +148,7 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 10),
                       child: Text(
-                        widget.title ??
-                            'Transcript: [${languageMapping[widget.locale]}]',
+                        title,
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
@@ -169,7 +173,7 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
                           onPressed: _onTapCloseButton,
                           icon: Container(
                             decoration: BoxDecoration(
-                              color: Colors.grey.withOpacity(0.4),
+                              color: Colors.grey.withValues(alpha: 0.4),
                               borderRadius: BorderRadius.circular(50),
                             ),
                             child: Icon(
@@ -185,7 +189,8 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
                             valueListenable: _ctlSecond,
                             builder: (_, sec, __) {
                               return Text(
-                                  Duration(seconds: sec).formatTimeAudio);
+                                Duration(seconds: sec).formatTimeAudio,
+                              );
                             },
                           ),
                         ),
@@ -195,7 +200,7 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
                           icon: Container(
                             padding: const EdgeInsets.all(5),
                             decoration: BoxDecoration(
-                              color: Colors.grey.withOpacity(0.2),
+                              color: Colors.grey.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(50),
                             ),
                             child: Icon(

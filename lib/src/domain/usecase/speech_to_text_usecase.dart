@@ -13,8 +13,15 @@ class SpeechToTextUsecase {
   ///
   final SpeechToText _speech = SpeechToText();
 
-  Future<String?> initSpeechToText({Function(String)? statusListener}) async {
+  Future<String?> initSpeechToText({
+    Function(String)? statusListener,
+  }) async {
     final hasSpeech = await _speech.initialize(
+      onStatus: (status) {
+        if (kDebugMode) {
+          print('[SeechToTextUsecase] status: $status');
+        }
+      },
       onError: (val) => debugPrint('onError: $val'),
       debugLogging: true,
     );
@@ -25,6 +32,18 @@ class SpeechToTextUsecase {
       }
 
       final systemLocale = await _speech.systemLocale();
+
+      // if (kDebugMode) {
+      //   final locales = await _speech.locales();
+      //   print('locales ${locales.length}');
+      //   final result = <String>[];
+      //   for (final e in locales) {
+      //     print('locales: ${e.name} ${e.localeId}');
+      //   }
+      //   final data = 'locales ${result.join('-')}';
+      //   print(data);
+      // }
+
       return local ?? systemLocale?.localeId ?? 'en-US';
     }
 
@@ -36,10 +55,13 @@ class SpeechToTextUsecase {
     String currentLocaleId,
   ) {
     debugPrint('[EasyAudio]: start record with locale: $currentLocaleId');
+
     _speech.listen(
-      cancelOnError: false,
       localeId: currentLocaleId,
-      listenMode: ListenMode.confirmation,
+      listenOptions: SpeechListenOptions(
+        cancelOnError: false,
+        listenMode: ListenMode.confirmation,
+      ),
       onResult: (value) {
         callback(value.alternates.last.recognizedWords);
       },

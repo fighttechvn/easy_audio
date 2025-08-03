@@ -1,6 +1,7 @@
 import 'package:easy_audio/easy_audio.dart';
 import 'package:example/src/constans.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 mixin WidgetDidMountMixin<T extends StatefulWidget> on State<T> {
   void setStateIfMounted() {
@@ -19,16 +20,38 @@ class EasyAudioExampleScreen extends StatefulWidget {
 class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen>
     with WidgetDidMountMixin<EasyAudioExampleScreen> {
   final EasyAudioController _audioController = EasyAudioController();
+
   var _offset = kOffsetHide;
   var _urlPlay = '';
-  final currentMockDataRecord = kMockDataRecord;
+  final _dataRecord = kMockDataRecord;
+
+  Future<bool?> askPermission() async {
+    // if (await Permission.contacts.request().isGranted) {
+    //   // Either the permission was already granted before or the user just granted it.
+    // }
+
+    // You can request multiple permissions at once.
+    Map<Permission, PermissionStatus> statuses = await [
+      Permission.microphone,
+      Permission.speech,
+    ].request();
+
+    return statuses[Permission.microphone] == PermissionStatus.granted &&
+        statuses[Permission.speech] == PermissionStatus.granted;
+  }
 
   void _startRecord() {
-    context.startRecord().then((value) {
-      if (value != null) {
-        currentMockDataRecord.add(value);
-        setStateIfMounted();
-        // _playAudio(value.url);
+    askPermission().then((val) {
+      if (val == true) {
+        if (mounted) {
+          context.startRecord().then((value) {
+            if (value != null) {
+              _dataRecord.add(value);
+              setStateIfMounted();
+              // _playAudio(value.url);
+            }
+          });
+        }
       }
     });
   }
@@ -51,6 +74,7 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen>
 
   void _playAudio(String url) {
     final currentFocus = FocusScope.of(context);
+
     if (!currentFocus.hasPrimaryFocus) {
       currentFocus.unfocus();
     }
@@ -80,9 +104,7 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen>
         MediaQuery.of(context).viewInsets.bottom == 0 && _offset == kOffsetShow;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Easy Audio Example Screen'),
-      ),
+      appBar: AppBar(title: const Text('Easy Audio')),
       extendBody: true,
       body: SizedBox(
         height: MediaQuery.of(context).size.height,
@@ -90,34 +112,36 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen>
           children: [
             Padding(
               padding: EdgeInsets.only(bottom: isShowBottom ? sizeBottom : 0),
-              child: Column(children: [
-                ...currentMockDataRecord
-                    .map(
-                      (item) => ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 0),
-                        dense: true,
-                        onTap: () {
-                          final isPlaying = _urlPlay == item.title;
-                          if (isPlaying) {
-                            return;
-                          } else {
-                            if (_offset == kOffsetHide) {
-                              _offset = kOffsetShow;
-                            }
+              child: Column(
+                children: [
+                  ..._dataRecord
+                      .map(
+                        (item) => ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 0),
+                          dense: true,
+                          onTap: () {
+                            final isPlaying = _urlPlay == item.title;
+                            if (isPlaying) {
+                              return;
+                            } else {
+                              if (_offset == kOffsetHide) {
+                                _offset = kOffsetShow;
+                              }
 
-                            _playAudio(item.url);
-                          }
-                        },
-                        title: Text(
-                          item.title ?? 'record',
-                          style: Theme.of(context).textTheme.bodyLarge,
+                              _playAudio(item.url);
+                            }
+                          },
+                          title: Text(
+                            item.title ?? 'record',
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          ),
+                          trailing: Text(item.totalTime.hhmmss),
                         ),
-                        trailing: Text(item.totalTime.hhmmss),
-                      ),
-                    )
-                    .toList(),
-              ]),
+                      )
+                      .toList(),
+                ],
+              ),
             ),
             if (MediaQuery.of(context).viewInsets.bottom == 0) ...[
               Positioned(
@@ -149,42 +173,44 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen>
               ),
               Positioned(
                 bottom: 0,
-                child: AnimatedSlide(
-                  duration: const Duration(milliseconds: 300),
-                  offset: MediaQuery.of(context).viewInsets.bottom != 0
-                      ? kOffsetHide
-                      : (_offset == kOffsetHide ? kOffsetShow : kOffsetHide),
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    width: MediaQuery.of(context).size.width,
-                    child: Center(
-                      child: Column(
-                        children: [
-                          GestureDetector(
-                            onTap: _startRecord,
-                            child: Container(
-                              margin: const EdgeInsets.only(bottom: 10),
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).primaryColor,
-                                borderRadius: BorderRadius.circular(40),
-                              ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.mic,
-                                  color: Colors.white,
+                child: SafeArea(
+                  child: AnimatedSlide(
+                    duration: const Duration(milliseconds: 300),
+                    offset: MediaQuery.of(context).viewInsets.bottom != 0
+                        ? kOffsetHide
+                        : (_offset == kOffsetHide ? kOffsetShow : kOffsetHide),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      width: MediaQuery.of(context).size.width,
+                      child: Center(
+                        child: Column(
+                          children: [
+                            GestureDetector(
+                              onTap: _startRecord,
+                              child: Container(
+                                margin: const EdgeInsets.only(bottom: 10),
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).primaryColor,
+                                  borderRadius: BorderRadius.circular(40),
+                                ),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.mic,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              )
-            ]
+              ),
+            ],
           ],
         ),
       ),
