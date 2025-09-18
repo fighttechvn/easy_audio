@@ -13,6 +13,18 @@ class SpeechToTextUsecase {
   ///
   final SpeechToText _speech = SpeechToText();
 
+  Future<List<(String, String)>> getListLocaleSupported() async {
+    final locales = await _speech.locales();
+    final result = <(String, String)>[];
+
+    for (final e in locales) {
+      result.add((e.name, e.localeId));
+    }
+
+    return result;
+  }
+
+
   Future<String?> initSpeechToText({
     Function(String)? statusListener,
   }) async {

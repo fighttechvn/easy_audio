@@ -3,12 +3,7 @@ import 'package:example/src/constans.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-mixin WidgetDidMountMixin<T extends StatefulWidget> on State<T> {
-  void setStateIfMounted() {
-    if (!context.mounted) return;
-    setState(() {});
-  }
-}
+import 'example/speech_to_text/main.dart';
 
 class EasyAudioExampleScreen extends StatefulWidget {
   const EasyAudioExampleScreen({super.key});
@@ -17,8 +12,7 @@ class EasyAudioExampleScreen extends StatefulWidget {
   State<EasyAudioExampleScreen> createState() => _EasyAudioExampleScreenState();
 }
 
-class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen>
-    with WidgetDidMountMixin<EasyAudioExampleScreen> {
+class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
   final EasyAudioController _audioController = EasyAudioController();
 
   var _offset = kOffsetHide;
@@ -40,14 +34,14 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen>
         statuses[Permission.speech] == PermissionStatus.granted;
   }
 
-  void _startRecord() {
+  void _onTapStartRecord() {
     askPermission().then((val) {
       if (val == true) {
         if (mounted) {
           context.startRecord().then((value) {
             if (value != null) {
               _dataRecord.add(value);
-              setStateIfMounted();
+              setState(() {});
               // _playAudio(value.url);
             }
           });
@@ -104,7 +98,27 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen>
         MediaQuery.of(context).viewInsets.bottom == 0 && _offset == kOffsetShow;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Easy Audio')),
+      appBar: AppBar(
+        title: const Text('Easy Audio'),
+        actions: [
+          IconButton(
+            onPressed: () {
+              context.startSelectLanguagueDialog();
+            },
+            icon: const Icon(Icons.language),
+          ),
+          IconButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const SpeechSampleApp(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.record_voice_over_rounded),
+          ),
+        ],
+      ),
       extendBody: true,
       body: SizedBox(
         height: MediaQuery.of(context).size.height,
@@ -186,7 +200,7 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen>
                         child: Column(
                           children: [
                             GestureDetector(
-                              onTap: _startRecord,
+                              onTap: _onTapStartRecord,
                               child: Container(
                                 margin: const EdgeInsets.only(bottom: 10),
                                 width: 40,

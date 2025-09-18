@@ -19,6 +19,9 @@ dependencies:
   easy_audio:
     path: ../../easy_audio
 
+  provider:
+  speech_to_text: 
+
   permission_handler: ^11.3.1
 
 dev_dependencies:

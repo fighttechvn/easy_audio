@@ -2,24 +2,33 @@
 + Support record audio file.
 + Friendly support convert speed to text.
 
+# Dependencies 
+
+	- [x] https://pub.dev/packages/audioplayers
+	- [x] https://pub.dev/packages/record
+	- [x] https://pub.dev/packages/speech_to_text
+	- [] https://pub.dev/packages/flutter_tts
+
 # How to use
-```
+
+```bash
 context.startRecord()
 ```
 
-
 Please make sure have handle permission. (Can use: `https://pub.dev/packages/permission_handler`)
+
 
 # How to Setup
 ## Android
 
 ### Update `android/app/build.gradle`
-```
+```bash
 compileSdkVersion 34 (33 or lower if you use gradle 7.x)
 
 ```
 
-### key.properties 
+Add file key.properties 
+```bash
 storePassword=123456
 keyPassword=123456
 keyAlias=keystore
@@ -27,13 +36,14 @@ storeFile=<path into upload keystore file>
 
 ```
 
+
+
 minSdkVersion 21
 
-```
 
-### Update `android/app/src/main/AndroidManifest.xml`
+File update `android/app/src/main/AndroidManifest.xml`
 
-```
+```bash
 <uses-permission android:name="android.permission.INTERNET"/>
 <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 ```
@@ -42,14 +52,14 @@ minSdkVersion 21
 
 ### Update `ios/Runner/Info.plist`
 
-```
+```bash
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Allow $(APP_NAME) access microphone?</string>
 ```
 
 ## Locales supported
 
-```base
+```bash
 flutter: locales 63
  Arabic (Saudi Arabia) ar-SA
  Cantonese (China mainland) yue-CN
