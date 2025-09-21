@@ -32,12 +32,6 @@ class _EasyAudioPlayerState extends State<EasyAudioPlayer> {
   EasyAudioController get controller => widget.controller;
 
   @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: kSizeEasyAudioPlayer,

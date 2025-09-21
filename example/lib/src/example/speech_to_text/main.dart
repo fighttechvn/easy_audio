@@ -2,10 +2,10 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
-
 
 class SpeechSampleApp extends StatefulWidget {
   const SpeechSampleApp({Key? key}) : super(key: key);
@@ -80,36 +80,39 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
         appBar: AppBar(
           title: const Text('Speech to Text Example'),
         ),
-        body: Column(children: [
-          const HeaderWidget(),
-          Column(
-            children: <Widget>[
-              InitSpeechWidget(_hasSpeech, initSpeechState),
-              SpeechControlWidget(_hasSpeech, speech.isListening,
-                  startListening, stopListening, cancelListening),
-              SessionOptionsWidget(
-                _currentLocaleId,
-                _switchLang,
-                _localeNames,
-                _logEvents,
-                _switchLogging,
-                _pauseForController,
-                _listenForController,
-                _onDevice,
-                _switchOnDevice,
-              ),
-            ],
-          ),
-          Expanded(
-            flex: 4,
-            child: RecognitionResultsWidget(lastWords: lastWords, level: level),
-          ),
-          Expanded(
-            flex: 1,
-            child: ErrorWidget(lastError: lastError),
-          ),
-          SpeechStatusWidget(speech: speech),
-        ]),
+        body: SafeArea(
+          child: Column(children: [
+            const HeaderWidget(),
+            Column(
+              children: <Widget>[
+                InitSpeechWidget(_hasSpeech, initSpeechState),
+                SpeechControlWidget(_hasSpeech, speech.isListening,
+                    startListening, stopListening, cancelListening),
+                SessionOptionsWidget(
+                  _currentLocaleId,
+                  _switchLang,
+                  _localeNames,
+                  _logEvents,
+                  _switchLogging,
+                  _pauseForController,
+                  _listenForController,
+                  _onDevice,
+                  _switchOnDevice,
+                ),
+              ],
+            ),
+            Expanded(
+              flex: 4,
+              child:
+                  RecognitionResultsWidget(lastWords: lastWords, level: level),
+            ),
+            Expanded(
+              flex: 1,
+              child: ErrorWidget(lastError: lastError),
+            ),
+            SpeechStatusWidget(speech: speech),
+          ]),
+        ),
       ),
     );
   }
@@ -316,6 +319,9 @@ class ErrorWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (lastError.isEmpty) {
+      return const SizedBox.shrink();
+    }
     return Column(
       children: <Widget>[
         const Center(
