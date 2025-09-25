@@ -25,6 +25,7 @@ class SpeechToTextUsecase {
   bool _isRunning = false;
   void Function(String)? _onTranscript;
   void Function(Object error, StackTrace stackTrace)? _onError;
+  bool _recordingActive = false;
 
   final List<String> _finalSegments = <String>[];
   String _partialSegment = '';
@@ -81,17 +82,35 @@ class SpeechToTextUsecase {
       cancelOnError: false,
     );
 
+    final bool startRecordingBeforeStt =
+        !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+
+    String? recordingPath;
+    var recordingStarted = false;
+    _recordingActive = false;
+
     try {
-      await controller.start();
-      if (controller.canRecordWhileListening) {
-        final directory = await getApplicationDocumentsDirectory();
-        final recordingPath = defaultRecordingPath(directory.path);
+      if (startRecordingBeforeStt || controller.canRecordWhileListening) {
+        recordingPath = await _createRecordingPath();
         await controller.startRecordingTo(recordingPath);
+        recordingStarted = true;
       }
+
+      await controller.start();
+
+      _recordingActive = recordingStarted;
       _isRunning = true;
     } catch (error, stackTrace) {
+      if (recordingStarted) {
+        try {
+          await controller.stopRecording(discard: true);
+        } catch (_) {
+          // Best-effort cleanup if recording teardown fails.
+        }
+      }
       await _resultsSubscription?.cancel();
       _resultsSubscription = null;
+      _recordingActive = false;
       _isRunning = false;
       _logError('Failed to start speech pipeline', error, stackTrace);
       rethrow;
@@ -108,6 +127,7 @@ class SpeechToTextUsecase {
     }
 
     String? recordedPath;
+    final wasRecording = _recordingActive;
     try {
       recordedPath = await controller.stop(
         discardRecording: discardRecording,
@@ -121,10 +141,12 @@ class SpeechToTextUsecase {
       }
       _onTranscript = null;
       _onError = null;
+      _recordingActive = false;
     }
 
     return StopSpeechResult(
-      recordingEnabled: !discardRecording && recordedPath != null,
+      recordingEnabled:
+          wasRecording && !discardRecording && recordedPath != null,
       recordingPath: recordedPath,
     );
   }
@@ -191,5 +213,10 @@ class SpeechToTextUsecase {
     }
     debugPrint('[SpeechToTextUsecase] $message: $error');
     debugPrint(stackTrace.toString());
+  }
+
+  Future<String> _createRecordingPath() async {
+    final directory = await getApplicationDocumentsDirectory();
+    return defaultRecordingPath(directory.path);
   }
 }

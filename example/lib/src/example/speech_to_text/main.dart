@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text_record/speech_to_text_record.dart';
@@ -21,6 +22,30 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
   String? _activeRecordingPath;
   String? _lastSavedRecording;
   String? _lastError;
+  late final AudioPlayer _player;
+  bool _isPlaying = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _player = AudioPlayer();
+    _player.onPlayerStateChanged.listen((PlayerState state) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isPlaying = state == PlayerState.playing;
+      });
+    });
+    _player.onPlayerComplete.listen((event) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isPlaying = false;
+      });
+    });
+  }
 
   Future<void> _ensurePermissions() async {
     final statuses =
@@ -40,6 +65,15 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
     if (previousSession != null) {
       _session = null;
       unawaited(previousSession.dispose());
+    }
+
+    if (_isPlaying) {
+      await _player.stop();
+      if (mounted) {
+        setState(() {
+          _isPlaying = false;
+        });
+      }
     }
 
     setState(() {
@@ -142,6 +176,41 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
     });
   }
 
+  Future<void> _togglePlayback() async {
+    final savedPath = _lastSavedRecording;
+    if (savedPath == null) {
+      return;
+    }
+
+    if (_isPlaying) {
+      await _player.stop();
+      if (mounted) {
+        setState(() {
+          _isPlaying = false;
+        });
+      }
+      return;
+    }
+
+    try {
+      await _player.stop();
+      await _player.play(DeviceFileSource(savedPath));
+      if (mounted) {
+        setState(() {
+          _isPlaying = true;
+        });
+      }
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _lastError = 'Playback failed: $error';
+        _isPlaying = false;
+      });
+    }
+  }
+
   @override
   void dispose() {
     final session = _session;
@@ -149,6 +218,8 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
     if (session != null) {
       unawaited(session.dispose());
     }
+    unawaited(_player.stop());
+    _player.dispose();
     super.dispose();
   }
 
@@ -241,6 +312,13 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
                           ? () => _stopPipeline(discardRecording: true)
                           : null,
                       child: const Text('Stop & Discard'),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      onPressed:
+                          _lastSavedRecording != null ? _togglePlayback : null,
+                      child:
+                          Text(_isPlaying ? 'Stop Playback' : 'Play Saved'),
                     ),
                   ],
                 ),

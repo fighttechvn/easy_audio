@@ -26,7 +26,7 @@ packages:
     source: hosted
     version: "2.13.0"
   audioplayers:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: audioplayers
       sha256: a5341380a4f1d3a10a4edde5bb75de5127fe31e0faa8c4d860e64d2f91ad84c7
@@ -573,11 +573,12 @@ packages:
     source: hosted
     version: "1.10.1"
   speech_to_text:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "../third_party/speech_to_text"
-      relative: true
-    source: path
+      name: speech_to_text
+      sha256: c07557664974afa061f221d0d4186935bea4220728ea9446702825e8b988db04
+      url: "https://pub.dev"
+    source: hosted
     version: "7.3.0"
   speech_to_text_platform_interface:
     dependency: transitive
