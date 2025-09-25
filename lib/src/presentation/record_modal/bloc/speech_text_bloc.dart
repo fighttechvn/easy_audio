@@ -12,106 +12,169 @@ part 'speech_text_event.dart';
 part 'speech_text_state.dart';
 
 class SpeechTextBloc extends Bloc<SpeechTextEvent, SpeechTextState> {
-  final SpeechToTextUsecase _speechToTextUsecase;
-
-  SpeechTextBloc(
-    this._speechToTextUsecase,
-  ) : super(const SpeechTextInitial(SpeechTextStateUI())) {
-    on<InitSpeechToTextEvent>(_onMapInitSpeechToTextEvent);
-    on<StartRecordEvent>(_onMapStartRecordEvent);
-    on<StopRecordEvent>(_onMapStopRecordEvent);
+  SpeechTextBloc(this._speechToTextUsecase)
+      : super(const SpeechTextInitial(SpeechTextStateUI())) {
+    on<InitSpeechToTextEvent>(_onInitSpeechToText);
+    on<StartRecordEvent>(_onStartRecord);
+    on<StopRecordEvent>(_onStopRecord);
+    on<_SpeechPipelineErrorEvent>(_onPipelineError);
 
     add(InitSpeechToTextEvent(retryCount: 0));
   }
 
-  FutureOr<void> _onMapInitSpeechToTextEvent(
-      InitSpeechToTextEvent event, Emitter<SpeechTextState> emit) async {
+  final SpeechToTextUsecase _speechToTextUsecase;
+  DateTime? _recordingStartedAt;
+
+  Future<void> _onInitSpeechToText(
+    InitSpeechToTextEvent event,
+    Emitter<SpeechTextState> emit,
+  ) async {
     try {
-      emit(InitialingService(state.stateUI));
+      emit(
+        InitialingService(
+          state.stateUI.copyWith(retryInitCount: event.retryCount),
+        ),
+      );
 
       final currentLocaleId = await _speechToTextUsecase.initSpeechToText(
         statusListener: (status) {
           if (kDebugMode) {
-            print('SpeechTextBloc: status $status');
+            debugPrint('SpeechTextBloc: status $status');
           }
         },
       );
 
       if (currentLocaleId?.isNotEmpty ?? false) {
-        emit(InitSucceeded(state.stateUI.copyWith(
-          currentLocaleId: currentLocaleId,
-          stateInit: StateInitSpeechText.succeeded,
-        )));
+        emit(
+          InitSucceeded(
+            state.stateUI.copyWith(
+              currentLocaleId: currentLocaleId,
+              stateInit: StateInitSpeechText.succeeded,
+            ),
+          ),
+        );
       } else {
-        emit(InitFailed(
+        emit(
+          InitFailed(
+            state.stateUI.copyWith(
+              stateInit: StateInitSpeechText.failed,
+            ),
+          ),
+        );
+      }
+    } catch (error, stackTrace) {
+      emit(
+        InitFailed(
           state.stateUI.copyWith(
             stateInit: StateInitSpeechText.failed,
           ),
-        ));
-      }
-    } catch (e, trace) {
-      emit(InitFailed(state.stateUI.copyWith(
-        stateInit: StateInitSpeechText.failed,
-      )));
-
-      if (kDebugMode) {
-        print('[SpeechTextBloc] error');
-        print(e);
-        print(trace);
-      }
+        ),
+      );
+      _logError('Init speech-to-text failed', error, stackTrace);
     }
   }
 
-  FutureOr<void> _onMapStartRecordEvent(
-      StartRecordEvent event, Emitter<SpeechTextState> emit) async {
-    try {
-      if (state.stateUI.isInitSuccess) {
-        await WakelockPlus.enable();
-        await WakelockPlus.toggle(enable: true);
-
-        _speechToTextUsecase.startSpeak(
-          event.callbackToText,
-          state.stateUI.currentLocaleId,
+  Future<void> _onStartRecord(
+    StartRecordEvent event,
+    Emitter<SpeechTextState> emit,
+  ) async {
+    if (!state.stateUI.isInitSuccess) {
+      if (!state.stateUI.isCloseFeature) {
+        add(
+          InitSpeechToTextEvent(
+            retryCount: state.stateUI.retryInitCount + 1,
+          ),
         );
-
-        emit(Recording(state.stateUI));
-      } else if (state.stateUI.isCloseFeature == false) {
-        add(InitSpeechToTextEvent(
-            retryCount: state.stateUI.retryInitCount + 1));
       } else {
         emit(InitFailed(state.stateUI));
       }
-    } catch (e, trace) {
-      emit(RecordError(state.stateUI, e.toString(), e));
-      await WakelockPlus.toggle(enable: false);
+      return;
+    }
 
-      if (kDebugMode) {
-        print('[SpeechTextBloc] error');
-        print(e);
-        print(trace);
-      }
+    try {
+      await WakelockPlus.enable();
+      await WakelockPlus.toggle(enable: true);
+
+      await _speechToTextUsecase.startSpeak(
+        event.callbackToText,
+        state.stateUI.currentLocaleId,
+        onError: (Object error, StackTrace stackTrace) {
+          add(_SpeechPipelineErrorEvent(error, stackTrace));
+        },
+      );
+
+      _recordingStartedAt = DateTime.now();
+      emit(Recording(state.stateUI));
+    } catch (error, stackTrace) {
+      await WakelockPlus.toggle(enable: false);
+      _recordingStartedAt = null;
+      emit(RecordError(state.stateUI, error.toString(), error));
+      _logError('Start record failed', error, stackTrace);
     }
   }
 
-  FutureOr<void> _onMapStopRecordEvent(
-      StopRecordEvent event, Emitter<SpeechTextState> emit) async {
-    try {
-      if (state.stateUI.isInitSuccess) {
-        emit(StopingRecord(state.stateUI));
-
-        await _speechToTextUsecase.stopSpeak();
-        await WakelockPlus.toggle(enable: false);
-
-        emit(StoppedRecord(state.stateUI, event.isSave));
-      }
-    } catch (e, trace) {
-      emit(RecordError(state.stateUI, e.toString(), e));
-
-      if (kDebugMode) {
-        print('[SpeechTextBloc] error');
-        print(e);
-        print(trace);
-      }
+  Future<void> _onStopRecord(
+    StopRecordEvent event,
+    Emitter<SpeechTextState> emit,
+  ) async {
+    if (!state.stateUI.isInitSuccess) {
+      return;
     }
+
+    try {
+      emit(StopingRecord(state.stateUI));
+
+      final startedAt = _recordingStartedAt;
+      final recordedDuration = startedAt != null
+          ? DateTime.now().difference(startedAt)
+          : Duration.zero;
+
+      final result = await _speechToTextUsecase.stopSpeak(
+        discardRecording: !event.isSave,
+      );
+
+      await WakelockPlus.toggle(enable: false);
+      _recordingStartedAt = null;
+
+      emit(
+        StoppedRecord(
+          state.stateUI,
+          event.isSave,
+          recordedDuration: recordedDuration,
+          filePath: event.isSave ? result.recordingPath : null,
+          recordingAvailable: result.recordingEnabled,
+        ),
+      );
+    } catch (error, stackTrace) {
+      await WakelockPlus.toggle(enable: false);
+      _recordingStartedAt = null;
+      emit(RecordError(state.stateUI, error.toString(), error));
+      _logError('Stop record failed', error, stackTrace);
+    }
+  }
+
+  Future<void> _onPipelineError(
+    _SpeechPipelineErrorEvent event,
+    Emitter<SpeechTextState> emit,
+  ) async {
+    await WakelockPlus.toggle(enable: false);
+    _recordingStartedAt = null;
+    emit(RecordError(state.stateUI, event.error.toString(), event.error));
+    _logError('Speech pipeline error', event.error, event.stackTrace);
+  }
+
+  void _logError(String message, Object error, StackTrace stackTrace) {
+    if (!kDebugMode) {
+      return;
+    }
+    debugPrint('[SpeechTextBloc] $message: $error');
+    debugPrint(stackTrace.toString());
+  }
+
+  @override
+  Future<void> close() async {
+    await _speechToTextUsecase.dispose();
+    await WakelockPlus.toggle(enable: false);
+    return super.close();
   }
 }

@@ -2,10 +2,8 @@ import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:record/record.dart';
+import 'package:speech_to_text_record/speech_to_text_record.dart';
 
-import '../../domain/entities/amp.dart';
 import '../../domain/entities/process_player.dart';
 
 abstract class EasyAudioInterface {
@@ -27,21 +25,24 @@ abstract class EasyAudioInterface {
 }
 
 class EasyAudioController extends ChangeNotifier implements EasyAudioInterface {
-  /// AudioPlayer
-  final _audioPlayer = AudioPlayer();
-  late StreamSubscription<void> _playerStateChangedSubscription;
-  late StreamSubscription<Duration?> _durationChangedSubscription;
-  late StreamSubscription<Duration> _positionChangedSubscription;
-  final _process = ValueNotifier<ProcessPlayer>(const ProcessPlayer());
+  EasyAudioController({int sampleRate = 16000, int numChannels = 1})
+      : _simpleRecorder = SimpleAudioRecorder(
+          sampleRate: sampleRate,
+          numChannels: numChannels,
+        );
 
-  /// Audio Record
-  final _audioRecorder = AudioRecorder();
-  final _amplitude = ValueNotifier<Amp?>(null);
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  late final StreamSubscription<void> _playerStateChangedSubscription;
+  late final StreamSubscription<Duration?> _durationChangedSubscription;
+  late final StreamSubscription<Duration> _positionChangedSubscription;
+  final ValueNotifier<ProcessPlayer> _process =
+      ValueNotifier<ProcessPlayer>(const ProcessPlayer());
 
-  DateTime? _startRecord;
-  StreamSubscription<Amplitude>? _amplitudeSub;
+  final SimpleAudioRecorder _simpleRecorder;
 
-  var _url = '';
+  DateTime? _recordStartedAt;
+
+  String _url = '';
   int _timeRecord = 0;
   bool _mPlayerIsInited = false;
   bool _disposeWhenParentDisponse = true;
@@ -69,34 +70,28 @@ class EasyAudioController extends ChangeNotifier implements EasyAudioInterface {
 
   @override
   Future<void> initPlayer([bool disposeWhenParentDisponse = true]) async {
-    if (_mPlayerIsInited == false) {
-      /// Player Audio
-      _playerStateChangedSubscription =
-          _audioPlayer.onPlayerComplete.listen((state) async {
-        await stopPlayer();
-        notifyListeners();
-      });
-      _positionChangedSubscription = _audioPlayer.onPositionChanged.listen(
-        (position) {
-          _process.value = _process.value.copyWith(position: position);
-        },
-      );
-      _durationChangedSubscription = _audioPlayer.onDurationChanged.listen(
-        (duration) {
-          _process.value = _process.value.copyWith(duration: duration);
-        },
-      );
-
-      /// Record Audio
-      _disposeWhenParentDisponse = disposeWhenParentDisponse;
-
-      _amplitudeSub = _audioRecorder
-          .onAmplitudeChanged(const Duration(milliseconds: 300))
-          .listen((amp) {
-        _amplitude.value = amp.toAmp();
-      });
-      _mPlayerIsInited = true;
+    if (_mPlayerIsInited) {
+      return;
     }
+
+    _playerStateChangedSubscription =
+        _audioPlayer.onPlayerComplete.listen((_) async {
+      await stopPlayer();
+      notifyListeners();
+    });
+    _positionChangedSubscription = _audioPlayer.onPositionChanged.listen(
+      (position) {
+        _process.value = _process.value.copyWith(position: position);
+      },
+    );
+    _durationChangedSubscription = _audioPlayer.onDurationChanged.listen(
+      (duration) {
+        _process.value = _process.value.copyWith(duration: duration);
+      },
+    );
+
+    _disposeWhenParentDisponse = disposeWhenParentDisponse;
+    _mPlayerIsInited = true;
   }
 
   @override
@@ -111,40 +106,42 @@ class EasyAudioController extends ChangeNotifier implements EasyAudioInterface {
       _url = urlAudio!;
       notifyListeners();
 
-      final audioSource =
+      final Source audioSource =
           _url.contains('http') ? UrlSource(_url) : DeviceFileSource(_url);
 
       await _audioPlayer.play(audioSource);
 
       notifyListeners();
-    } else {
-      if (_mPlayerIsInited && _audioPlayer.state == PlayerState.playing) {
-        await stopPlayer();
-      }
+      return;
+    }
+
+    if (_mPlayerIsInited && _audioPlayer.state == PlayerState.playing) {
+      await stopPlayer();
     }
   }
 
   @override
   Future<void> record() async {
     try {
-      _startRecord = null;
-      if (await _audioRecorder.hasPermission()) {
-        _isRecording = true;
-        final tempDir = await getTemporaryDirectory();
-        final tempPath = tempDir.path;
-
-        await _audioRecorder.start(
-          const RecordConfig(
-            encoder: AudioEncoder.aacLc,
-          ),
-          path: '$tempPath/recor_${DateTime.now().millisecondsSinceEpoch}.m4a',
-        );
-
-        _startRecord = DateTime.now();
-        notifyListeners();
-      }
-    } catch (e) {
-      ///
+      _recordStartedAt = DateTime.now();
+      await _simpleRecorder.start();
+      _isRecording = true;
+      notifyListeners();
+    } on MicrophonePermissionException catch (error) {
+      debugPrint('[EasyAudioController] Microphone permission denied: $error');
+      _recordStartedAt = null;
+      _isRecording = false;
+      rethrow;
+    } on AudioPipelineStateException catch (error) {
+      debugPrint('[EasyAudioController] Recorder state error: $error');
+      _recordStartedAt = null;
+      _isRecording = false;
+      rethrow;
+    } catch (error) {
+      debugPrint('[EasyAudioController] Failed to start recording: $error');
+      _recordStartedAt = null;
+      _isRecording = false;
+      rethrow;
     }
   }
 
@@ -157,13 +154,15 @@ class EasyAudioController extends ChangeNotifier implements EasyAudioInterface {
 
   @override
   Future<String?>? stopRecorder() async {
-    final endTime = DateTime.now().difference(_startRecord!);
-    _timeRecord = endTime.inMilliseconds;
-    final urlRecord = await _audioRecorder.stop();
-    _isRecording = false;
+    final startedAt = _recordStartedAt;
+    if (startedAt != null) {
+      _timeRecord = DateTime.now().difference(startedAt).inMilliseconds;
+    }
 
+    final path = await _simpleRecorder.stop();
+    _isRecording = false;
     notifyListeners();
-    return urlRecord;
+    return path;
   }
 
   @override
@@ -175,14 +174,12 @@ class EasyAudioController extends ChangeNotifier implements EasyAudioInterface {
   }
 
   void _disposeAll() {
-    _amplitudeSub?.cancel();
-    _audioRecorder.dispose();
+    _simpleRecorder.dispose();
     _playerStateChangedSubscription.cancel();
     _positionChangedSubscription.cancel();
     _durationChangedSubscription.cancel();
     _audioPlayer.dispose();
     _process.dispose();
-    _amplitude.dispose();
   }
 
   @override
