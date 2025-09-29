@@ -589,7 +589,7 @@ packages:
     source: hosted
     version: "2.3.0"
   speech_to_text_record:
-    dependency: "direct main"
+    dependency: transitive
     description:
       path: "../plugins/speech_to_text_record"
       relative: true

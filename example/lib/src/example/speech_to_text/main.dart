@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:easy_audio/easy_audio.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:speech_to_text_record/speech_to_text_record.dart';
 
 class SpeechSampleApp extends StatefulWidget {
   const SpeechSampleApp({super.key});
@@ -317,8 +317,7 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
                     ElevatedButton(
                       onPressed:
                           _lastSavedRecording != null ? _togglePlayback : null,
-                      child:
-                          Text(_isPlaying ? 'Stop Playback' : 'Play Saved'),
+                      child: Text(_isPlaying ? 'Stop Playback' : 'Play Saved'),
                     ),
                   ],
                 ),

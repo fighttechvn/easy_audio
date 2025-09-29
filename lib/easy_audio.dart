@@ -1,5 +1,6 @@
 library;
 
+export 'package:speech_to_text_record/speech_to_text_record.dart';
 export 'src/core/services/easy_audio_controller.dart';
 export 'src/domain/entities/process_player.dart';
 export 'src/domain/entities/record_data.dart';

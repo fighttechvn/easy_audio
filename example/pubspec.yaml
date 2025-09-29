@@ -22,8 +22,6 @@ dependencies:
   provider:
   audioplayers: ^6.4.0
   permission_handler: ^11.3.1
-  speech_to_text_record:
-    path: ../plugins/speech_to_text_record
 
 dev_dependencies:
   flutter_test:
