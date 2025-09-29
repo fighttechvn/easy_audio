@@ -17,6 +17,8 @@ class StopSpeechResult {
 class SpeechToTextUsecase {
   SpeechToTextUsecase({this.local});
 
+  static const String _defaultLocale = 'en-US';
+
   final String? local;
 
   SpeechToTextRecordController? _controller;
@@ -26,21 +28,24 @@ class SpeechToTextUsecase {
   void Function(String)? _onTranscript;
   void Function(Object error, StackTrace stackTrace)? _onError;
   bool _recordingActive = false;
+  String? _preparedLocale;
 
   final List<String> _finalSegments = <String>[];
   String _partialSegment = '';
+
+  /// Get the microphone audio stream for real-time waveform visualization
+  MicrophoneAudioStream? get microphoneStream => _controller?.microphoneStream;
 
   /// Prepare the speech-to-text pipeline.
   Future<String?> initSpeechToText({
     Function(String)? statusListener,
   }) async {
     statusListener?.call('preparing');
-    final controller = _controller ??= SpeechToTextRecordController();
+    final String targetLocale = _resolveLocale(local);
     try {
-      await controller.prepareModel();
-      _isPrepared = true;
+      await _ensurePrepared(targetLocale);
       statusListener?.call('ready');
-      return local ?? 'en-US';
+      return targetLocale;
     } on SpeechToTextNotSupportedException catch (error, stackTrace) {
       statusListener?.call('notSupported');
       _logError('Speech recognition not supported', error, stackTrace);
@@ -62,7 +67,8 @@ class SpeechToTextUsecase {
     String currentLocaleId, {
     void Function(Object error, StackTrace stackTrace)? onError,
   }) async {
-    final controller = await _ensurePrepared();
+    final String resolvedLocale = _resolveLocale(currentLocaleId);
+    final controller = await _ensurePrepared(resolvedLocale);
     if (_isRunning) {
       await stopSpeak(discardRecording: true);
     }
@@ -73,7 +79,7 @@ class SpeechToTextUsecase {
     _partialSegment = '';
 
     if (kDebugMode) {
-      debugPrint('[SpeechToTextUsecase] start locale: $currentLocaleId');
+      debugPrint('[SpeechToTextUsecase] start locale: $resolvedLocale');
     }
     await _resultsSubscription?.cancel();
     _resultsSubscription = controller.transcriptions.listen(
@@ -90,13 +96,19 @@ class SpeechToTextUsecase {
     _recordingActive = false;
 
     try {
-      if (startRecordingBeforeStt || controller.canRecordWhileListening) {
+      Future<void> startRecord() async {
         recordingPath = await _createRecordingPath();
-        await controller.startRecordingTo(recordingPath);
+        await controller.startRecordingTo(recordingPath!);
         recordingStarted = true;
       }
 
-      await controller.start();
+      if (startRecordingBeforeStt) {
+        await startRecord();
+        await controller.start(localeId: resolvedLocale);
+      } else if (controller.canRecordWhileListening) {
+        await controller.start(localeId: resolvedLocale);
+        await startRecord();
+      }
 
       _recordingActive = recordingStarted;
       _isRunning = true;
@@ -163,15 +175,32 @@ class SpeechToTextUsecase {
     if (controller != null) {
       await controller.dispose();
     }
+    _isPrepared = false;
+    _preparedLocale = null;
   }
 
-  Future<SpeechToTextRecordController> _ensurePrepared() async {
+  Future<SpeechToTextRecordController> _ensurePrepared(
+      [String? localeId]) async {
     final controller = _controller ??= SpeechToTextRecordController();
-    if (!_isPrepared) {
-      await controller.prepareModel();
+    final String targetLocale = _resolveLocale(localeId);
+    final bool needsReload = !_isPrepared || _preparedLocale != targetLocale;
+    if (needsReload) {
+      await controller.prepareModel(
+        localeId: targetLocale,
+        forceReload: _isPrepared && _preparedLocale != targetLocale,
+      );
       _isPrepared = true;
+      _preparedLocale = targetLocale;
     }
     return controller;
+  }
+
+  String _resolveLocale(String? localeId) {
+    final String? candidate = localeId ?? local;
+    if (candidate != null && candidate.isNotEmpty) {
+      return candidate;
+    }
+    return _defaultLocale;
   }
 
   void _handleResult(SpeechRecognitionResult result) {

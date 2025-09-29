@@ -35,10 +35,17 @@ extension BuildContextAnimatedWaveform on BuildContext {
       },
     );
   }
-    Future<T?> startSelectLanguagueDialog<T>() async {
+
+  Future<String?> startSelectLanguagueDialog({
+    String langDefault = RecordLanguageContants.defaultLang,
+    Map<String, String> languages = RecordLanguageContants.languages,
+  }) {
     return startDialogApp(
       title: 'Select lanuage to use',
-      body: const SelectLanguagueDialogWidget(),
+      body: SelectLanguagueDialogWidget(
+        langDefault: langDefault,
+        languages: languages,
+      ),
       showButtonClose: false,
       barrierDismissible: true,
     );

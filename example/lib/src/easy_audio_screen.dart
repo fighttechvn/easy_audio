@@ -18,6 +18,24 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
   var _offset = kOffsetHide;
   var _urlPlay = '';
   final _dataRecord = kMockDataRecord;
+  bool _isRequestingRecording = false;
+  bool _isPreparingLanguageModel = false;
+  String _currentLocale =
+      RecordLanguageContants.languages[RecordLanguageContants.defaultLang]!;
+  String _currentLanguageLabel = RecordLanguageContants.defaultLang;
+
+  String _languageLabelForLocale(String locale) {
+    return RecordLanguageContants.languages.entries
+        .firstWhere(
+          (entry) => entry.value == locale,
+          orElse: () => MapEntry(
+            RecordLanguageContants.defaultLang,
+            RecordLanguageContants
+                .languages[RecordLanguageContants.defaultLang]!,
+          ),
+        )
+        .key;
+  }
 
   Future<bool?> askPermission() async {
     // if (await Permission.contacts.request().isGranted) {
@@ -35,19 +53,120 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
   }
 
   void _onTapStartRecord() {
-    askPermission().then((val) {
-      if (val == true) {
-        if (mounted) {
-          context.startRecord().then((value) {
-            if (value != null) {
-              _dataRecord.add(value);
-              setState(() {});
-              // _playAudio(value.url);
-            }
-          });
+    if (_isRequestingRecording || _isPreparingLanguageModel) {
+      if (_isPreparingLanguageModel) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Vui lòng chờ tải mô hình ngôn ngữ hoàn tất.'),
+          ),
+        );
+      }
+      return;
+    }
+    setState(() {
+      _isRequestingRecording = true;
+    });
+
+    askPermission().then((val) async {
+      if (val != true || !mounted) {
+        return null;
+      }
+      final record = await context.startRecord(locale: _currentLocale);
+      if (!mounted) {
+        return null;
+      }
+      if (record != null) {
+        _dataRecord.insert(0, record);
+        if (record.url.isNotEmpty) {
+          // Auto play the newest recording.
+          _offset = kOffsetShow;
+          _playAudio(record.url);
         }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Không thể lưu file ghi âm cho phiên này nhưng bản chép lời đã được cập nhật.',
+            ),
+          ),
+        );
+      }
+      return record;
+    }).catchError((Object error, StackTrace stackTrace) {
+      if (!mounted) {
+        return null;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Khởi động ghi âm thất bại: $error'),
+        ),
+      );
+      return null;
+    }).whenComplete(() {
+      if (mounted) {
+        setState(() {
+          _isRequestingRecording = false;
+        });
       }
     });
+  }
+
+  Future<void> _prepareLanguageModel(String locale) async {
+    if (_isPreparingLanguageModel) {
+      return;
+    }
+    setState(() {
+      _isPreparingLanguageModel = true;
+    });
+
+    final usecase = SpeechToTextUsecase(local: locale);
+    var isSuccess = false;
+    try {
+      await usecase.initSpeechToText();
+      isSuccess = true;
+    } catch (error, stackTrace) {
+      debugPrint('Tải mô hình cho $locale thất bại: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Tải mô hình ngôn ngữ thất bại: $error'),
+          ),
+        );
+      }
+    } finally {
+      await usecase.dispose();
+      if (mounted) {
+        setState(() {
+          _isPreparingLanguageModel = false;
+          if (isSuccess) {
+            _currentLocale = locale;
+            _currentLanguageLabel = _languageLabelForLocale(locale);
+          }
+        });
+      }
+    }
+  }
+
+  Future<void> _onTapSelectLanguage() async {
+    if (_isPreparingLanguageModel) {
+      return;
+    }
+
+    final selectedLocale = await context.startSelectLanguagueDialog(
+      langDefault: _currentLanguageLabel,
+      languages: RecordLanguageContants.languages,
+    );
+
+    if (!mounted || selectedLocale == null || selectedLocale.isEmpty) {
+      return;
+    }
+
+    if (selectedLocale == _currentLocale) {
+      return;
+    }
+
+    await _prepareLanguageModel(selectedLocale);
   }
 
   void _init() {
@@ -102,9 +221,8 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
         title: const Text('Easy Audio'),
         actions: [
           IconButton(
-            onPressed: () {
-              context.startSelectLanguagueDialog();
-            },
+            onPressed: _onTapSelectLanguage,
+            tooltip: 'Language: $_currentLanguageLabel',
             icon: const Icon(Icons.language),
           ),
           IconButton(
@@ -150,6 +268,16 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
                             item.title ?? 'record',
                             style: Theme.of(context).textTheme.bodyLarge,
                           ),
+                          subtitle: item.content?.isNotEmpty ?? false
+                              ? Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    item.content!,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                )
+                              : null,
                           trailing: Text(item.totalTime.hhmmss),
                         ),
                       )
@@ -209,11 +337,22 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
                                   color: Theme.of(context).primaryColor,
                                   borderRadius: BorderRadius.circular(40),
                                 ),
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.mic,
-                                    color: Colors.white,
-                                  ),
+                                child: Center(
+                                  child: _isRequestingRecording
+                                      ? SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onPrimary,
+                                          ),
+                                        )
+                                      : const Icon(
+                                          Icons.mic,
+                                          color: Colors.white,
+                                        ),
                                 ),
                               ),
                             ),
@@ -225,6 +364,25 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
                 ),
               ),
             ],
+            if (_isPreparingLanguageModel)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black.withValues(alpha: 0.4),
+                  child: const Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 12),
+                        Text(
+                          'Đang tải mô hình ngôn ngữ...',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),

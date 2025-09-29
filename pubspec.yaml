@@ -19,10 +19,6 @@ dependencies:
   speech_to_text_record:
     path: plugins/speech_to_text_record
 
-dependency_overrides:
-  speech_to_text:
-    path: third_party/speech_to_text
-
 dev_dependencies:
   flutter_test:
     sdk: flutter

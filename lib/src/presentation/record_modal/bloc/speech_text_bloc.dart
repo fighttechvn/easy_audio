@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:speech_to_text_record/speech_to_text_record.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../../domain/usecase/speech_to_text_usecase.dart';
@@ -24,6 +25,10 @@ class SpeechTextBloc extends Bloc<SpeechTextEvent, SpeechTextState> {
 
   final SpeechToTextUsecase _speechToTextUsecase;
   DateTime? _recordingStartedAt;
+
+  /// Get the microphone audio stream for real-time waveform visualization
+  MicrophoneAudioStream? get microphoneStream =>
+      _speechToTextUsecase.microphoneStream;
 
   Future<void> _onInitSpeechToText(
     InitSpeechToTextEvent event,
