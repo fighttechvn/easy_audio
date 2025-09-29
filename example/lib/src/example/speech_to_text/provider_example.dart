@@ -7,7 +7,6 @@
 
 // import 'recognition_results_widget.dart';
 
-
 // class ProviderDemoApp extends StatefulWidget {
 //   const ProviderDemoApp({Key? key}) : super(key: key);
 
