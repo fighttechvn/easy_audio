@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/dialog_coodinator.dart';
 import 'domain/entities/record_data.dart';
 import 'domain/usecase/speech_to_text_usecase.dart';
+import 'easy_audio_constants.dart';
 import 'presentation/record_modal/bloc/speech_text_bloc.dart';
 import 'presentation/record_modal/record_modal_widget.dart';
 import 'presentation/select_language/select_languague_dialog_widget.dart';
