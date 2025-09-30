@@ -43,16 +43,22 @@ class _SelectLanguagueDialogWidgetState
           ),
           const SizedBox(height: 26),
 
-          GroupCheckBoxWidget<String>(
-            values: widget.languages.keys.toList(),
-            defaultValue: _languageSelected,
-            onSelected: (value) {
-              setState(() {
-                _languageSelected = value!;
-              });
-            },
-            isRadioType: true,
-            direction: Axis.vertical,
+          ConstrainedBox(
+            constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.5),
+            child: SingleChildScrollView(
+              child: GroupCheckBoxWidget<String>(
+                values: widget.languages.keys.toList(),
+                defaultValue: _languageSelected,
+                onSelected: (value) {
+                  setState(() {
+                    _languageSelected = value!;
+                  });
+                },
+                isRadioType: true,
+                direction: Axis.vertical,
+              ),
+            ),
           ),
           const SizedBox(height: 16),
           ElevatedButton(
