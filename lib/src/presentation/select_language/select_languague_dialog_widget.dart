@@ -30,11 +30,11 @@ class _SelectLanguagueDialogWidgetState
   late final String? _previousLocale = widget.languages[widget.langDefault];
   late String _languageSelected = widget.langDefault;
   bool _isProcessing = false;
+  final _tagDebound = '_select_lang';
+  late List<String> _currentList = widget.languages.keys.toList();
 
   bool get _isAndroidTarget =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
-  late List<String> _currentList = widget.languages.keys.toList();
-  final _tagDebound = '_select_lang';
 
   @override
   void dispose() {
@@ -60,8 +60,12 @@ class _SelectLanguagueDialogWidgetState
                     _currentList = widget.languages.keys.toList();
                     setState(() {});
                   } else {
-                    _currentList = widget.languages.keys
-                        .where((e) => e.contains(value))
+                    _currentList = widget.languages.entries
+                        .where((e) =>
+                            e.key.toLowerCase().contains(value.toLowerCase()) ||
+                            e.value.toLowerCase().contains(value.toLowerCase()))
+                        .toList()
+                        .map((e) => e.key)
                         .toList();
                     setState(() {});
                   }
@@ -70,10 +74,8 @@ class _SelectLanguagueDialogWidgetState
             },
           ),
           const SizedBox(height: 26),
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.5,
-            ),
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.35,
             child: SingleChildScrollView(
               child: GroupCheckBoxWidget<String>(
                 values: _currentList,
@@ -102,6 +104,7 @@ class _SelectLanguagueDialogWidgetState
                   )
                 : const Text('Confirm'),
           ),
+          const SizedBox(height: 8),
         ],
       ),
     );

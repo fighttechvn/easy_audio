@@ -212,23 +212,11 @@ class _GroupCheckBoxWidgetState<T> extends State<GroupCheckBoxWidget<T>> {
         });
 
         late List<Widget> itemsBuild;
-        if (items.length == 1) {
-          itemsBuild = items
-              .expand(
-                (element) => [element, SizedBox(height: widget.spacing)],
-              )
-              .toList();
-        } else {
-          itemsBuild = items
-              .expand(
-                (element) => [element, SizedBox(height: widget.spacing)],
-              )
-              .toList()
-            ..removeLast();
-        }
-        
+        itemsBuild = items.toList();
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: widget.spacing,
           children: [
             if (widget.direction == Axis.vertical)
               ...itemsBuild
