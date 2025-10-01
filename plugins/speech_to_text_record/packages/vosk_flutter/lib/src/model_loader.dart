@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
-import 'dart:isolate';
 
 import 'package:archive/archive_io.dart';
 import 'package:flutter/services.dart';
@@ -21,6 +20,9 @@ class ModelLoader {
   /// Shared registry of active download operations keyed by model name.
   static final Map<String, Future<String>> _inFlightDownloads =
       <String, Future<String>>{};
+
+  static const ModelDownloadCancelledException _cancelledError =
+      ModelDownloadCancelledException();
 
   static const String _modelsListUrl =
       'https://alphacephei.com/vosk/models/model-list.json';
@@ -74,58 +76,121 @@ class ModelLoader {
     String modelUrl, {
     bool forceReload = false,
   }) async {
+    return loadFromNetworkWithProgress(
+      modelUrl,
+      forceReload: forceReload,
+    );
+  }
+
+  Future<String> loadFromNetworkWithProgress(
+    String modelUrl, {
+    bool forceReload = false,
+    void Function(int receivedBytes, int? totalBytes)? onProgress,
+    bool Function()? isCancelled,
+  }) async {
     final modelName = path.basenameWithoutExtension(modelUrl);
     if (!forceReload && await isModelAlreadyLoaded(modelName)) {
       final modelPathValue = await modelPath(modelName);
+      onProgress?.call(1, 1);
       log('Model already loaded to $modelPathValue', name: 'ModelLoader');
       return modelPathValue;
     }
 
-    if (!forceReload) {
-      final inFlight = _inFlightDownloads[modelName];
-      if (inFlight != null) {
-        log(
-          'Waiting for in-flight download of $modelName',
-          name: 'ModelLoader',
+    Future<String> performDownload() async {
+      final start = DateTime.now();
+      final uri = Uri.parse(modelUrl);
+      final request = http.Request('GET', uri);
+      final response = await httpClient.send(request);
+
+      if (response.statusCode != 200) {
+        throw HttpException(
+          'Error downloading Vosk model from $modelUrl. '
+          'Status code: ${response.statusCode}',
         );
-        return inFlight;
       }
+
+      final totalLength = response.contentLength;
+      var received = 0;
+
+      final tempDir = await getTemporaryDirectory();
+      final tempFile = File(path.join(tempDir.path, '$modelName.zip'));
+      if (await tempFile.exists()) {
+        await tempFile.delete();
+      }
+      final sink = tempFile.openWrite();
+
+      final completer = Completer<void>();
+      late final StreamSubscription<List<int>> subscription;
+      subscription = response.stream.listen(
+        (chunk) {
+          if (_shouldCancel(isCancelled)) {
+            subscription.cancel();
+            completer.completeError(_cancelledError);
+            return;
+          }
+          received += chunk.length;
+          sink.add(chunk);
+          onProgress?.call(received, totalLength);
+        },
+        onError: (Object error, StackTrace stackTrace) {
+          completer.completeError(error, stackTrace);
+        },
+        onDone: () => completer.complete(),
+        cancelOnError: true,
+      );
+
+      try {
+        await completer.future;
+      } finally {
+        await sink.flush();
+        await sink.close();
+      }
+
+      if (_shouldCancel(isCancelled)) {
+        await tempFile.delete().catchError((_) {});
+        throw _cancelledError;
+      }
+
+      final bytes = await tempFile.readAsBytes();
+      await tempFile.delete().catchError((_) {});
+
+      final archive = ZipDecoder().decodeBytes(bytes);
+      final decompressionPath = modelStorage ?? await _defaultDecompressionPath();
+
+      // Extract archive directly on main thread to avoid isolate serialization issues
+      extractArchiveToDisk(archive, decompressionPath);
+
+      final decompressedModelRoot = path.join(decompressionPath, modelName);
+      log(
+        'Model loaded to $decompressedModelRoot in '
+        '${DateTime.now().difference(start).inMilliseconds}ms',
+        name: 'ModelLoader',
+      );
+
+      onProgress?.call(totalLength ?? received, totalLength);
+      return decompressedModelRoot;
     }
 
-    final Future<String> downloadFuture = _performNetworkLoad(
-      modelUrl,
-      modelName,
-    );
-
-    if (!forceReload) {
-      _inFlightDownloads[modelName] = downloadFuture;
+    if (forceReload) {
+      return performDownload();
     }
 
+    final inFlight = _inFlightDownloads[modelName];
+    if (inFlight != null) {
+      log(
+        'Waiting for in-flight download of $modelName',
+        name: 'ModelLoader',
+      );
+      return inFlight;
+    }
+
+    final downloadFuture = performDownload();
+    _inFlightDownloads[modelName] = downloadFuture;
     try {
       return await downloadFuture;
     } finally {
-      if (!forceReload) {
-        _inFlightDownloads.remove(modelName);
-      }
+      _inFlightDownloads.remove(modelName);
     }
-  }
-
-  Future<String> _performNetworkLoad(String modelUrl, String modelName) async {
-    final start = DateTime.now();
-
-    final bytes = await httpClient
-        .get(Uri.parse(modelUrl))
-        .then((response) => response.bodyBytes);
-
-    final decompressionPath = await _extractModel(bytes);
-    final decompressedModelRoot = path.join(decompressionPath, modelName);
-    log(
-      'Model loaded to $decompressedModelRoot in '
-      '${DateTime.now().difference(start).inMilliseconds}ms',
-      name: 'ModelLoader',
-    );
-
-    return decompressedModelRoot;
   }
 
   /// Load a list of all available models from the vosk lib web page.
@@ -161,13 +226,24 @@ class ModelLoader {
     final archive = ZipDecoder().decodeBytes(bytes);
     final decompressionPath = modelStorage ?? await _defaultDecompressionPath();
 
-    await Isolate.run(() => extractArchiveToDisk(archive, decompressionPath));
+    // Extract archive directly on main thread to avoid isolate serialization issues
+    extractArchiveToDisk(archive, decompressionPath);
 
     return decompressionPath;
   }
 
   static Future<String> _defaultDecompressionPath() async =>
       path.join((await getApplicationDocumentsDirectory()).path, 'models');
+
+  static bool _shouldCancel(bool Function()? isCancelled) =>
+      isCancelled?.call() ?? false;
+}
+
+class ModelDownloadCancelledException implements Exception {
+  const ModelDownloadCancelledException();
+
+  @override
+  String toString() => 'ModelDownloadCancelledException: download cancelled';
 }
 
 /// Description of a model.
