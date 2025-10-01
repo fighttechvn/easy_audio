@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:speech_to_text_record/speech_to_text_record.dart';
 import 'package:vosk_flutter/vosk_flutter.dart';
 
+import '../../core/easy_debounce.dart';
 import '../../core/widgets/group_check_box_widget.dart';
 import '../../easy_audio_constants.dart';
 
@@ -32,25 +33,41 @@ class _SelectLanguagueDialogWidgetState
 
   bool get _isAndroidTarget =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+  late List<String> _currentList = widget.languages.keys.toList();
+  final _tagDebound = '_select_lang';
+
+  @override
+  void dispose() {
+    EasyDebounce.cancel(_tagDebound);
+
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.language,
-            size: 50,
-            color: Theme.of(context).primaryColor,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Choose lanuage to use record.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  height: 1.2,
-                ),
+          TextFormField(
+            onChanged: (value) {
+              EasyDebounce.debounce(
+                _tagDebound,
+                const Duration(milliseconds: 400),
+                () {
+                  if (value.isEmpty) {
+                    _currentList = widget.languages.keys.toList();
+                    setState(() {});
+                  } else {
+                    _currentList = widget.languages.keys
+                        .where((e) => e.contains(value))
+                        .toList();
+                    setState(() {});
+                  }
+                },
+              );
+            },
           ),
           const SizedBox(height: 26),
           ConstrainedBox(
@@ -59,7 +76,7 @@ class _SelectLanguagueDialogWidgetState
             ),
             child: SingleChildScrollView(
               child: GroupCheckBoxWidget<String>(
-                values: widget.languages.keys.toList(),
+                values: _currentList,
                 defaultValue: _languageSelected,
                 onSelected: (value) {
                   if (value == null) {
@@ -188,7 +205,8 @@ class _SelectLanguagueDialogWidgetState
           builder: (ctx) => AlertDialog(
             title: const Text('Tải mô hình ngôn ngữ'),
             content: Text(
-              'Thiết bị chưa có mô hình cho "$label".\nBạn có muốn tải về ngay?',
+              'Thiết bị chưa có mô hình cho "$label".'
+              '\nBạn có muốn tải về ngay?',
             ),
             actions: [
               TextButton(
