@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/easy_debounce.dart';
 import '../../core/widgets/group_check_box_widget.dart';
 import '../../easy_audio_constants.dart';
 
@@ -20,26 +21,43 @@ class SelectLanguagueDialogWidget extends StatefulWidget {
 
 class _SelectLanguagueDialogWidgetState
     extends State<SelectLanguagueDialogWidget> {
-  late var _languageSelected = widget.langDefault;
+  late List<String> _currentList = widget.languages.keys.toList();
+
+  late String _languageSelected = widget.langDefault;
+  final _tagDebound = '_select_lang';
+
+  @override
+  void dispose() {
+    EasyDebounce.cancel(_tagDebound);
+
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.language,
-            size: 50,
-            color: Theme.of(context).primaryColor,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            '''Choose lanuage to use record.''',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  height: 1.2,
-                ),
+          TextFormField(
+            onChanged: (value) {
+              EasyDebounce.debounce(
+                _tagDebound,
+                const Duration(milliseconds: 400),
+                () {
+                  if (value.isEmpty) {
+                    _currentList = widget.languages.keys.toList();
+                    setState(() {});
+                  } else {
+                    _currentList = widget.languages.keys
+                        .where((e) => e.contains(value))
+                        .toList();
+                    setState(() {});
+                  }
+                },
+              );
+            },
           ),
           const SizedBox(height: 26),
 
@@ -48,7 +66,7 @@ class _SelectLanguagueDialogWidgetState
                 maxHeight: MediaQuery.of(context).size.height * 0.5),
             child: SingleChildScrollView(
               child: GroupCheckBoxWidget<String>(
-                values: widget.languages.keys.toList(),
+                values: _currentList,
                 defaultValue: _languageSelected,
                 onSelected: (value) {
                   setState(() {
