@@ -4,7 +4,7 @@ import 'dart:io' show Platform;
 import 'package:path_provider/path_provider.dart';
 
 import '../audio_file_sink.dart';
-import '../constants/speech_to_text_locales.dart';
+import '../constants/vosk_model.dart';
 import '../models/speech_recognition_result.dart';
 import '../speech_to_text_record_controller.dart';
 
@@ -31,7 +31,7 @@ class SpeechToTextRecord {
     int sampleRate = 16000,
     int numChannels = 1,
     String? recordingPath,
-    String localeId = SpeechToTextLocales.defaultLocale,
+    String localeId = RecordLanguage.defaultLocale,
     Iterable<String>? preloadLocales,
     void Function(SpeechRecognitionResult result)? onResult,
     void Function(Object error, StackTrace stackTrace)? onError,
@@ -110,8 +110,8 @@ class SpeechToTextRecordSession {
     StreamSubscription<SpeechRecognitionResult>? resultsSubscription,
     required this.recordingPath,
     required this.recordingEnabled,
-  }) : _controller = controller,
-       _resultsSubscription = resultsSubscription;
+  })  : _controller = controller,
+        _resultsSubscription = resultsSubscription;
 
   final SpeechToTextRecordController _controller;
   final StreamSubscription<SpeechRecognitionResult>? _resultsSubscription;

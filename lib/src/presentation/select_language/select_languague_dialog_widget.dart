@@ -6,14 +6,14 @@ import 'package:speech_to_text_record/speech_to_text_record.dart';
 import 'package:vosk_flutter/vosk_flutter.dart';
 
 import '../../core/easy_debounce.dart';
+import '../../core/services/language_history_service.dart';
 import '../../core/widgets/group_check_box_widget.dart';
-import '../../easy_audio_constants.dart';
 
 class SelectLanguagueDialogWidget extends StatefulWidget {
   const SelectLanguagueDialogWidget({
     super.key,
-    this.langDefault = RecordLanguageContants.defaultLang,
-    this.languages = RecordLanguageContants.languages,
+    this.langDefault = RecordLanguage.defaultLocale,
+    this.languages = RecordLanguage.supported,
   });
 
   final String langDefault;
@@ -32,15 +32,41 @@ class _SelectLanguagueDialogWidgetState
   bool _isProcessing = false;
   final _tagDebound = '_select_lang';
   late List<String> _currentList = widget.languages.keys.toList();
+  late List<String> _sortedLanguageKeys = [];
 
   bool get _isAndroidTarget =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSortedLanguages();
+  }
 
   @override
   void dispose() {
     EasyDebounce.cancel(_tagDebound);
 
     super.dispose();
+  }
+
+  Future<void> _loadSortedLanguages() async {
+    try {
+      final sortedKeys = await LanguageHistoryService.sortLanguagesByUsage(
+        widget.languages.keys.toList(),
+      );
+      setState(() {
+        _sortedLanguageKeys = sortedKeys;
+        _currentList = sortedKeys;
+      });
+    } catch (e) {
+      debugPrint('Error loading sorted languages: $e');
+      // Fallback to original order if there's an error
+      setState(() {
+        _sortedLanguageKeys = widget.languages.keys.toList();
+        _currentList = _sortedLanguageKeys;
+      });
+    }
   }
 
   @override
@@ -57,16 +83,17 @@ class _SelectLanguagueDialogWidgetState
                 const Duration(milliseconds: 400),
                 () {
                   if (value.isEmpty) {
-                    _currentList = widget.languages.keys.toList();
+                    _currentList = _sortedLanguageKeys;
                     setState(() {});
                   } else {
-                    _currentList = widget.languages.entries
-                        .where((e) =>
-                            e.key.toLowerCase().contains(value.toLowerCase()) ||
-                            e.value.toLowerCase().contains(value.toLowerCase()))
-                        .toList()
-                        .map((e) => e.key)
-                        .toList();
+                    // Filter from sorted list to maintain order
+                    _currentList = _sortedLanguageKeys.where((key) {
+                      final languageValue = widget.languages[key] ?? '';
+                      return key.toLowerCase().contains(value.toLowerCase()) ||
+                          languageValue
+                              .toLowerCase()
+                              .contains(value.toLowerCase());
+                    }).toList();
                     setState(() {});
                   }
                 },
@@ -120,7 +147,11 @@ class _SelectLanguagueDialogWidgetState
     }
 
     if (!_isAndroidTarget) {
-      Navigator.of(context).pop(selectedLocale);
+      // For iOS, save the language as used when selected
+      await LanguageHistoryService.addUsedLanguage(selectedLabel);
+      if (mounted) {
+        Navigator.of(context).pop(selectedLocale);
+      }
       return;
     }
 
@@ -136,7 +167,11 @@ class _SelectLanguagueDialogWidgetState
 
       final modelReady = await _isModelReady(selectedLocale);
       if (modelReady) {
-        Navigator.of(context).pop(selectedLocale);
+        // Model is already available, add to used languages
+        await LanguageHistoryService.addUsedLanguage(selectedLabel);
+        if (mounted) {
+          Navigator.of(context).pop(selectedLocale);
+        }
         return;
       }
 
@@ -158,13 +193,19 @@ class _SelectLanguagueDialogWidgetState
 
       switch (outcome.status) {
         case _DownloadStatus.success:
+          // Mark model as downloaded and add to used languages
+          await LanguageHistoryService.markModelAsDownloaded(selectedLabel);
           final confirmed = await _showDownloadSuccess(selectedLabel);
           if (confirmed == true) {
-            Navigator.of(context).pop(selectedLocale);
+            if (mounted) {
+              Navigator.of(context).pop(selectedLocale);
+            }
           } else {
-            setState(() {
-              _languageSelected = widget.langDefault;
-            });
+            if (mounted) {
+              setState(() {
+                _languageSelected = widget.langDefault;
+              });
+            }
           }
           break;
         case _DownloadStatus.cancelled:
@@ -192,7 +233,7 @@ class _SelectLanguagueDialogWidgetState
   }
 
   Future<bool> _isModelReady(String locale) async {
-    final url = SpeechToTextLocales.voskModelUrlFor(locale);
+    final url = RecordLanguage.voskModelUrlFor(locale);
     if (url == null || url.isEmpty) {
       return false;
     }
@@ -230,7 +271,7 @@ class _SelectLanguagueDialogWidgetState
     String locale,
     String label,
   ) async {
-    final url = SpeechToTextLocales.voskModelUrlFor(locale);
+    final url = RecordLanguage.voskModelUrlFor(locale);
     if (url == null || url.isEmpty) {
       return const _DownloadOutcome.failure(
           'Không tìm thấy đường dẫn tải mô hình.');
@@ -247,6 +288,8 @@ class _SelectLanguagueDialogWidgetState
         Navigator.of(contextToClose).pop(outcome);
       }
     }
+
+    print('Download model: $url');
 
     unawaited(Future<void>(() async {
       try {

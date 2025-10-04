@@ -21,17 +21,16 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
   bool _isRequestingRecording = false;
   bool _isPreparingLanguageModel = false;
   String _currentLocale =
-      RecordLanguageContants.languages[RecordLanguageContants.defaultLang]!;
-  String _currentLanguageLabel = RecordLanguageContants.defaultLang;
+      RecordLanguage.supported[RecordLanguage.defaultLocale]!;
+  String _currentLanguageLabel = RecordLanguage.defaultLocale;
 
   String _languageLabelForLocale(String locale) {
-    return RecordLanguageContants.languages.entries
+    return RecordLanguage.supported.entries
         .firstWhere(
           (entry) => entry.value == locale,
           orElse: () => MapEntry(
-            RecordLanguageContants.defaultLang,
-            RecordLanguageContants
-                .languages[RecordLanguageContants.defaultLang]!,
+            RecordLanguage.defaultLocale,
+            RecordLanguage.supported[RecordLanguage.defaultLocale]!,
           ),
         )
         .key;
@@ -155,7 +154,7 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
 
     final selectedLocale = await context.startSelectLanguagueDialog(
       langDefault: _currentLanguageLabel,
-      languages: RecordLanguageContants.languages,
+      languages: RecordLanguage.supported,
     );
 
     if (!mounted || selectedLocale == null || selectedLocale.isEmpty) {

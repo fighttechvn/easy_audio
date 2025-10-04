@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:developer' as developer;
+import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:vosk_flutter/vosk_flutter.dart';
 import 'package:path/path.dart' as p;
+import 'package:vosk_flutter/vosk_flutter.dart';
 
-import '../constants/speech_to_text_locales.dart';
+import '../constants/vosk_model.dart';
 import '../exceptions.dart';
 import '../models/speech_recognition_result.dart';
 import 'speech_to_text_engine.dart';
@@ -22,11 +22,11 @@ class VoskSpeechToTextEngine extends SpeechToTextEngine {
     required this.sampleRate,
     ModelLoader? modelLoader,
     Iterable<String> preloadLocales = const <String>[],
-  }) : _modelLoader = modelLoader ?? ModelLoader(),
-       _preloadLocales = preloadLocales
-           .map((locale) => locale.trim())
-           .where((locale) => locale.isNotEmpty)
-           .toSet() {
+  })  : _modelLoader = modelLoader ?? ModelLoader(),
+        _preloadLocales = preloadLocales
+            .map((locale) => locale.trim())
+            .where((locale) => locale.isNotEmpty)
+            .toSet() {
     if (_preloadLocales.isNotEmpty) {
       _scheduleWarmup();
     }
@@ -93,7 +93,7 @@ class VoskSpeechToTextEngine extends SpeechToTextEngine {
     }
 
     final String targetLocale = (localeId == null || localeId.isEmpty)
-        ? (_activeLocale ?? SpeechToTextLocales.defaultLocale)
+        ? (_activeLocale ?? RecordLanguage.defaultLocale)
         : localeId;
 
     await _ensureRecognizerForLocale(targetLocale, forceReload: forceReload);
@@ -102,7 +102,7 @@ class VoskSpeechToTextEngine extends SpeechToTextEngine {
   @override
   Future<void> start(Stream<Uint8List> audioStream, {String? localeId}) async {
     final String targetLocale =
-        localeId ?? _activeLocale ?? SpeechToTextLocales.defaultLocale;
+        localeId ?? _activeLocale ?? RecordLanguage.defaultLocale;
 
     await _ensureRecognizerForLocale(targetLocale);
 
@@ -121,10 +121,10 @@ class VoskSpeechToTextEngine extends SpeechToTextEngine {
         _processingQueue = _processingQueue
             .then((_) => _handleChunk(data))
             .catchError((Object error, StackTrace stackTrace) {
-              if (!_resultsController.isClosed) {
-                _resultsController.addError(error, stackTrace);
-              }
-            });
+          if (!_resultsController.isClosed) {
+            _resultsController.addError(error, stackTrace);
+          }
+        });
       },
       onError: (Object error, StackTrace stackTrace) {
         if (!_resultsController.isClosed) {
@@ -204,15 +204,13 @@ class VoskSpeechToTextEngine extends SpeechToTextEngine {
   String _canonicalizeLocale(String locale) {
     final cleaned = locale.trim();
     if (cleaned.isEmpty) {
-      return SpeechToTextLocales.defaultLocale;
+      return RecordLanguage.defaultLocale;
     }
     final hyphenated = cleaned.replaceAll('_', '-');
-    final parts = hyphenated
-        .split('-')
-        .where((part) => part.isNotEmpty)
-        .toList();
+    final parts =
+        hyphenated.split('-').where((part) => part.isNotEmpty).toList();
     if (parts.isEmpty) {
-      return SpeechToTextLocales.defaultLocale;
+      return RecordLanguage.defaultLocale;
     }
     final language = parts.first.toLowerCase();
     if (parts.length == 1) {
@@ -236,7 +234,7 @@ class VoskSpeechToTextEngine extends SpeechToTextEngine {
       );
     }
     final String? url =
-        _customModelUrl ?? SpeechToTextLocales.voskModelUrlFor(locale);
+        _customModelUrl ?? RecordLanguage.voskModelUrlFor(locale);
     if (url == null) {
       throw SpeechToTextNotSupportedException(
         'No Vosk model configured for locale $locale. Provide a custom modelPath, assetPath, or modelUrl.',
@@ -266,7 +264,7 @@ class VoskSpeechToTextEngine extends SpeechToTextEngine {
   void _scheduleWarmup() {
     for (final String locale in _preloadLocales) {
       final String normalized = _canonicalizeLocale(locale);
-      final String? url = SpeechToTextLocales.voskModelUrlFor(normalized);
+      final String? url = RecordLanguage.voskModelUrlFor(normalized);
       if (url == null) {
         developer.log(
           'Ignoring preload for $locale (no Vosk model configured).',

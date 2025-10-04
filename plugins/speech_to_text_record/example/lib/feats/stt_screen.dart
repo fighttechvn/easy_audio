@@ -18,7 +18,7 @@ class _SpeechToTextOnlyScreenState extends State<SpeechToTextOnlyScreen> {
   final SpeechToTextService _service = SpeechToTextService(sampleRate: 16000);
   final List<String> _finalSegments = <String>[];
   String _partialSegment = '';
-  String _selectedLocale = SpeechToTextLocales.defaultLocale;
+  String _selectedLocale = RecordLanguage.defaultLocale;
   bool _isPrepared = false;
   bool _isRunning = false;
   String? _error;
@@ -122,11 +122,11 @@ class _SpeechToTextOnlyScreenState extends State<SpeechToTextOnlyScreen> {
                             if (value == null) return;
                             setState(() => _selectedLocale = value);
                           },
-                    items: SpeechToTextLocales.supported.values
+                    items: RecordLanguage.supported.values
                         .map(
                           (locale) => DropdownMenuItem<String>(
                             value: locale,
-                            child: Text(SpeechToTextLocales.labelFor(locale)),
+                            child: Text(RecordLanguage.labelFor(locale)),
                           ),
                         )
                         .toList(),

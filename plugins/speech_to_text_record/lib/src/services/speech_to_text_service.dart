@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import '../constants/speech_to_text_locales.dart';
+import '../constants/vosk_model.dart';
 import '../models/speech_recognition_result.dart';
 import '../speech_to_text_record_controller.dart';
 
@@ -12,10 +12,10 @@ class SpeechToTextService {
     this.numChannels = 1,
     Iterable<String>? preloadLocales,
   }) : _controller = SpeechToTextRecordController(
-         sampleRate: sampleRate,
-         numChannels: numChannels,
-         preloadLocales: preloadLocales,
-       );
+          sampleRate: sampleRate,
+          numChannels: numChannels,
+          preloadLocales: preloadLocales,
+        );
 
   final int sampleRate;
   final int numChannels;
@@ -54,7 +54,7 @@ class SpeechToTextService {
       await prepare();
     }
     await _controller.start(
-      localeId: localeId ?? SpeechToTextLocales.defaultLocale,
+      localeId: localeId ?? RecordLanguage.defaultLocale,
     );
   }
 

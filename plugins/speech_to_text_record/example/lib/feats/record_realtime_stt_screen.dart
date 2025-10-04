@@ -20,7 +20,7 @@ class _CombinedPipelineScreenState extends State<CombinedPipelineScreen> {
   SpeechToTextRecordSession? _session;
   final List<String> _finalSegments = <String>[];
   String _partialSegment = '';
-  String _selectedLocale = SpeechToTextLocales.defaultLocale;
+  String _selectedLocale = RecordLanguage.defaultLocale;
   bool _isRunning = false;
   bool _isPreparing = false;
   bool _recordingEnabled = false;
@@ -234,11 +234,11 @@ class _CombinedPipelineScreenState extends State<CombinedPipelineScreen> {
                               if (value == null) return;
                               setState(() => _selectedLocale = value);
                             },
-                      items: SpeechToTextLocales.supported.values
+                      items: RecordLanguage.supported.values
                           .map(
                             (locale) => DropdownMenuItem<String>(
                               value: locale,
-                              child: Text(SpeechToTextLocales.labelFor(locale)),
+                              child: Text(RecordLanguage.labelFor(locale)),
                             ),
                           )
                           .toList(),
