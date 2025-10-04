@@ -39,13 +39,13 @@ extension BuildContextAnimatedWaveform on BuildContext {
 
   Future<String?> startSelectLanguagueDialog({
     String langDefault = RecordLanguage.defaultLocale,
-    Map<String, String> languages = RecordLanguage.supported,
+    Map<String, String>? languages,
   }) {
     return startDialogApp(
       title: 'Select lanuage to use',
       body: SelectLanguagueDialogWidget(
         langDefault: langDefault,
-        languages: languages,
+        languages: languages ?? RecordLanguage.supported,
       ),
       showButtonClose: false,
       barrierDismissible: true,

@@ -13,11 +13,11 @@ class SelectLanguagueDialogWidget extends StatefulWidget {
   const SelectLanguagueDialogWidget({
     super.key,
     this.langDefault = RecordLanguage.defaultLocale,
-    this.languages = RecordLanguage.supported,
+    this.languages,
   });
 
   final String langDefault;
-  final Map<String, String> languages;
+  final Map<String, String>? languages;
 
   @override
   State<SelectLanguagueDialogWidget> createState() =>
@@ -26,12 +26,14 @@ class SelectLanguagueDialogWidget extends StatefulWidget {
 
 class _SelectLanguagueDialogWidgetState
     extends State<SelectLanguagueDialogWidget> {
+  late final Map<String, String> _languages =
+      widget.languages ?? RecordLanguage.supported;
   late final ModelLoader _modelLoader = ModelLoader();
-  late final String? _previousLocale = widget.languages[widget.langDefault];
+  late final String? _previousLocale = _languages[widget.langDefault];
   late String _languageSelected = widget.langDefault;
   bool _isProcessing = false;
   final _tagDebound = '_select_lang';
-  late List<String> _currentList = widget.languages.keys.toList();
+  late List<String> _currentList = _languages.keys.toList();
   late List<String> _sortedLanguageKeys = [];
 
   bool get _isAndroidTarget =>
@@ -53,7 +55,7 @@ class _SelectLanguagueDialogWidgetState
   Future<void> _loadSortedLanguages() async {
     try {
       final sortedKeys = await LanguageHistoryService.sortLanguagesByUsage(
-        widget.languages.keys.toList(),
+        _languages.keys.toList(),
       );
       setState(() {
         _sortedLanguageKeys = sortedKeys;
@@ -63,7 +65,7 @@ class _SelectLanguagueDialogWidgetState
       debugPrint('Error loading sorted languages: $e');
       // Fallback to original order if there's an error
       setState(() {
-        _sortedLanguageKeys = widget.languages.keys.toList();
+        _sortedLanguageKeys = _languages.keys.toList();
         _currentList = _sortedLanguageKeys;
       });
     }
@@ -88,7 +90,7 @@ class _SelectLanguagueDialogWidgetState
                   } else {
                     // Filter from sorted list to maintain order
                     _currentList = _sortedLanguageKeys.where((key) {
-                      final languageValue = widget.languages[key] ?? '';
+                      final languageValue = _languages[key] ?? '';
                       return key.toLowerCase().contains(value.toLowerCase()) ||
                           languageValue
                               .toLowerCase()
@@ -139,7 +141,7 @@ class _SelectLanguagueDialogWidgetState
 
   Future<void> _handleConfirm() async {
     final selectedLabel = _languageSelected;
-    final selectedLocale = widget.languages[selectedLabel];
+    final selectedLocale = _languages[selectedLabel];
 
     if (selectedLocale == null || selectedLocale.isEmpty) {
       Navigator.of(context).pop(selectedLocale);
