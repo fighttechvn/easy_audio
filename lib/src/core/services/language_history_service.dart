@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:speech_to_text_record/src/constants/vosk_model.dart';
+import 'package:speech_to_text_record/speech_to_text_record.dart';
 import 'package:vosk_flutter/vosk_flutter.dart';
 
 /// Service to manage language usage history

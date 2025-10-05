@@ -26,15 +26,15 @@ class SelectLanguagueDialogWidget extends StatefulWidget {
 
 class _SelectLanguagueDialogWidgetState
     extends State<SelectLanguagueDialogWidget> {
-  late final Map<String, String> _languages =
-      widget.languages ?? RecordLanguage.supported;
   late final ModelLoader _modelLoader = ModelLoader();
-  late final String? _previousLocale = _languages[widget.langDefault];
+  Map<String, String> _languages = const <String, String>{};
+  String? _previousLocale;
   late String _languageSelected = widget.langDefault;
   bool _isProcessing = false;
   final _tagDebound = '_select_lang';
-  late List<String> _currentList = _languages.keys.toList();
-  late List<String> _sortedLanguageKeys = [];
+  List<String> _currentList = const <String>[];
+  List<String> _sortedLanguageKeys = const <String>[];
+  bool _isLoadingLanguages = false;
 
   bool get _isAndroidTarget =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
@@ -42,7 +42,7 @@ class _SelectLanguagueDialogWidgetState
   @override
   void initState() {
     super.initState();
-    _loadSortedLanguages();
+    _initialiseLanguages();
   }
 
   @override
@@ -52,11 +52,53 @@ class _SelectLanguagueDialogWidgetState
     super.dispose();
   }
 
+  Future<void> _initialiseLanguages() async {
+    _applyLanguages(widget.languages ?? RecordLanguage.supported);
+
+    if (widget.languages != null) {
+      return;
+    }
+
+    setState(() {
+      _isLoadingLanguages = true;
+    });
+
+    try {
+      final updated = await RecordLanguage.ensureSystemLocalesLoaded();
+      if (!mounted) {
+        return;
+      }
+      if (!mapEquals(updated, _languages)) {
+        _applyLanguages(updated);
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingLanguages = false;
+        });
+      }
+    }
+  }
+
+  void _applyLanguages(Map<String, String> languages) {
+    _languages = Map<String, String>.from(languages);
+    _previousLocale = _languages[widget.langDefault];
+    if (!_languages.containsKey(_languageSelected)) {
+      _languageSelected = widget.langDefault;
+    }
+    _currentList = _languages.keys.toList();
+    _sortedLanguageKeys = _currentList;
+    _loadSortedLanguages();
+  }
+
   Future<void> _loadSortedLanguages() async {
     try {
       final sortedKeys = await LanguageHistoryService.sortLanguagesByUsage(
         _languages.keys.toList(),
       );
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _sortedLanguageKeys = sortedKeys;
         _currentList = sortedKeys;
@@ -64,6 +106,9 @@ class _SelectLanguagueDialogWidgetState
     } catch (e) {
       debugPrint('Error loading sorted languages: $e');
       // Fallback to original order if there's an error
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _sortedLanguageKeys = _languages.keys.toList();
         _currentList = _sortedLanguageKeys;
@@ -122,6 +167,11 @@ class _SelectLanguagueDialogWidgetState
               ),
             ),
           ),
+          if (_isLoadingLanguages)
+            const Padding(
+              padding: EdgeInsets.only(top: 12),
+              child: LinearProgressIndicator(),
+            ),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: _isProcessing ? null : _handleConfirm,
@@ -291,7 +341,7 @@ class _SelectLanguagueDialogWidgetState
       }
     }
 
-    print('Download model: $url');
+    debugPrint('Download model: $url');
 
     unawaited(Future<void>(() async {
       try {

@@ -45,7 +45,7 @@ extension BuildContextAnimatedWaveform on BuildContext {
       title: 'Select lanuage to use',
       body: SelectLanguagueDialogWidget(
         langDefault: langDefault,
-        languages: languages ?? RecordLanguage.supported,
+        languages: languages,
       ),
       showButtonClose: false,
       barrierDismissible: true,

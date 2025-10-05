@@ -21,7 +21,8 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
   bool _isRequestingRecording = false;
   bool _isPreparingLanguageModel = false;
   String _currentLocale =
-      RecordLanguage.supported[RecordLanguage.defaultLocale]!;
+      RecordLanguage.supported[RecordLanguage.defaultLocale] ??
+          RecordLanguage.defaultLocale;
   String _currentLanguageLabel = RecordLanguage.defaultLocale;
 
   String _languageLabelForLocale(String locale) {
@@ -154,7 +155,6 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
 
     final selectedLocale = await context.startSelectLanguagueDialog(
       langDefault: _currentLanguageLabel,
-      languages: RecordLanguage.supported,
     );
 
     if (!mounted || selectedLocale == null || selectedLocale.isEmpty) {
@@ -184,6 +184,24 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
     });
   }
 
+  Future<void> _loadSupportedLanguages() async {
+    final languages = await RecordLanguage.ensureSystemLocalesLoaded();
+    if (!mounted) {
+      return;
+    }
+
+    final localeForLabel = languages[_currentLanguageLabel];
+    final fallbackLocale =
+        languages[RecordLanguage.defaultLocale] ?? RecordLanguage.defaultLocale;
+    final resolvedLocale = localeForLabel ?? fallbackLocale;
+    final resolvedLabel = _languageLabelForLocale(resolvedLocale);
+
+    setState(() {
+      _currentLocale = resolvedLocale;
+      _currentLanguageLabel = resolvedLabel;
+    });
+  }
+
   void _playAudio(String url) {
     final currentFocus = FocusScope.of(context);
 
@@ -201,6 +219,7 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
   void initState() {
     super.initState();
     _init();
+    _loadSupportedLanguages();
   }
 
   @override

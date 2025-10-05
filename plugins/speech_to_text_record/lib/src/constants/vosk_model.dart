@@ -1,4 +1,9 @@
+import 'dart:async';
+import 'dart:collection';
 import 'dart:io';
+
+import 'package:flutter/foundation.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 /// Supported locale identifiers for the speech-to-text pipeline with Vosk models.
 class RecordLanguage {
@@ -7,81 +12,6 @@ class RecordLanguage {
   /// Default locale when none is provided by the caller.
   static const String defaultLocale = 'en-US';
   static const String defaultLang = 'English (United States)';
-  static const Map<String, String> _iOSSupportedLanguages = {
-    'Arabic (Saudi Arabia)': 'ar-SA',
-    'Arabic (Tunisia)': 'ar-TN',
-    'Cantonese (China mainland)': 'yue-CN',
-    'Catalan (Spain)': 'ca-ES',
-    'Chinese (China mainland)': 'zh-CN',
-    'Chinese (Hong Kong)': 'zh-HK',
-    'Chinese (Taiwan)': 'zh-TW',
-    'Croatian (Croatia)': 'hr-HR',
-    'Czech (Czechia)': 'cs-CZ',
-    'Danish (Denmark)': 'da-DK',
-    'Dutch (Belgium)': 'nl-BE',
-    'Dutch (Netherlands)': 'nl-NL',
-    'English (Australia)': 'en-AU',
-    'English (Canada)': 'en-CA',
-    'English (India)': 'en-IN',
-    'English (Indonesia)': 'en-ID',
-    'English (Ireland)': 'en-IE',
-    'English (New Zealand)': 'en-NZ',
-    'English (Philippines)': 'en-PH',
-    'English (Saudi Arabia)': 'en-SA',
-    'English (Singapore)': 'en-SG',
-    'English (South Africa)': 'en-ZA',
-    'English (United Arab Emirates)': 'en-AE',
-    'English (United Kingdom)': 'en-GB',
-    'English (United States)': 'en-US',
-    'English (Vietnam)': 'en-VN',
-    'Esperanto': 'eo',
-    'Farsi (Iran)': 'fa',
-    'Filipino (Philippines)': 'tl-PH',
-    'Finnish (Finland)': 'fi-FI',
-    'French (Belgium)': 'fr-BE',
-    'French (Canada)': 'fr-CA',
-    'French (France)': 'fr-FR',
-    'French (Switzerland)': 'fr-CH',
-    'German (Austria)': 'de-AT',
-    'German (Germany)': 'de-DE',
-    'German (Switzerland)': 'de-CH',
-    'Greek (Greece)': 'el-GR',
-    'Gujarati (India)': 'gu',
-    'Hebrew (Israel)': 'he-IL',
-    'Hindi (India)': 'hi-IN',
-    'Hindi (Latin)': 'hi-Latn',
-    'Hungarian (Hungary)': 'hu-HU',
-    'Indonesian (Indonesia)': 'id-ID',
-    'Italian (Italy)': 'it-IT',
-    'Italian (Switzerland)': 'it-CH',
-    'Japanese (Japan)': 'ja-JP',
-    'Kazakh (Kazakhstan)': 'kz',
-    'Korean (South Korea)': 'ko-KR',
-    'Malay (Malaysia)': 'ms-MY',
-    'Norwegian Bokmål (Norway)': 'nb-NO',
-    'Polish (Poland)': 'pl-PL',
-    'Portuguese (Brazil)': 'pt-BR',
-    'Portuguese (Portugal)': 'pt-PT',
-    'Romanian (Romania)': 'ro-RO',
-    'Russian (Russia)': 'ru-RU',
-    'Shanghainese (China mainland)': 'wuu-CN',
-    'Slovak (Slovakia)': 'sk-SK',
-    'Spanish (Chile)': 'es-CL',
-    'Spanish (Colombia)': 'es-CO',
-    'Spanish (Latin America)': 'es-419',
-    'Spanish (Mexico)': 'es-MX',
-    'Spanish (Spain)': 'es-ES',
-    'Spanish (United States)': 'es-US',
-    'Swedish (Sweden)': 'sv-SE',
-    'Tajik (Tajikistan)': 'tg',
-    'Telugu (India)': 'te',
-    'Thai (Thailand)': 'th-TH',
-    'Turkish (Türkiye)': 'tr-TR',
-    'Ukrainian (Ukraine)': 'uk-UA',
-    'Uzbek (Uzbekistan)': 'uz',
-    'Vietnamese (Vietnam)': 'vi-VN',
-  };
-
   static const Map<String, String> _androidSupportedLanguages = {
     'Arabic (Saudi Arabia)': 'ar-SA',
     'Arabic (Tunisia)': 'ar-TN',
@@ -117,12 +47,81 @@ class RecordLanguage {
   };
 
   /// Map of user-facing language labels to locale codes.
-  static Map<String, String> supported = <String, String>{
-    if (Platform.isIOS)
-      ..._iOSSupportedLanguages
-    else
-      ..._androidSupportedLanguages,
-  };
+  static Map<String, String> supported = Platform.isIOS
+      ? <String, String>{defaultLang: defaultLocale}
+      : <String, String>{..._androidSupportedLanguages};
+
+  static bool _iosLocalesLoaded = !Platform.isIOS;
+  static bool _isLoadingIosLocales = false;
+
+  /// Ensures the iOS supported language map is refreshed from the system via
+  /// speech-to-text. Returns the updated map when a refresh was attempted or
+  /// the cached map otherwise.
+  static Future<Map<String, String>> ensureSystemLocalesLoaded({
+    bool forceReload = false,
+  }) async {
+    if (!Platform.isIOS) {
+      return supported;
+    }
+    if (_iosLocalesLoaded && !forceReload) {
+      return supported;
+    }
+    if (_isLoadingIosLocales) {
+      // Wait for the current load to finish.
+      while (_isLoadingIosLocales) {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      }
+      return supported;
+    }
+
+    _isLoadingIosLocales = true;
+    try {
+      final stt.SpeechToText speech = stt.SpeechToText();
+      final bool available = await speech.initialize();
+      if (!available) {
+        if (kDebugMode) {
+          debugPrint(
+            '[RecordLanguage] SpeechToText unavailable when loading locales',
+          );
+        }
+        _iosLocalesLoaded = true;
+        return supported;
+      }
+
+      final locales = await speech.locales();
+      if (locales.isEmpty) {
+        if (kDebugMode) {
+          debugPrint('[RecordLanguage] No locales returned by SpeechToText');
+        }
+        _iosLocalesLoaded = true;
+        return supported;
+      }
+
+      final SplayTreeMap<String, String> systemLocales =
+          SplayTreeMap<String, String>();
+      for (final locale in locales) {
+        final String normalizedId = locale.localeId.replaceAll('_', '-');
+        final String label = labels[normalizedId] ?? locale.name;
+        systemLocales[label] = normalizedId;
+      }
+
+      // Always ensure default language is present.
+      systemLocales.putIfAbsent(defaultLang, () => defaultLocale);
+
+      supported = Map<String, String>.fromEntries(systemLocales.entries);
+      _iosLocalesLoaded = true;
+    } catch (error, stackTrace) {
+      _iosLocalesLoaded = false;
+      if (kDebugMode) {
+        debugPrint('[RecordLanguage] Failed to load system locales: $error');
+        debugPrintStack(stackTrace: stackTrace);
+      }
+    } finally {
+      _isLoadingIosLocales = false;
+    }
+
+    return supported;
+  }
 
   /// Human readable labels for the supported locales.
   static const Map<String, String> labels = <String, String>{

@@ -21,6 +21,8 @@ class _CombinedPipelineScreenState extends State<CombinedPipelineScreen> {
   final List<String> _finalSegments = <String>[];
   String _partialSegment = '';
   String _selectedLocale = RecordLanguage.defaultLocale;
+  Map<String, String> _supportedLocales = RecordLanguage.supported;
+  bool _isLoadingLocales = false;
   bool _isRunning = false;
   bool _isPreparing = false;
   bool _recordingEnabled = false;
@@ -48,11 +50,42 @@ class _CombinedPipelineScreenState extends State<CombinedPipelineScreen> {
       }
     });
     unawaited(_configureAudioSession());
+    unawaited(_loadSupportedLocales());
   }
 
   Future<void> _configureAudioSession() async {
     final session = await AudioSession.instance;
     await session.configure(const AudioSessionConfiguration.speech());
+  }
+
+  Future<void> _loadSupportedLocales() async {
+    if (mounted) {
+      setState(() {
+        _isLoadingLocales = true;
+      });
+    } else {
+      _isLoadingLocales = true;
+    }
+    try {
+      final locales = await RecordLanguage.ensureSystemLocalesLoaded();
+      if (!mounted) {
+        return;
+      }
+      final availableLocales = Map<String, String>.from(locales);
+      final hasSelected = availableLocales.values.contains(_selectedLocale);
+      setState(() {
+        _supportedLocales = availableLocales;
+        if (!hasSelected) {
+          _selectedLocale = RecordLanguage.defaultLocale;
+        }
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingLocales = false;
+        });
+      }
+    }
   }
 
   Future<void> _startPipeline() async {
@@ -234,7 +267,7 @@ class _CombinedPipelineScreenState extends State<CombinedPipelineScreen> {
                               if (value == null) return;
                               setState(() => _selectedLocale = value);
                             },
-                      items: RecordLanguage.supported.values
+                      items: _supportedLocales.values
                           .map(
                             (locale) => DropdownMenuItem<String>(
                               value: locale,
@@ -246,6 +279,11 @@ class _CombinedPipelineScreenState extends State<CombinedPipelineScreen> {
                   ),
                 ),
               ),
+              if (_isLoadingLocales)
+                const Padding(
+                  padding: EdgeInsets.only(top: 8),
+                  child: LinearProgressIndicator(),
+                ),
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
