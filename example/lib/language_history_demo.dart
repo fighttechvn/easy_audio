@@ -31,7 +31,7 @@ class _LanguageHistoryDemoState extends State<LanguageHistoryDemo> {
   }
 
   Future<void> _selectLanguage() async {
-    final result = await context.startSelectLanguagueDialog();
+    final result = await context.startSelectLanguague();
     if (result != null) {
       setState(() {
         _selectedLanguage = result;

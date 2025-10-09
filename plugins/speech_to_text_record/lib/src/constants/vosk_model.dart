@@ -842,4 +842,16 @@ class RecordLanguage {
   static List<String> getAllLanguages() {
     return [...supportedLanguages, ...unsupportedLanguages];
   }
+
+  static String languageLabelForLocale(String locale) {
+    return RecordLanguage.supported.entries
+        .firstWhere(
+          (entry) => entry.value == locale,
+          orElse: () => const MapEntry(
+            RecordLanguage.defaultLang,
+            RecordLanguage.defaultLocale,
+          ),
+        )
+        .key;
+  }
 }

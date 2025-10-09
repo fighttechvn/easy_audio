@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:speech_to_text_record/speech_to_text_record.dart';
 
-import 'core/dialog_coodinator.dart';
 import 'domain/entities/record_data.dart';
 import 'domain/usecase/speech_to_text_usecase.dart';
 import 'presentation/record_modal/bloc/speech_text_bloc.dart';
 import 'presentation/record_modal/record_modal_widget.dart';
-import 'presentation/select_language/select_languague_dialog_widget.dart';
 
 extension BuildContextAnimatedWaveform on BuildContext {
   Future<RecordData?> startRecord({
@@ -37,18 +34,19 @@ extension BuildContextAnimatedWaveform on BuildContext {
     );
   }
 
-  Future<String?> startSelectLanguagueDialog({
-    String langDefault = RecordLanguage.defaultLocale,
-    Map<String, String>? languages,
-  }) {
-    return startDialogApp(
-      title: 'Select lanuage to use',
-      body: SelectLanguagueDialogWidget(
-        langDefault: langDefault,
-        languages: languages,
-      ),
-      showButtonClose: false,
-      barrierDismissible: true,
-    );
-  }
+  // Future<String?> startSelectLanguagueDialog({
+  //   String langDefault = RecordLanguage.defaultLocale,
+  //   Map<String, String>? languages,
+  //   String? title,
+  // }) {
+  //   return startDialogApp(
+  //     title: title ?? 'Select lanuage to use',
+  //     body: SelectLanguagueDialogWidget(
+  //       langDefault: langDefault,
+  //       languages: languages,
+  //     ),
+  //     showButtonClose: false,
+  //     barrierDismissible: true,
+  //   );
+  // }
 }

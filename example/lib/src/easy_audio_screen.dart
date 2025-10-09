@@ -3,8 +3,6 @@ import 'package:example/src/constans.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import 'example/speech_to_text/main.dart';
-
 class EasyAudioExampleScreen extends StatefulWidget {
   const EasyAudioExampleScreen({super.key});
 
@@ -21,9 +19,9 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
   bool _isRequestingRecording = false;
   bool _isPreparingLanguageModel = false;
   String _currentLocale =
-      RecordLanguage.supported[RecordLanguage.defaultLocale] ??
+      RecordLanguage.supported[RecordLanguage.defaultLang] ??
           RecordLanguage.defaultLocale;
-  String _currentLanguageLabel = RecordLanguage.defaultLocale;
+  String _currentLanguageLabel = RecordLanguage.defaultLang;
 
   String _languageLabelForLocale(String locale) {
     return RecordLanguage.supported.entries
@@ -52,7 +50,7 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
         statuses[Permission.speech] == PermissionStatus.granted;
   }
 
-  void _onTapStartRecord() {
+  void _onTapStartRecord() async {
     if (_isRequestingRecording || _isPreparingLanguageModel) {
       if (_isPreparingLanguageModel) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -63,18 +61,37 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
       }
       return;
     }
+
+    final selectedLocale = await context.startSelectLanguague(
+      langDefault: _currentLanguageLabel,
+    );
+
+    if (!mounted || selectedLocale == null || selectedLocale.isEmpty) {
+      return;
+    }
+
+    if (selectedLocale != _currentLocale) {
+      await _prepareLanguageModel(selectedLocale);
+      if (!mounted || _currentLocale != selectedLocale) {
+        return;
+      }
+    }
+
     setState(() {
       _isRequestingRecording = true;
     });
 
-    askPermission().then((val) async {
-      if (val != true || !mounted) {
-        return null;
+    try {
+      final hasPermission = await askPermission();
+      if (hasPermission != true || !mounted) {
+        return;
       }
+
       final record = await context.startRecord(locale: _currentLocale);
       if (!mounted) {
-        return null;
+        return;
       }
+
       if (record != null) {
         _dataRecord.insert(0, record);
         if (record.url.isNotEmpty) {
@@ -91,24 +108,23 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
           ),
         );
       }
-      return record;
-    }).catchError((Object error, StackTrace stackTrace) {
-      if (!mounted) {
-        return null;
+    } catch (error, stackTrace) {
+      debugPrint('Khởi động ghi âm thất bại: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Khởi động ghi âm thất bại: $error'),
+          ),
+        );
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Khởi động ghi âm thất bại: $error'),
-        ),
-      );
-      return null;
-    }).whenComplete(() {
+    } finally {
       if (mounted) {
         setState(() {
           _isRequestingRecording = false;
         });
       }
-    });
+    }
   }
 
   Future<void> _prepareLanguageModel(String locale) async {
@@ -153,7 +169,7 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
       return;
     }
 
-    final selectedLocale = await context.startSelectLanguagueDialog(
+    final selectedLocale = await context.startSelectLanguague(
       langDefault: _currentLanguageLabel,
     );
 
@@ -192,7 +208,7 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
 
     final localeForLabel = languages[_currentLanguageLabel];
     final fallbackLocale =
-        languages[RecordLanguage.defaultLocale] ?? RecordLanguage.defaultLocale;
+        languages[RecordLanguage.defaultLang] ?? RecordLanguage.defaultLocale;
     final resolvedLocale = localeForLabel ?? fallbackLocale;
     final resolvedLabel = _languageLabelForLocale(resolvedLocale);
 
@@ -243,16 +259,6 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
             tooltip: 'Language: $_currentLanguageLabel',
             icon: const Icon(Icons.language),
           ),
-          IconButton(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const SpeechSampleApp(),
-                ),
-              );
-            },
-            icon: const Icon(Icons.record_voice_over_rounded),
-          ),
         ],
       ),
       extendBody: true,
@@ -264,42 +270,40 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
               padding: EdgeInsets.only(bottom: isShowBottom ? sizeBottom : 0),
               child: Column(
                 children: [
-                  ..._dataRecord
-                      .map(
-                        (item) => ListTile(
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 0),
-                          dense: true,
-                          onTap: () {
-                            final isPlaying = _urlPlay == item.title;
-                            if (isPlaying) {
-                              return;
-                            } else {
-                              if (_offset == kOffsetHide) {
-                                _offset = kOffsetShow;
-                              }
+                  ..._dataRecord.map(
+                    (item) => ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 0),
+                      dense: true,
+                      onTap: () {
+                        final isPlaying = _urlPlay == item.title;
+                        if (isPlaying) {
+                          return;
+                        } else {
+                          if (_offset == kOffsetHide) {
+                            _offset = kOffsetShow;
+                          }
 
-                              _playAudio(item.url);
-                            }
-                          },
-                          title: Text(
-                            item.title ?? 'record',
-                            style: Theme.of(context).textTheme.bodyLarge,
-                          ),
-                          subtitle: item.content?.isNotEmpty ?? false
-                              ? Padding(
-                                  padding: const EdgeInsets.only(top: 4),
-                                  child: Text(
-                                    item.content!,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                )
-                              : null,
-                          trailing: Text(item.totalTime.hhmmss),
-                        ),
-                      )
-                      .toList(),
+                          _playAudio(item.url);
+                        }
+                      },
+                      title: Text(
+                        item.title ?? 'record',
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                      subtitle: item.content?.isNotEmpty ?? false
+                          ? Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                item.content!,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            )
+                          : null,
+                      trailing: Text(item.totalTime.hhmmss),
+                    ),
+                  ),
                 ],
               ),
             ),
