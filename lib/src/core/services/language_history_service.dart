@@ -122,14 +122,19 @@ class LanguageHistoryService {
     final recentlyUsed = await getRecentlyUsedLanguages();
     final sortedList = <String>[];
 
-    // Add recently used languages first (in order of usage)
+    // 1. Add 'en' first if it exists in allLanguages
+    if (allLanguages.contains('en')) {
+      sortedList.add('en');
+    }
+
+    // 2. Add recently used languages (excluding 'en' if already added)
     for (final usedLang in recentlyUsed) {
-      if (allLanguages.contains(usedLang)) {
+      if (allLanguages.contains(usedLang) && !sortedList.contains(usedLang)) {
         sortedList.add(usedLang);
       }
     }
 
-    // Add remaining languages that haven't been used
+    // 3. Add remaining languages that haven't been used
     for (final lang in allLanguages) {
       if (!sortedList.contains(lang)) {
         sortedList.add(lang);
