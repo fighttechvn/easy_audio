@@ -10,7 +10,6 @@ export 'src/domain/entities/record_data.dart';
 export 'src/domain/entities/record_language_result.dart';
 export 'src/domain/usecase/record_usecase.dart';
 export 'src/domain/usecase/speech_to_text_usecase.dart';
-export 'src/easy_audio_constants.dart';
 export 'src/presentation/record_modal/bloc/speech_text_bloc.dart';
 export 'src/presentation/record_modal/record_modal_widget.dart';
 export 'src/presentation/select_language/select_languague_dialog_widget.dart';

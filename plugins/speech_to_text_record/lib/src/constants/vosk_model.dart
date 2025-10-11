@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
@@ -843,15 +844,11 @@ class RecordLanguage {
     return [...supportedLanguages, ...unsupportedLanguages];
   }
 
-  static String languageLabelForLocale(String locale) {
+  static String? languageLabelForLocale(String locale) {
     return RecordLanguage.supported.entries
-        .firstWhere(
+        .firstWhereOrNull(
           (entry) => entry.value == locale,
-          orElse: () => const MapEntry(
-            RecordLanguage.defaultLang,
-            RecordLanguage.defaultLocale,
-          ),
         )
-        .key;
+        ?.key;
   }
 }

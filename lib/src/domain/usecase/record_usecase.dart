@@ -6,16 +6,16 @@ import 'speech_to_text_usecase.dart';
 
 class RecordUsecase {
   Future<RecordLanguageResult> loadSupportedLanguages({
-    required String currentLabel,
     required String currentLocale,
   }) async {
     final languages = await RecordLanguage.ensureSystemLocalesLoaded();
-
-    final localeForLabel = languages[currentLabel];
+    final labelLocale = RecordLanguage.languageLabelForLocale(currentLocale);
     final fallbackLocale =
         languages[RecordLanguage.defaultLang] ?? RecordLanguage.defaultLocale;
-    final resolvedLocale = localeForLabel ?? fallbackLocale;
-    final resolvedLabel = RecordLanguage.languageLabelForLocale(resolvedLocale);
+    final resolvedLocale = labelLocale == null ? fallbackLocale : currentLocale;
+    final resolvedLabel =
+        RecordLanguage.languageLabelForLocale(resolvedLocale) ??
+            RecordLanguage.defaultLang;
 
     return RecordLanguageResult(locale: resolvedLocale, label: resolvedLabel);
   }
@@ -41,7 +41,8 @@ class RecordUsecase {
 
     return RecordLanguageResult(
       locale: resolvedLocale,
-      label: RecordLanguage.languageLabelForLocale(resolvedLocale),
+      label: RecordLanguage.languageLabelForLocale(resolvedLocale) ??
+          RecordLanguage.defaultLang,
     );
   }
 }
