@@ -37,4 +37,13 @@ abstract class SpeechToTextEngine {
 
   /// Release resources held by the engine.
   Future<void> dispose();
+
+  /// Pause the engine.
+  Future<void> pause();
+
+  /// Resume the engine.
+  Future<void> resume();
+
+  /// Whether the engine is paused.
+  bool get isPaused;
 }

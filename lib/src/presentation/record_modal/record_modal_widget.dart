@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -28,7 +29,12 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
   Timer? _timer;
   final ValueNotifier<int> _elapsedSeconds = ValueNotifier<int>(0);
   final TextEditingController _textCtrl = TextEditingController();
+  final AnimatedWaveformController _animatedWaveformController =
+      AnimatedWaveformController();
   DateTime? _recordStartedAt;
+  Duration _pausedAccumulated = Duration.zero;
+  DateTime? _pausedAt;
+  bool _supportsPauseResume = true;
 
   void _stopRecord(bool save) {
     context.read<SpeechTextBloc>().add(StopRecordEvent(isSave: save));
@@ -59,6 +65,10 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
       if (_recordStartedAt == null) {
         _recordStartedAt = DateTime.now();
         _elapsedSeconds.value = 0;
+      }
+      if (_pausedAt != null) {
+        _pausedAccumulated += DateTime.now().difference(_pausedAt!);
+        _pausedAt = null;
       }
     } else if (state is StoppedRecord) {
       _recordStartedAt = null;
@@ -119,14 +129,19 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
       _elapsedSeconds.value = 0;
       return;
     }
-    final elapsed = DateTime.now().difference(startedAt).inSeconds;
-    _elapsedSeconds.value = elapsed;
+    final now = DateTime.now();
+    final pausedExtra =
+        _pausedAt != null ? now.difference(_pausedAt!) : Duration.zero;
+    final effective =
+        now.difference(startedAt) - _pausedAccumulated - pausedExtra;
+    _elapsedSeconds.value = effective.isNegative ? 0 : effective.inSeconds;
   }
 
   @override
   void initState() {
     super.initState();
     _timer = Timer.periodic(const Duration(seconds: 1), _updateElapsedTimer);
+    _supportsPauseResume = _detectPauseSupport();
   }
 
   @override
@@ -135,6 +150,25 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
     _elapsedSeconds.dispose();
     _textCtrl.dispose();
     super.dispose();
+  }
+
+  bool _detectPauseSupport() {
+    try {
+      if (Platform.isAndroid) {
+        final v = Platform.operatingSystemVersion; // e.g. 'Android 13 (SDK 33)'
+        final sdkMatch = RegExp(r'SDK\s*(\d+)').firstMatch(v);
+        if (sdkMatch != null) {
+          final sdk = int.tryParse(sdkMatch.group(1) ?? '') ?? 0;
+          return sdk >= 24;
+        }
+        // If cannot parse, be conservative and disable
+        return false;
+      }
+      // iOS/macOS/web: allow by default
+      return true;
+    } catch (_) {
+      return true;
+    }
   }
 
   @override
@@ -210,6 +244,41 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
                             ),
                           ),
                         ),
+                        if (_supportsPauseResume)
+                          BlocBuilder<SpeechTextBloc, SpeechTextState>(
+                            builder: (context, state) {
+                              final isPaused = state is PausedRecording;
+                              return IconButton(
+                                onPressed: () {
+                                  if (state is Recording) {
+                                    _pausedAt = DateTime.now();
+                                    context
+                                        .read<SpeechTextBloc>()
+                                        .add(PauseRecordEvent());
+                                    _animatedWaveformController.pause?.call();
+                                  } else if (state is PausedRecording) {
+                                    context
+                                        .read<SpeechTextBloc>()
+                                        .add(ResumeRecordEvent());
+                                    _animatedWaveformController.resume?.call();
+                                  }
+                                },
+                                icon: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.withValues(alpha: 0.4),
+                                    borderRadius: BorderRadius.circular(50),
+                                  ),
+                                  child: Icon(
+                                    isPaused
+                                        ? Icons.play_arrow_rounded
+                                        : Icons.pause_rounded,
+                                    size: 20,
+                                    color: Theme.of(context).primaryColor,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
                         Padding(
                           padding: const EdgeInsets.only(left: 10),
                           child: ValueListenableBuilder<int>(
@@ -239,11 +308,14 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
                         ),
                       ],
                     ),
-                    const Expanded(
+                    Expanded(
                       child: Center(
                         child: SizedBox(
                           height: 150,
-                          child: AnimatedWaveform(divide: 3),
+                          child: AnimatedWaveform(
+                            divide: 3,
+                            controller: _animatedWaveformController,
+                          ),
                         ),
                       ),
                     ),

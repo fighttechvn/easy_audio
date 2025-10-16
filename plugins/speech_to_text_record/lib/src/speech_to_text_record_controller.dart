@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'audio_file_sink.dart';
+import 'engines/speech_to_text_engine.dart';
+import 'engines/speech_to_text_engine_factory.dart';
 import 'exceptions.dart';
 import 'microphone_audio_stream.dart';
 import 'models/speech_recognition_result.dart';
-import 'engines/speech_to_text_engine.dart';
-import 'engines/speech_to_text_engine_factory.dart';
 
 /// Facade that coordinates microphone capture, transcription,
 /// and optional file recording.
@@ -16,16 +16,15 @@ class SpeechToTextRecordController {
     this.numChannels = 1,
     SpeechToTextEngine? engine,
     Iterable<String>? preloadLocales,
-  }) : _microphone = MicrophoneAudioStream(
-         sampleRate: sampleRate,
-         numChannels: numChannels,
-       ),
-       _sttEngine =
-           engine ??
-           SpeechToTextEngineFactory.createDefault(
-             sampleRate: sampleRate,
-             preloadLocales: preloadLocales,
-           ) {
+  })  : _microphone = MicrophoneAudioStream(
+          sampleRate: sampleRate,
+          numChannels: numChannels,
+        ),
+        _sttEngine = engine ??
+            SpeechToTextEngineFactory.createDefault(
+              sampleRate: sampleRate,
+              preloadLocales: preloadLocales,
+            ) {
     _fileSink = AudioFileSink(
       stream: _microphone.stream,
       sampleRate: sampleRate,
@@ -49,8 +48,10 @@ class SpeechToTextRecordController {
 
   bool get isPipelineRunning => _microphone.isStarted || _isSttActive;
   bool get isRecording => _fileSink.isRecording;
+  bool get isPaused => _fileSink.isPaused;
   bool get isSpeechToTextSupported => _sttEngine.isSupported;
   bool get canRecordWhileListening => _sttEngine.requiresExternalAudioStream;
+  bool get supportsPauseResume => true;
 
   /// Prepare STT resources. Must be called before [start].
   Future<void> prepareModel({
@@ -125,6 +126,18 @@ class SpeechToTextRecordController {
       await _microphone.stop();
     }
     return path;
+  }
+
+  /// Pause persisting audio data to file while keeping the pipeline running.
+  void pauseRecording() {
+    _sttEngine.pause();
+    _fileSink.pause();
+  }
+
+  /// Resume persisting audio data to file after a pause.
+  void resumeRecording() {
+    _sttEngine.resume();
+    _fileSink.resume();
   }
 
   Future<void> dispose() async {

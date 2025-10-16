@@ -18,6 +18,8 @@ class SpeechTextBloc extends Bloc<SpeechTextEvent, SpeechTextState> {
     on<InitSpeechToTextEvent>(_onInitSpeechToText);
     on<StartRecordEvent>(_onStartRecord);
     on<StopRecordEvent>(_onStopRecord);
+    on<PauseRecordEvent>(_onPauseRecord);
+    on<ResumeRecordEvent>(_onResumeRecord);
     on<_SpeechPipelineErrorEvent>(_onPipelineError);
 
     add(InitSpeechToTextEvent(retryCount: 0));
@@ -25,6 +27,8 @@ class SpeechTextBloc extends Bloc<SpeechTextEvent, SpeechTextState> {
 
   final SpeechToTextUsecase _speechToTextUsecase;
   DateTime? _recordingStartedAt;
+  Duration _totalPausedDuration = Duration.zero;
+  DateTime? _pausedAt;
 
   /// Get the microphone audio stream for real-time waveform visualization
   MicrophoneAudioStream? get microphoneStream =>
@@ -109,12 +113,43 @@ class SpeechTextBloc extends Bloc<SpeechTextEvent, SpeechTextState> {
       );
 
       _recordingStartedAt = DateTime.now();
+      _totalPausedDuration = Duration.zero;
+      _pausedAt = null;
       emit(Recording(state.stateUI));
     } catch (error, stackTrace) {
       await WakelockPlus.toggle(enable: false);
       _recordingStartedAt = null;
       emit(RecordError(state.stateUI, error.toString(), error));
       _logError('Start record failed', error, stackTrace);
+    }
+  }
+
+  Future<void> _onPauseRecord(
+    PauseRecordEvent event,
+    Emitter<SpeechTextState> emit,
+  ) async {
+    try {
+      _speechToTextUsecase.pauseRecording();
+      _pausedAt ??= DateTime.now();
+      emit(PausedRecording(state.stateUI));
+    } catch (error, stackTrace) {
+      add(_SpeechPipelineErrorEvent(error, stackTrace));
+    }
+  }
+
+  Future<void> _onResumeRecord(
+    ResumeRecordEvent event,
+    Emitter<SpeechTextState> emit,
+  ) async {
+    try {
+      _speechToTextUsecase.resumeRecording();
+      if (_pausedAt != null) {
+        _totalPausedDuration += DateTime.now().difference(_pausedAt!);
+        _pausedAt = null;
+      }
+      emit(Recording(state.stateUI));
+    } catch (error, stackTrace) {
+      add(_SpeechPipelineErrorEvent(error, stackTrace));
     }
   }
 
@@ -131,7 +166,7 @@ class SpeechTextBloc extends Bloc<SpeechTextEvent, SpeechTextState> {
 
       final startedAt = _recordingStartedAt;
       final recordedDuration = startedAt != null
-          ? DateTime.now().difference(startedAt)
+          ? DateTime.now().difference(startedAt) - _totalPausedDuration
           : Duration.zero;
 
       final result = await _speechToTextUsecase.stopSpeak(
@@ -140,6 +175,8 @@ class SpeechTextBloc extends Bloc<SpeechTextEvent, SpeechTextState> {
 
       await WakelockPlus.toggle(enable: false);
       _recordingStartedAt = null;
+      _totalPausedDuration = Duration.zero;
+      _pausedAt = null;
 
       emit(
         StoppedRecord(

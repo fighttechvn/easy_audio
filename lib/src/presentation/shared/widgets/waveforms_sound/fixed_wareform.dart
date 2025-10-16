@@ -125,6 +125,7 @@ class AnimatedWaveform extends StatefulWidget {
   final double jitter;
   final bool mirror;
   final double smoothing;
+  final AnimatedWaveformController? controller;
 
   const AnimatedWaveform({
     super.key,
@@ -137,6 +138,7 @@ class AnimatedWaveform extends StatefulWidget {
     this.jitter = 0.35,
     this.mirror = true,
     this.smoothing = 0.25,
+    this.controller,
   });
 
   @override
@@ -167,6 +169,13 @@ class _AnimatedWaveformState extends State<AnimatedWaveform>
     if (widget.playing) {
       controller.forward();
     }
+
+    widget.controller?.pause = () {
+      controller.stop();
+    };
+    widget.controller?.resume = () {
+      controller.forward();
+    };
     super.initState();
   }
 
@@ -332,4 +341,9 @@ class _AnimatedWaveformState extends State<AnimatedWaveform>
     }
     return smoothed;
   }
+}
+
+class AnimatedWaveformController {
+  Function? pause;
+  Function? resume;
 }

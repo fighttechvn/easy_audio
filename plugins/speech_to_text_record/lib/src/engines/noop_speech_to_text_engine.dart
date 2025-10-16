@@ -44,4 +44,13 @@ class NoOpSpeechToTextEngine extends SpeechToTextEngine {
   Future<void> dispose() async {
     await _controller.close();
   }
+
+  @override
+  Future<void> pause() async {}
+
+  @override
+  Future<void> resume() async {}
+
+  @override
+  bool get isPaused => false;
 }

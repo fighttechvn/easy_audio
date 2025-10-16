@@ -28,8 +28,10 @@ class AudioFileSink {
   Future<void> _writeQueue = Future<void>.value();
   String? _outputPath;
   int _writtenBytes = 0;
+  bool _isPaused = false;
 
   bool get isRecording => _subscription != null;
+  bool get isPaused => _isPaused;
 
   /// Begin writing audio frames to [filePath].
   Future<void> start(String filePath) async {
@@ -47,11 +49,13 @@ class AudioFileSink {
 
     _subscription = stream.listen(
       (chunk) {
-        final bytes = Uint8List.fromList(chunk);
-        _writtenBytes += bytes.length;
-        _writeQueue = _writeQueue.then(
-          (_) => _outputFile?.writeFrom(bytes) ?? Future<void>.value(),
-        );
+        if (!_isPaused) {
+          final bytes = Uint8List.fromList(chunk);
+          _writtenBytes += bytes.length;
+          _writeQueue = _writeQueue.then(
+            (_) => _outputFile?.writeFrom(bytes) ?? Future<void>.value(),
+          );
+        }
       },
       onError: (Object error, StackTrace stackTrace) {
         _writeQueue = _writeQueue.then((_) async {
@@ -61,6 +65,22 @@ class AudioFileSink {
       },
       cancelOnError: true,
     );
+  }
+
+  /// Temporarily pause writing audio frames to disk.
+  void pause() {
+    if (_subscription == null) {
+      return;
+    }
+    _isPaused = true;
+  }
+
+  /// Resume writing audio frames to disk after a pause.
+  void resume() {
+    if (_subscription == null) {
+      return;
+    }
+    _isPaused = false;
   }
 
   /// Stop recording and seal the WAV header. Returns the output file path.
@@ -155,8 +175,7 @@ class AudioFileSink {
 
 /// Utility to compose file paths for recordings.
 String defaultRecordingPath(String directory, {String? fileName}) {
-  final safeName =
-      fileName ??
+  final safeName = fileName ??
       'recording_${DateTime.now().toIso8601String().replaceAll(':', '-')}.wav';
   return path.join(directory, safeName);
 }

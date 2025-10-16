@@ -15,11 +15,12 @@ class StopSpeechResult {
 }
 
 class SpeechToTextUsecase {
-  SpeechToTextUsecase({this.local});
+  SpeechToTextUsecase({this.local, this.enablePauseResume = true});
 
   static const String _defaultLocale = 'en-US';
 
   final String? local;
+  final bool enablePauseResume;
 
   SpeechToTextRecordController? _controller;
   StreamSubscription<SpeechRecognitionResult>? _resultsSubscription;
@@ -161,6 +162,25 @@ class SpeechToTextUsecase {
           wasRecording && !discardRecording && recordedPath != null,
       recordingPath: recordedPath,
     );
+  }
+
+  bool get supportsPauseResume {
+    // iOS: supported; Android: assume supported via stream-level pause
+    return enablePauseResume;
+  }
+
+  void pauseRecording() {
+    if (!enablePauseResume) {
+      return;
+    }
+    _controller?.pauseRecording();
+  }
+
+  void resumeRecording() {
+    if (!enablePauseResume) {
+      return;
+    }
+    _controller?.resumeRecording();
   }
 
   Future<void> dispose() async {

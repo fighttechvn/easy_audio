@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:speech_to_text/speech_recognition_error.dart' as stt_error;
@@ -13,18 +14,22 @@ import 'speech_to_text_engine.dart';
 /// is not supported (iOS, macOS).
 class SpeechToTextPluginEngine extends SpeechToTextEngine {
   SpeechToTextPluginEngine()
-    : _speech = stt.SpeechToText(),
-      _resultsController =
-          StreamController<SpeechRecognitionResult>.broadcast();
+      : _speech = stt.SpeechToText(),
+        _resultsController =
+            StreamController<SpeechRecognitionResult>.broadcast();
 
   final stt.SpeechToText _speech;
   final StreamController<SpeechRecognitionResult> _resultsController;
 
   bool _isInitialized = false;
   bool _isListening = false;
+  bool _isPaused = false;
 
   @override
   Stream<SpeechRecognitionResult> get results => _resultsController.stream;
+
+  @override
+  bool get isPaused => _isPaused;
 
   @override
   bool get isSupported =>
@@ -79,6 +84,9 @@ class SpeechToTextPluginEngine extends SpeechToTextEngine {
     _isInitialized = true;
   }
 
+  String? _normalizedLocale;
+  String _cacheValue = '';
+  String _sessionValue = '';
   @override
   Future<void> start(Stream<Uint8List> audioStream, {String? localeId}) async {
     if (!isSupported) {
@@ -91,35 +99,57 @@ class SpeechToTextPluginEngine extends SpeechToTextEngine {
       return;
     }
 
-    final String? normalizedLocale = localeId?.replaceAll('-', '_');
-
-    await _speech.listen(
-      onResult: (stt_result.SpeechRecognitionResult result) {
-        if (_resultsController.isClosed) {
-          return;
-        }
-        if (!result.finalResult && result.recognizedWords.trim().isEmpty) {
-          return;
-        }
-        _resultsController.add(
-          SpeechRecognitionResult(
-            text: result.recognizedWords,
-            isFinal: result.finalResult,
-          ),
-        );
-      },
-      listenOptions: stt.SpeechListenOptions(
-        listenMode: stt.ListenMode.dictation,
-        partialResults: true,
-      ),
-      localeId: normalizedLocale,
-    );
+    _normalizedLocale = localeId?.replaceAll('-', '_');
 
     // if (!success) {
     //   throw AudioPipelineStateException('Failed to start speech recognition');
     // }
+    unawaited(_listen());
+  }
 
+  void _stopListening() async {
+    await _speech.stop();
+    _isListening = false;
+  }
+
+  Future<void> _listen() async {
     _isListening = true;
+    try {
+      await _speech.listen(
+        onResult: (stt_result.SpeechRecognitionResult result) {
+          if (_isPaused) {
+            return;
+          }
+          if (_resultsController.isClosed) {
+            return;
+          }
+          if (!result.finalResult && result.recognizedWords.trim().isEmpty) {
+            return;
+          }
+          _sessionValue = result.recognizedWords;
+
+          if (_sessionValue.isNotEmpty && _cacheValue.isNotEmpty) {
+            _sessionValue = _toLowercaseFirst(_sessionValue);
+          }
+
+          final currentValue = '$_cacheValue$_sessionValue';
+
+          _resultsController.add(
+            SpeechRecognitionResult(
+              text: currentValue,
+              isFinal: result.finalResult,
+            ),
+          );
+        },
+        listenOptions: stt.SpeechListenOptions(
+          listenMode: stt.ListenMode.dictation,
+          partialResults: true,
+        ),
+        localeId: _normalizedLocale,
+      );
+    } catch (e) {
+      _isListening = false;
+    }
   }
 
   @override
@@ -129,11 +159,15 @@ class SpeechToTextPluginEngine extends SpeechToTextEngine {
     }
     await _speech.stop();
     _isListening = false;
+    _cacheValue = '';
+    _sessionValue = '';
   }
 
   @override
   Future<void> reset() async {
     await _speech.cancel();
+    _cacheValue = '';
+    _sessionValue = '';
     _isListening = false;
   }
 
@@ -142,8 +176,32 @@ class SpeechToTextPluginEngine extends SpeechToTextEngine {
     if (_isListening) {
       await _speech.stop();
     }
+
+    _cacheValue = '';
+    _sessionValue = '';
     await _resultsController.close();
     _isListening = false;
     _isInitialized = false;
+  }
+
+  @override
+  Future<void> pause() async {
+    _isPaused = true;
+
+    _stopListening();
+    _cacheValue = '$_cacheValue $_sessionValue ';
+    _sessionValue = '';
+  }
+
+  @override
+  Future<void> resume() async {
+    _isPaused = false;
+    await _listen();
+  }
+
+  String _toLowercaseFirst(String value) {
+    return value.isEmpty
+        ? ''
+        : value.substring(0, 1).toLowerCase() + value.substring(1);
   }
 }

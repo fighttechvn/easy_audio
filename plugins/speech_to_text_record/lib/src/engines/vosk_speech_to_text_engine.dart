@@ -49,6 +49,7 @@ class VoskSpeechToTextEngine extends SpeechToTextEngine {
   String? _customAssetPath;
   String? _customModelUrl;
   bool _isListening = false;
+  bool _isPaused = false;
 
   final Set<String> _preloadLocales;
 
@@ -60,6 +61,9 @@ class VoskSpeechToTextEngine extends SpeechToTextEngine {
 
   @override
   bool get isSupported => isPlatformSupported;
+
+  @override
+  bool get isPaused => _isPaused;
 
   @override
   Future<void> prepare({
@@ -317,7 +321,7 @@ class VoskSpeechToTextEngine extends SpeechToTextEngine {
 
   Future<void> _handleChunk(Uint8List chunk) async {
     final recognizer = _recognizer;
-    if (recognizer == null) {
+    if (recognizer == null || _isPaused) {
       return;
     }
 
@@ -380,5 +384,15 @@ class VoskSpeechToTextEngine extends SpeechToTextEngine {
       return null;
     }
     return SpeechRecognitionResult(text: partial, isFinal: false);
+  }
+
+  @override
+  Future<void> pause() async {
+    _isPaused = true;
+  }
+
+  @override
+  Future<void> resume() async {
+    _isPaused = false;
   }
 }
