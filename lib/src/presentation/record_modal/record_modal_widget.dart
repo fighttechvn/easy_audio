@@ -228,85 +228,64 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
                         ),
                       ),
                     ),
-                    Row(
-                      children: [
-                        IconButton(
-                          onPressed: _onTapCloseButton,
-                          icon: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.grey.withValues(alpha: 0.4),
-                              borderRadius: BorderRadius.circular(50),
-                            ),
-                            child: Icon(
-                              Icons.close,
-                              size: 20,
-                              color: Theme.of(context).primaryColor,
-                            ),
+                    const SizedBox(height: 15),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: [
+                          _IconButton(
+                            onPressed: _onTapCloseButton,
+                            icon: Icons.close,
+                            color: Colors.red,
                           ),
-                        ),
-                        if (_supportsPauseResume)
-                          BlocBuilder<SpeechTextBloc, SpeechTextState>(
-                            builder: (context, state) {
-                              final isPaused = state is PausedRecording;
-                              return IconButton(
-                                onPressed: () {
-                                  if (state is Recording) {
-                                    _pausedAt = DateTime.now();
-                                    context
-                                        .read<SpeechTextBloc>()
-                                        .add(PauseRecordEvent());
-                                    _animatedWaveformController.pause?.call();
-                                  } else if (state is PausedRecording) {
-                                    context
-                                        .read<SpeechTextBloc>()
-                                        .add(ResumeRecordEvent());
-                                    _animatedWaveformController.resume?.call();
-                                  }
-                                },
-                                icon: Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.withValues(alpha: 0.4),
-                                    borderRadius: BorderRadius.circular(50),
-                                  ),
-                                  child: Icon(
-                                    isPaused
-                                        ? Icons.play_arrow_rounded
-                                        : Icons.pause_rounded,
-                                    size: 20,
-                                    color: Theme.of(context).primaryColor,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 10),
-                          child: ValueListenableBuilder<int>(
-                            valueListenable: _elapsedSeconds,
-                            builder: (_, sec, __) {
-                              return Text(
-                                Duration(seconds: sec).formatTimeAudio,
-                              );
-                            },
-                          ),
-                        ),
-                        const Spacer(),
-                        IconButton(
-                          onPressed: () => _stopRecord(true),
-                          icon: Container(
-                            padding: const EdgeInsets.all(5),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(50),
+                          if (_supportsPauseResume) ...[
+                            const SizedBox(width: 20),
+                            BlocBuilder<SpeechTextBloc, SpeechTextState>(
+                              builder: (context, state) {
+                                final isPaused = state is PausedRecording;
+                                return _IconButton(
+                                  onPressed: () {
+                                    if (state is Recording) {
+                                      _pausedAt = DateTime.now();
+                                      context
+                                          .read<SpeechTextBloc>()
+                                          .add(PauseRecordEvent());
+                                      _animatedWaveformController.pause?.call();
+                                    } else if (state is PausedRecording) {
+                                      context
+                                          .read<SpeechTextBloc>()
+                                          .add(ResumeRecordEvent());
+                                      _animatedWaveformController.resume
+                                          ?.call();
+                                    }
+                                  },
+                                  icon: isPaused
+                                      ? Icons.play_arrow_rounded
+                                      : Icons.pause_rounded,
+                                );
+                              },
                             ),
-                            child: Icon(
-                              Icons.send_rounded,
-                              size: 20,
-                              color: Theme.of(context).primaryColor,
+                          ],
+                          Padding(
+                            padding: const EdgeInsets.only(left: 20),
+                            child: ValueListenableBuilder<int>(
+                              valueListenable: _elapsedSeconds,
+                              builder: (_, sec, __) {
+                                return Text(
+                                  Duration(seconds: sec).formatTimeAudio,
+                                );
+                              },
                             ),
                           ),
-                        ),
-                      ],
+                          const Spacer(),
+                          _IconButton(
+                            onPressed: () => _stopRecord(true),
+                            icon: Icons.send_rounded,
+                            color: Theme.of(context).primaryColor,
+                            size: 20.0,
+                          ),
+                        ],
+                      ),
                     ),
                     Expanded(
                       child: Center(
@@ -324,6 +303,46 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
               );
             },
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _IconButton extends StatelessWidget {
+  const _IconButton({
+    required this.onPressed,
+    required this.icon,
+    this.color,
+    this.size = 30.0,
+  });
+
+  final Function() onPressed;
+  final IconData icon;
+  final Color? color;
+  final double size;
+  @override
+  Widget build(BuildContext context) {
+    const sizeButton = 35.0;
+
+    return IconButton(
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(
+        minWidth: sizeButton,
+        minHeight: sizeButton,
+      ),
+      onPressed: onPressed,
+      icon: Container(
+        width: sizeButton,
+        height: sizeButton,
+        decoration: BoxDecoration(
+          color: Colors.grey.withValues(alpha: 0.4),
+          borderRadius: BorderRadius.circular(50),
+        ),
+        child: Icon(
+          icon,
+          size: size,
+          color: color ?? Theme.of(context).primaryColor,
         ),
       ),
     );
