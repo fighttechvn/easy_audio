@@ -11,6 +11,7 @@ abstract class EasyAudioInterface {
   Future<void> play([String? urlAudio]);
   Future<void> stopPlayer();
   Future<void> pause();
+  Future<void> resume();
   Future<void> record();
   Future<void> seek(Duration duration);
   Future<String?>? stopRecorder();
@@ -22,6 +23,8 @@ abstract class EasyAudioInterface {
   ValueNotifier<ProcessPlayer> get onProgress;
   int get timeRecord;
   bool get isRecording;
+
+  AudioPlayer get audioPlayer;
 }
 
 class EasyAudioController extends ChangeNotifier implements EasyAudioInterface {
@@ -193,4 +196,13 @@ class EasyAudioController extends ChangeNotifier implements EasyAudioInterface {
     await _audioPlayer.seek(duration);
     notifyListeners();
   }
+
+  @override
+  Future<void> resume() async {
+    await _audioPlayer.resume();
+    notifyListeners();
+  }
+  
+  @override
+  AudioPlayer get audioPlayer => _audioPlayer;
 }

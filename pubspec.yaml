@@ -1,6 +1,6 @@
 name: easy_audio
 description: Easy record audio file, and friendly convert `speech_to_text`
-version: 1.0.1
+version: 1.0.2
 homepage: https://github.com/fighttech-vn/easy_audio
 publish_to: none
 

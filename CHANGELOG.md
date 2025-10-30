@@ -1,3 +1,6 @@
+## 1.0.2
++ Support resume audio
+
 ## 1.0.1
 + Add wake screen while recoding
 
