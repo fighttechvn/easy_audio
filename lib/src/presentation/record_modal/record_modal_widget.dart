@@ -8,6 +8,10 @@ import '../../domain/entities/record_data.dart';
 import '../../record_audio_constants.dart';
 import '../shared/widgets/waveforms_sound/fixed_wareform.dart';
 import 'bloc/speech_text_bloc.dart';
+import 'widgets/control_bar.dart';
+import 'widgets/sheet_icon_button.dart';
+import 'widgets/transcription_view.dart';
+import 'widgets/waveform_view.dart';
 
 class RecordModalWidget extends StatefulWidget {
   const RecordModalWidget({
@@ -27,7 +31,8 @@ class RecordModalWidget extends StatefulWidget {
 
 class _RecordModalWidgetState extends State<RecordModalWidget> {
   Timer? _timer;
-  final ValueNotifier<int> _elapsedSeconds = ValueNotifier<int>(0);
+  final ValueNotifier<Duration> _elapsedDuration =
+      ValueNotifier<Duration>(Duration.zero);
   final TextEditingController _textCtrl = TextEditingController();
   final AnimatedWaveformController _animatedWaveformController =
       AnimatedWaveformController();
@@ -35,6 +40,7 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
   Duration _pausedAccumulated = Duration.zero;
   DateTime? _pausedAt;
   bool _supportsPauseResume = true;
+  bool _showTranscription = false;
 
   void _stopRecord(bool save) {
     context.read<SpeechTextBloc>().add(StopRecordEvent(isSave: save));
@@ -64,7 +70,7 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
     } else if (state is Recording) {
       if (_recordStartedAt == null) {
         _recordStartedAt = DateTime.now();
-        _elapsedSeconds.value = 0;
+        _elapsedDuration.value = Duration.zero;
       }
       if (_pausedAt != null) {
         _pausedAccumulated += DateTime.now().difference(_pausedAt!);
@@ -126,7 +132,7 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
   void _updateElapsedTimer(Timer timer) {
     final startedAt = _recordStartedAt;
     if (startedAt == null) {
-      _elapsedSeconds.value = 0;
+      _elapsedDuration.value = Duration.zero;
       return;
     }
     final now = DateTime.now();
@@ -134,20 +140,21 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
         _pausedAt != null ? now.difference(_pausedAt!) : Duration.zero;
     final effective =
         now.difference(startedAt) - _pausedAccumulated - pausedExtra;
-    _elapsedSeconds.value = effective.isNegative ? 0 : effective.inSeconds;
+    _elapsedDuration.value = effective.isNegative ? Duration.zero : effective;
   }
 
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(const Duration(seconds: 1), _updateElapsedTimer);
+    _timer =
+        Timer.periodic(const Duration(milliseconds: 80), _updateElapsedTimer);
     _supportsPauseResume = _detectPauseSupport();
   }
 
   @override
   void dispose() {
     _timer?.cancel();
-    _elapsedSeconds.dispose();
+    _elapsedDuration.dispose();
     _textCtrl.dispose();
     super.dispose();
   }
@@ -171,178 +178,228 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
     }
   }
 
+  String _formatClockTime(DateTime time) {
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
+  String _formatElapsedForDisplay(Duration value) {
+    final hours = value.inHours;
+    final minutes = value.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = value.inSeconds.remainder(60).toString().padLeft(2, '0');
+    final hundredths =
+        (value.inMilliseconds.remainder(1000) ~/ 10).toString().padLeft(2, '0');
+    if (hours > 0) {
+      final hoursText = hours.toString().padLeft(2, '0');
+      return '$hoursText:$minutes:$seconds,$hundredths';
+    }
+    return '$minutes:$seconds,$hundredths';
+  }
+
+  void _onTogglePauseResume(SpeechTextState state) {
+    if (!_supportsPauseResume) {
+      return;
+    }
+
+    if (state is Recording) {
+      _pausedAt = DateTime.now();
+      context.read<SpeechTextBloc>().add(PauseRecordEvent());
+      _animatedWaveformController.pause?.call();
+    } else if (state is PausedRecording) {
+      context.read<SpeechTextBloc>().add(ResumeRecordEvent());
+      _animatedWaveformController.resume?.call();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final title = widget.title ?? '[${widget.locale}] Transcripts: ';
+    final media = MediaQuery.of(context);
+    final screenHeight = media.size.height;
+    final desiredHeight = screenHeight * 0.78;
+    const double minHeight = 420.0;
+    final maxHeight = screenHeight * 0.95;
+    final double resolvedHeight;
+    if (maxHeight <= minHeight) {
+      resolvedHeight =
+          maxHeight <= 320.0 ? maxHeight : maxHeight.clamp(320.0, screenHeight);
+    } else {
+      resolvedHeight = desiredHeight.clamp(minHeight, maxHeight).toDouble();
+    }
+    final displayTitle = (widget.title?.trim().isNotEmpty ?? false)
+        ? widget.title!.trim()
+        : 'New Recording';
 
     return GestureDetector(
       onTap: _onTapCloseButton,
       behavior: HitTestBehavior.translucent,
-      child: Container(
-        color: Colors.transparent,
-        height: MediaQuery.of(context).size.height,
+      child: SizedBox(
+        height: resolvedHeight,
+        width: double.infinity,
         child: Align(
           alignment: Alignment.bottomCenter,
           child: BlocConsumer<SpeechTextBloc, SpeechTextState>(
             listener: _onListenerSpeechTextBloc,
             builder: (context, state) {
-              return Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withAlpha((0.2 * 255).toInt()),
-                      blurRadius: 1.0,
-                      offset: const Offset(0, -1),
-                      spreadRadius: 1.0,
-                    ),
-                  ],
-                ),
-                height: 350,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      child: Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      constraints: const BoxConstraints(maxHeight: 200),
-                      child: SingleChildScrollView(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: TextFormField(
-                            maxLines: 6,
-                            controller: _textCtrl,
+              final bool isSaving = state is StopingRecord;
+              final bool isInitialising = state is InitialingService;
+
+              return GestureDetector(
+                onTap: () {},
+                child: Container(
+                  width: double.infinity,
+                  height: resolvedHeight,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  child: SafeArea(
+                    top: false,
+                    bottom: false,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 52,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 15),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        children: [
-                          _IconButton(
-                            onPressed: _onTapCloseButton,
-                            icon: Icons.close,
-                            color: Colors.red,
-                          ),
-                          if (_supportsPauseResume) ...[
-                            const SizedBox(width: 20),
-                            BlocBuilder<SpeechTextBloc, SpeechTextState>(
-                              builder: (context, state) {
-                                final isPaused = state is PausedRecording;
-                                return _IconButton(
-                                  onPressed: () {
-                                    if (state is Recording) {
-                                      _pausedAt = DateTime.now();
-                                      context
-                                          .read<SpeechTextBloc>()
-                                          .add(PauseRecordEvent());
-                                      _animatedWaveformController.pause?.call();
-                                    } else if (state is PausedRecording) {
-                                      context
-                                          .read<SpeechTextBloc>()
-                                          .add(ResumeRecordEvent());
-                                      _animatedWaveformController.resume
-                                          ?.call();
-                                    }
-                                  },
-                                  icon: isPaused
-                                      ? Icons.play_arrow_rounded
-                                      : Icons.pause_rounded,
-                                );
-                              },
+                        const SizedBox(height: 20),
+                        Row(
+                          children: [
+                            SheetIconButton(
+                              icon: Icons.close_rounded,
+                              tooltip: 'Đóng',
+                              onTap: isSaving ? null : _onTapCloseButton,
+                              backgroundColor: Colors.white10,
+                              iconColor: Colors.white,
+                            ),
+                            Expanded(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    displayTitle,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  ValueListenableBuilder<Duration>(
+                                    valueListenable: _elapsedDuration,
+                                    builder: (_, duration, __) {
+                                      final reference =
+                                          _recordStartedAt ?? DateTime.now();
+                                      final subtitle =
+                                          '${_formatClockTime(reference)}  '
+                                          '${duration.formatTimeAudio}';
+                                      return Text(
+                                        subtitle,
+                                        style: TextStyle(
+                                          color: Colors.white
+                                              .withValues(alpha: 0.6),
+                                          fontSize: 13,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SheetIconButton.progressAware(
+                              icon: Icons.check_rounded,
+                              tooltip: 'Lưu bản ghi',
+                              onTap: isSaving ? null : () => _stopRecord(true),
+                              backgroundColor: const Color(0xFF0A84FF),
+                              iconColor: Colors.white,
+                              isLoading: isSaving,
                             ),
                           ],
-                          Padding(
-                            padding: const EdgeInsets.only(left: 20),
-                            child: ValueListenableBuilder<int>(
-                              valueListenable: _elapsedSeconds,
-                              builder: (_, sec, __) {
-                                return Text(
-                                  Duration(seconds: sec).formatTimeAudio,
-                                );
-                              },
-                            ),
-                          ),
-                          const Spacer(),
-                          _IconButton(
-                            onPressed: () => _stopRecord(true),
-                            icon: Icons.send_rounded,
-                            color: Theme.of(context).primaryColor,
-                            size: 20.0,
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: Center(
-                        child: SizedBox(
-                          height: 150,
-                          child: AnimatedWaveform(
-                            divide: 3,
-                            controller: _animatedWaveformController,
+                        ),
+                        const SizedBox(height: 24),
+                        Expanded(
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 240),
+                            switchInCurve: Curves.easeOut,
+                            switchOutCurve: Curves.easeIn,
+                            child: _showTranscription
+                                ? TranscriptionView(
+                                    key:
+                                        const ValueKey<String>('transcription'),
+                                    controller: _textCtrl,
+                                  )
+                                : WaveformView(
+                                    key: const ValueKey<String>('waveform'),
+                                    controller: _animatedWaveformController,
+                                    isInitialising: isInitialising,
+                                  ),
                           ),
                         ),
-                      ),
+                        const SizedBox(height: 24),
+                        ValueListenableBuilder<Duration>(
+                          valueListenable: _elapsedDuration,
+                          builder: (_, duration, __) {
+                            return Text(
+                              _formatElapsedForDisplay(duration),
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 34,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 1.1,
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 6),
+                        const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.graphic_eq_outlined,
+                              size: 16,
+                              color: Colors.white54,
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              'Speech to text đang hoạt động',
+                              style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        ControlBar(
+                          showTranscription: _showTranscription,
+                          supportsPauseResume: _supportsPauseResume,
+                          isPaused: state is PausedRecording,
+                          isRecording:
+                              state is Recording || state is PausedRecording,
+                          isSaving: isSaving,
+                          isInitialising: isInitialising,
+                          onToggleText: () {
+                            setState(() {
+                              _showTranscription = !_showTranscription;
+                            });
+                          },
+                          onTogglePause: () => _onTogglePauseResume(state),
+                          onStop: () => _stopRecord(true),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               );
             },
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _IconButton extends StatelessWidget {
-  const _IconButton({
-    required this.onPressed,
-    required this.icon,
-    this.color,
-    this.size = 30.0,
-  });
-
-  final Function() onPressed;
-  final IconData icon;
-  final Color? color;
-  final double size;
-  @override
-  Widget build(BuildContext context) {
-    const sizeButton = 35.0;
-
-    return IconButton(
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(
-        minWidth: sizeButton,
-        minHeight: sizeButton,
-      ),
-      onPressed: onPressed,
-      icon: Container(
-        width: sizeButton,
-        height: sizeButton,
-        decoration: BoxDecoration(
-          color: Colors.grey.withValues(alpha: 0.4),
-          borderRadius: BorderRadius.circular(50),
-        ),
-        child: Icon(
-          icon,
-          size: size,
-          color: color ?? Theme.of(context).primaryColor,
         ),
       ),
     );
