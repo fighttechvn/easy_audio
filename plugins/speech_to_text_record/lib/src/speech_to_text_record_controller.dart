@@ -129,14 +129,22 @@ class SpeechToTextRecordController {
   }
 
   /// Pause persisting audio data to file while keeping the pipeline running.
-  void pauseRecording() {
-    _sttEngine.pause();
+  Future<void> pauseRecording() async {
     _fileSink.pause();
+    await _sttEngine.pause();
+
+    if (!_sttEngine.requiresExternalAudioStream && _microphone.isStarted) {
+      await _microphone.pause();
+    }
   }
 
   /// Resume persisting audio data to file after a pause.
-  void resumeRecording() {
-    _sttEngine.resume();
+  Future<void> resumeRecording() async {
+    if (!_sttEngine.requiresExternalAudioStream && _microphone.isStarted) {
+      await _microphone.resume();
+    }
+
+    await _sttEngine.resume();
     _fileSink.resume();
   }
 

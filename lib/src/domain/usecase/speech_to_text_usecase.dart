@@ -169,18 +169,18 @@ class SpeechToTextUsecase {
     return enablePauseResume;
   }
 
-  void pauseRecording() {
+  Future<void> pauseRecording() async {
     if (!enablePauseResume) {
       return;
     }
-    _controller?.pauseRecording();
+    await _controller?.pauseRecording();
   }
 
-  void resumeRecording() {
+  Future<void> resumeRecording() async {
     if (!enablePauseResume) {
       return;
     }
-    _controller?.resumeRecording();
+    await _controller?.resumeRecording();
   }
 
   Future<void> dispose() async {

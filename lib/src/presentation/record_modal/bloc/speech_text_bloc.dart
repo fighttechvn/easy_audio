@@ -129,7 +129,7 @@ class SpeechTextBloc extends Bloc<SpeechTextEvent, SpeechTextState> {
     Emitter<SpeechTextState> emit,
   ) async {
     try {
-      _speechToTextUsecase.pauseRecording();
+      await _speechToTextUsecase.pauseRecording();
       _pausedAt ??= DateTime.now();
       emit(PausedRecording(state.stateUI));
     } catch (error, stackTrace) {
@@ -142,7 +142,7 @@ class SpeechTextBloc extends Bloc<SpeechTextEvent, SpeechTextState> {
     Emitter<SpeechTextState> emit,
   ) async {
     try {
-      _speechToTextUsecase.resumeRecording();
+      await _speechToTextUsecase.resumeRecording();
       if (_pausedAt != null) {
         _totalPausedDuration += DateTime.now().difference(_pausedAt!);
         _pausedAt = null;

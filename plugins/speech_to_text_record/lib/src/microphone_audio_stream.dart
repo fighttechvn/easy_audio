@@ -12,8 +12,8 @@ class MicrophoneAudioStream {
     this.numChannels = 1,
     RecorderFactory? recordFactory,
     int? streamBufferSize,
-  }) : _recordFactory = recordFactory ?? (() => AudioRecorder()),
-       _streamBufferSize = streamBufferSize;
+  })  : _recordFactory = recordFactory ?? (() => AudioRecorder()),
+        _streamBufferSize = streamBufferSize;
 
   final int sampleRate;
   final int numChannels;
@@ -71,7 +71,20 @@ class MicrophoneAudioStream {
     _isStarted = true;
   }
 
-  /// Stop microphone capture.
+  Future<void> pause() async {
+    if (!_isStarted) {
+      return;
+    }
+    await _recorder?.pause();
+  }
+
+  Future<void> resume() async {
+    if (!_isStarted) {
+      return;
+    }
+    await _recorder?.resume();
+  }
+
   Future<void> stop() async {
     if (!_isStarted) {
       return;
