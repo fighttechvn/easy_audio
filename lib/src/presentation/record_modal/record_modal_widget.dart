@@ -19,11 +19,13 @@ class RecordModalWidget extends StatefulWidget {
     this.onExits,
     this.title,
     required this.locale,
+    this.colorWaveformView,
   });
 
   final String? title;
   final Future<bool?> Function()? onExits;
   final String locale;
+  final Color? colorWaveformView;
 
   @override
   State<RecordModalWidget> createState() => _RecordModalWidgetState();
@@ -272,7 +274,7 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
                           children: [
                             SheetIconButton(
                               icon: Icons.close_rounded,
-                              tooltip: 'Đóng',
+                              tooltip: 'Close',
                               onTap: isSaving ? null : _onTapCloseButton,
                               backgroundColor: Colors.white10,
                               iconColor: Colors.white,
@@ -314,7 +316,7 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
                             ),
                             SheetIconButton.progressAware(
                               icon: Icons.check_rounded,
-                              tooltip: 'Lưu bản ghi',
+                              tooltip: 'Save record',
                               onTap: isSaving ? null : () => _stopRecord(true),
                               backgroundColor: const Color(0xFF0A84FF),
                               iconColor: Colors.white,
@@ -338,6 +340,7 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
                                     key: const ValueKey<String>('waveform'),
                                     controller: _animatedWaveformController,
                                     isInitialising: isInitialising,
+                                    color: widget.colorWaveformView,
                                   ),
                           ),
                         ),
@@ -368,7 +371,7 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
                             ),
                             SizedBox(width: 6),
                             Text(
-                              'Speech to text đang hoạt động',
+                              'Speech to text is working',
                               style: TextStyle(
                                 color: Colors.white54,
                                 fontSize: 12,

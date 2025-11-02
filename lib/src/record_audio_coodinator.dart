@@ -11,13 +11,15 @@ extension BuildContextAnimatedWaveform on BuildContext {
     Future<bool?> Function()? onExits,
     String? transcript,
     String locale = 'en-US',
+    Color? backgroundColor,
+    Color? colorWaveformView,
   }) {
     return showModalBottomSheet<RecordData?>(
       context: this,
       isDismissible: false,
       isScrollControlled: true,
       enableDrag: false,
-      backgroundColor: Colors.black26,
+      backgroundColor: backgroundColor ?? const Color(0xff18203A) ,
       barrierColor: Colors.transparent,
       constraints: BoxConstraints(maxHeight: MediaQuery.of(this).size.height),
       builder: (BuildContext context) {
@@ -28,6 +30,7 @@ extension BuildContextAnimatedWaveform on BuildContext {
             onExits: onExits,
             title: transcript,
             locale: locale,
+            colorWaveformView: colorWaveformView,
           ),
         );
       },

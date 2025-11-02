@@ -4,19 +4,21 @@ import '../../shared/widgets/waveforms_sound/fixed_wareform.dart';
 
 class WaveformView extends StatelessWidget {
   const WaveformView({
+    super.key,
     required this.controller,
     required this.isInitialising,
-    super.key,
+    this.color,
   });
 
   final AnimatedWaveformController controller;
   final bool isInitialising;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF2C2C2E),
+        color: color ?? const Color(0xFF2C2C2E),
         borderRadius: BorderRadius.circular(28),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
