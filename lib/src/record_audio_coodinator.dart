@@ -14,23 +14,34 @@ extension BuildContextAnimatedWaveform on BuildContext {
     Color? backgroundColor,
     Color? colorWaveformView,
   }) {
+    Color bgColorDefault = const Color(0xff18203A);
+    Color? colorWaveformViewDefault;
+
+    if (Theme.brightnessOf(this) == Brightness.light) {
+      bgColorDefault = Colors.white;
+      colorWaveformViewDefault = const Color(0xff8F9BB3);
+    }
+
     return showModalBottomSheet<RecordData?>(
       context: this,
       isDismissible: false,
       isScrollControlled: true,
       enableDrag: false,
-      backgroundColor: backgroundColor ?? const Color(0xff18203A) ,
-      barrierColor: Colors.transparent,
-      constraints: BoxConstraints(maxHeight: MediaQuery.of(this).size.height),
+      backgroundColor: backgroundColor ?? bgColorDefault,
+      barrierColor: Colors.black12,
       builder: (BuildContext context) {
         return BlocProvider<SpeechTextBloc>(
           create: (context) =>
               SpeechTextBloc(SpeechToTextUsecase(local: locale)),
-          child: RecordModalWidget(
-            onExits: onExits,
-            title: transcript,
-            locale: locale,
-            colorWaveformView: colorWaveformView,
+          child: Container(
+            constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(this).size.height * 0.9),
+            child: RecordModalWidget(
+              onExits: onExits,
+              title: transcript,
+              locale: locale,
+              colorWaveformView: colorWaveformView ?? colorWaveformViewDefault,
+            ),
           ),
         );
       },

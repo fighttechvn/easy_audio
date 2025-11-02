@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'primary_record_button.dart';
-import 'secondary_control_button.dart';
 
 class ControlBar extends StatelessWidget {
   const ControlBar({
@@ -42,12 +41,12 @@ class ControlBar extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        SecondaryControlButton(
-          icon: Icons.chat_bubble_outline_rounded,
-          isActive: showTranscription,
-          onTap: showLoading ? null : onToggleText,
-        ),
-        const SizedBox(width: 24),
+        // SecondaryControlButton(
+        //   icon: Icons.chat_bubble_outline_rounded,
+        //   isActive: showTranscription,
+        //   onTap: showLoading ? null : onToggleText,
+
+        // ),
         PrimaryRecordButton(
           isPaused: centralIsPaused,
           isEnabled: centralEnabled,
@@ -55,19 +54,17 @@ class ControlBar extends StatelessWidget {
           useStopIcon: useStopIcon,
           onTap: centralOnTap,
         ),
-        const SizedBox(width: 24),
         // TODO: Remove this when the feature is implemented
-        const Opacity(
-          opacity: 0,
-          child: SecondaryControlButton(
-            icon: Icons.mic_rounded,
-            isActive: true,
-            onTap: null,
-            isDisabled: true,
-          ),
-        ),
+        // const Opacity(
+        //   opacity: 0,
+        //   child: SecondaryControlButton(
+        //     icon: Icons.mic_rounded,
+        //     isActive: true,
+        //     onTap: null,
+        //     isDisabled: true,
+        //   ),
+        // ),
       ],
     );
   }
 }
-

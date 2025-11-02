@@ -220,7 +220,7 @@ class _RealtimeAudioWaveformState extends State<RealtimeAudioWaveform>
       final lastIndex = _smoothedAmplitudes.length - 1;
       _smoothedAmplitudes[lastIndex] =
           (_smoothedAmplitudes[lastIndex] * widget.smoothingFactor) +
-          (_amplitudes[lastIndex] * (1.0 - widget.smoothingFactor));
+              (_amplitudes[lastIndex] * (1.0 - widget.smoothingFactor));
     }
   }
 
@@ -245,9 +245,8 @@ class _RealtimeAudioWaveformState extends State<RealtimeAudioWaveform>
       child: AnimatedBuilder(
         animation: _idleAnimation,
         builder: (context, child) {
-          final displayAmplitudes = widget.isRecording
-              ? _smoothedAmplitudes
-              : _getIdleAmplitudes();
+          final displayAmplitudes =
+              widget.isRecording ? _smoothedAmplitudes : _getIdleAmplitudes();
 
           return CustomPaint(
             size: Size(widget.width, widget.height),

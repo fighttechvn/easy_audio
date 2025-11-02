@@ -202,7 +202,7 @@ class EasyAudioController extends ChangeNotifier implements EasyAudioInterface {
     await _audioPlayer.resume();
     notifyListeners();
   }
-  
+
   @override
   AudioPlayer get audioPlayer => _audioPlayer;
 }

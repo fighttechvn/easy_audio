@@ -18,7 +18,7 @@ class WaveformView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: color ?? const Color(0xFF2C2C2E),
+        color: Colors.grey[200] ?? color ?? const Color(0xFF2C2C2E),
         borderRadius: BorderRadius.circular(28),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -36,7 +36,7 @@ class WaveformView extends StatelessWidget {
                 ),
                 SizedBox(height: 16),
                 Text(
-                  'Đang khởi tạo micro...',
+                  'Initializing microphone...',
                   style: TextStyle(
                     color: Colors.white60,
                     fontSize: 14,
@@ -47,16 +47,19 @@ class WaveformView extends StatelessWidget {
           : Column(
               children: [
                 Expanded(
-                  child: AnimatedWaveform(
-                    divide: 3,
-                    controller: controller,
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    child: AnimatedWaveform(
+                      divide: 3,
+                      controller: controller,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 24),
-                const FixedWaveform(
-                  waveThickness: 3,
-                  size: Size(double.infinity, 24),
-                ),
+                // const SizedBox(height: 24),
+                // const FixedWaveform(
+                //   waveThickness: 3,
+                //   size: Size(double.infinity, 24),
+                // ),
               ],
             ),
     );

@@ -43,6 +43,7 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
   DateTime? _pausedAt;
   bool _supportsPauseResume = true;
   bool _showTranscription = false;
+  final ScrollController _scrollController = ScrollController();
 
   void _stopRecord(bool save) {
     context.read<SpeechTextBloc>().add(StopRecordEvent(isSave: save));
@@ -54,10 +55,17 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
         return;
       }
       context.read<SpeechTextBloc>().add(
-            StartRecordEvent(
-              callbackToText: (text) => _textCtrl.text = text,
-            ),
-          );
+        StartRecordEvent(
+          callbackToText: (text) {
+            _textCtrl.text = text;
+            _scrollController.animateTo(
+              _scrollController.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 100),
+              curve: Curves.linear,
+            );
+          },
+        ),
+      );
     });
   }
 
@@ -218,16 +226,7 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
     final screenHeight = media.size.height;
-    final desiredHeight = screenHeight * 0.78;
-    const double minHeight = 420.0;
-    final maxHeight = screenHeight * 0.95;
-    final double resolvedHeight;
-    if (maxHeight <= minHeight) {
-      resolvedHeight =
-          maxHeight <= 320.0 ? maxHeight : maxHeight.clamp(320.0, screenHeight);
-    } else {
-      resolvedHeight = desiredHeight.clamp(minHeight, maxHeight).toDouble();
-    }
+
     final displayTitle = (widget.title?.trim().isNotEmpty ?? false)
         ? widget.title!.trim()
         : 'New Recording';
@@ -236,7 +235,6 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
       onTap: _onTapCloseButton,
       behavior: HitTestBehavior.translucent,
       child: SizedBox(
-        height: resolvedHeight,
         width: double.infinity,
         child: Align(
           alignment: Alignment.bottomCenter,
@@ -245,17 +243,17 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
             builder: (context, state) {
               final bool isSaving = state is StopingRecord;
               final bool isInitialising = state is InitialingService;
+              final isDarkMode = Theme.brightnessOf(context) == Brightness.dark;
 
               return GestureDetector(
                 onTap: () {},
                 child: Container(
                   width: double.infinity,
-                  height: resolvedHeight,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 24)
+                      .copyWith(top: 20),
                   child: SafeArea(
                     top: false,
-                    bottom: false,
+                    minimum: const EdgeInsets.only(bottom: 12),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -264,7 +262,9 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
                             width: 52,
                             height: 5,
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.18),
+                              color: isDarkMode
+                                  ? Colors.white.withValues(alpha: 0.18)
+                                  : Colors.black.withValues(alpha: 0.18),
                               borderRadius: BorderRadius.circular(20),
                             ),
                           ),
@@ -276,8 +276,12 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
                               icon: Icons.close_rounded,
                               tooltip: 'Close',
                               onTap: isSaving ? null : _onTapCloseButton,
-                              backgroundColor: Colors.white10,
-                              iconColor: Colors.white,
+                              backgroundColor: Theme.brightnessOf(context) ==
+                                      Brightness.light
+                                  ? Colors.grey[200]!
+                                  : Colors.white10,
+                              iconColor:
+                                  isDarkMode ? Colors.white : Colors.black,
                             ),
                             Expanded(
                               child: Column(
@@ -286,8 +290,11 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
                                   Text(
                                     displayTitle,
                                     textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: Theme.brightnessOf(context) ==
+                                              Brightness.dark
+                                          ? Colors.white
+                                          : Colors.black,
                                       fontSize: 20,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -324,35 +331,41 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 24),
-                        Expanded(
-                          child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 240),
-                            switchInCurve: Curves.easeOut,
-                            switchOutCurve: Curves.easeIn,
-                            child: _showTranscription
-                                ? TranscriptionView(
-                                    key:
-                                        const ValueKey<String>('transcription'),
-                                    controller: _textCtrl,
-                                  )
-                                : WaveformView(
-                                    key: const ValueKey<String>('waveform'),
-                                    controller: _animatedWaveformController,
-                                    isInitialising: isInitialising,
-                                    color: widget.colorWaveformView,
-                                  ),
+                        const SizedBox(height: 12),
+                        Container(
+                          constraints: BoxConstraints(
+                            minWidth: 100,
+                            maxHeight: screenHeight * 0.32,
+                          ),
+                          child: TranscriptionView(
+                            key: const ValueKey<String>('transcription'),
+                            controller: _textCtrl,
+                            scrollController: _scrollController,
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 12),
+                        const Spacer(),
+                        Container(
+                          height: 70,
+                          margin: const EdgeInsets.symmetric(vertical: 12),
+                          child: WaveformView(
+                            key: const ValueKey<String>('waveform'),
+                            controller: _animatedWaveformController,
+                            isInitialising: isInitialising,
+                            color: widget.colorWaveformView,
+                          ),
+                        ),
                         ValueListenableBuilder<Duration>(
                           valueListenable: _elapsedDuration,
                           builder: (_, duration, __) {
                             return Text(
                               _formatElapsedForDisplay(duration),
                               textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: Theme.brightnessOf(context) ==
+                                        Brightness.dark
+                                    ? Colors.white
+                                    : Colors.black,
                                 fontSize: 34,
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: 1.1,
@@ -360,26 +373,31 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
                             );
                           },
                         ),
-                        const SizedBox(height: 6),
-                        const Row(
+                        Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
                               Icons.graphic_eq_outlined,
                               size: 16,
-                              color: Colors.white54,
+                              color:
+                                  Theme.brightnessOf(context) == Brightness.dark
+                                      ? Colors.white
+                                      : Colors.black,
                             ),
-                            SizedBox(width: 6),
+                            const SizedBox(width: 6),
                             Text(
                               'Speech to text is working',
                               style: TextStyle(
-                                color: Colors.white54,
+                                color: Theme.brightnessOf(context) ==
+                                        Brightness.dark
+                                    ? Colors.white
+                                    : Colors.black,
                                 fontSize: 12,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 10),
                         ControlBar(
                           showTranscription: _showTranscription,
                           supportsPauseResume: _supportsPauseResume,

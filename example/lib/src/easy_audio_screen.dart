@@ -103,7 +103,7 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Không thể lưu file ghi âm cho phiên này nhưng bản chép lời đã được cập nhật.',
+              'The recording file for this session could not be saved, but the transcript has been updated.',
             ),
           ),
         );
@@ -114,7 +114,7 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Khởi động ghi âm thất bại: $error'),
+            content: Text('Recording startup failed: $error'),
           ),
         );
       }
@@ -146,7 +146,7 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Tải mô hình ngôn ngữ thất bại: $error'),
+            content: Text('Language model loading failed: $error'),
           ),
         );
       }
@@ -397,7 +397,7 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
                         CircularProgressIndicator(),
                         SizedBox(height: 12),
                         Text(
-                          'Đang tải mô hình ngôn ngữ...',
+                          'Loading language model...',
                           style: TextStyle(color: Colors.white),
                         ),
                       ],

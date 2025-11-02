@@ -11,7 +11,7 @@ import '../exceptions.dart';
 /// recording into a WAV file.
 class SimpleAudioRecorder {
   SimpleAudioRecorder({this.sampleRate = 16000, this.numChannels = 1})
-    : _recorder = AudioRecorder();
+      : _recorder = AudioRecorder();
 
   final int sampleRate;
   final int numChannels;

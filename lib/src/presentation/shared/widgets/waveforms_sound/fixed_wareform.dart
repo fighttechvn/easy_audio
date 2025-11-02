@@ -248,7 +248,9 @@ class _AnimatedWaveformState extends State<AnimatedWaveform>
             painter: WavePainter(
               templates: samples,
               waveThickness: widget.waveThickness,
-              waveColor: Colors.white,
+              waveColor: Theme.brightnessOf(context) == Brightness.dark
+                  ? Colors.white
+                  : Colors.black,
               form: widget.form,
             ),
           ),

@@ -155,7 +155,8 @@ class ModelLoader {
       await tempFile.delete().catchError((_) {});
 
       final archive = ZipDecoder().decodeBytes(bytes);
-      final decompressionPath = modelStorage ?? await _defaultDecompressionPath();
+      final decompressionPath =
+          modelStorage ?? await _defaultDecompressionPath();
 
       // Extract archive directly on main thread to avoid isolate serialization issues
       extractArchiveToDisk(archive, decompressionPath);

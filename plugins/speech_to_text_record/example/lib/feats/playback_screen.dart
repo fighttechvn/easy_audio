@@ -70,7 +70,7 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
     } catch (error) {
       if (!mounted) return;
       setState(() {
-        _error = 'Không thể đọc thư mục: $error';
+        _error = 'Unable to read directory: $error';
         _loading = false;
       });
     }
@@ -85,7 +85,7 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
       await _player.play();
     } catch (error) {
       if (!mounted) return;
-      setState(() => _error = 'Không thể phát tệp: $error');
+      setState(() => _error = 'Unable to play file: $error');
     }
   }
 
@@ -104,7 +104,7 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
           IconButton(
             onPressed: _loadFiles,
             icon: const Icon(Icons.refresh),
-            tooltip: 'Tải lại danh sách',
+            tooltip: 'Reload list',
           ),
         ],
       ),
@@ -124,7 +124,8 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
             if (_loading)
               const Expanded(child: Center(child: CircularProgressIndicator()))
             else if (_files.isEmpty)
-              const Expanded(child: Center(child: Text('Chưa có bản ghi nào.')))
+              const Expanded(
+                  child: Center(child: Text('There are no records yet.')))
             else
               Expanded(
                 child: ListView.separated(
@@ -136,7 +137,7 @@ class _PlaybackScreenState extends State<PlaybackScreen> {
                     return ListTile(
                       title: Text(file.path.split('/').last),
                       subtitle: Text(
-                        'Cập nhật: ${modified.toLocal().toIso8601String()}',
+                        'Update: ${modified.toLocal().toIso8601String()}',
                       ),
                       trailing: const Icon(Icons.play_arrow),
                       onTap: () => _play(file),

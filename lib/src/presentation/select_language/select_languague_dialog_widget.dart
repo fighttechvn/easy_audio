@@ -124,6 +124,8 @@ class _SelectLanguagueDialogWidgetState
         mainAxisSize: MainAxisSize.min,
         children: [
           TextFormField(
+            decoration:
+                const InputDecoration(hint: Text('Search country or language')),
             onChanged: (value) {
               EasyDebounce.debounce(
                 _tagDebound,
@@ -402,16 +404,16 @@ class _SelectLanguagueDialogWidgetState
     return (await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Tải xuống thành công'),
-            content: Text('Mô hình cho "$label" đã sẵn sàng. Sử dụng ngay?'),
+            title: const Text('Download successful'),
+            content: Text('The model for "$label" is ready. Use it now?'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(false),
-                child: const Text('Để sau'),
+                child: const Text('Later'),
               ),
               ElevatedButton(
                 onPressed: () => Navigator.of(ctx).pop(true),
-                child: const Text('Xác nhận'),
+                child: const Text('Confirm'),
               ),
             ],
           ),
@@ -422,16 +424,16 @@ class _SelectLanguagueDialogWidgetState
   Future<void> _showDownloadError(String? message) {
     final displayMessage = message?.isNotEmpty == true
         ? message!
-        : 'Không thể tải mô hình. Vui lòng thử lại sau.';
+        : 'Unable to load model. Please try again later.';
     return showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Lỗi tải mô hình'),
+        title: const Text('Model loading error'),
         content: Text(displayMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Đóng'),
+            child: const Text('Close'),
           ),
         ],
       ),
@@ -485,7 +487,7 @@ class _DownloadProgressDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Đang tải mô hình'),
+      title: const Text('Downloading model'),
       content: ValueListenableBuilder<double?>(
         valueListenable: progressListenable,
         builder: (context, progress, _) {
@@ -505,16 +507,16 @@ class _DownloadProgressDialog extends StatelessWidget {
                       percent < 0 ? 0 : (percent > 100 ? 100 : percent);
                   return '${safePercent.toStringAsFixed(0)}%';
                 }()
-              : 'Đang tải...';
+              : 'Downloading...';
           return Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Mô hình "$languageLabel" đang được tải xuống.'),
+              Text('The "$languageLabel" model is being downloaded.'),
               const SizedBox(height: 16),
               LinearProgressIndicator(value: progressValue),
               const SizedBox(height: 8),
-              Text('Tiến trình: $percentLabel'),
+              Text('Process: $percentLabel'),
             ],
           );
         },
@@ -522,7 +524,7 @@ class _DownloadProgressDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: onCancel,
-          child: const Text('Hủy'),
+          child: const Text('Cancel'),
         ),
       ],
     );

@@ -206,7 +206,7 @@ class _CombinedPipelineScreenState extends State<CombinedPipelineScreen> {
     } catch (error) {
       if (!mounted) return;
       setState(() {
-        _error = 'Không thể phát tệp đã ghi: $error';
+        _error = 'Unable to play recorded file: $error';
       });
     }
   }
@@ -226,15 +226,11 @@ class _CombinedPipelineScreenState extends State<CombinedPipelineScreen> {
   @override
   Widget build(BuildContext context) {
     final statusText = <String>[
-      'Pipeline: ${_isRunning
-          ? 'đang chạy'
-          : _isPreparing
-          ? 'đang khởi động'
-          : 'đã dừng'}',
+      'Pipeline: ${_isRunning ? 'running' : _isPreparing ? 'starting' : 'stopped'}',
       if (_recordingEnabled)
-        'Ghi âm: ${_isRunning ? 'đang ghi' : 'đã dừng'}'
+        'Recording: ${_isRunning ? 'recording' : 'stopped'}'
       else
-        'Ghi âm: không khả dụng trong chế độ đồng thời',
+        'Recording: not available in concurrent mode',
     ].join(' · ');
 
     return Scaffold(
@@ -250,7 +246,7 @@ class _CombinedPipelineScreenState extends State<CombinedPipelineScreen> {
                 padding: const EdgeInsets.only(top: 8),
                 child: InputDecorator(
                   decoration: const InputDecoration(
-                    labelText: 'Ngôn ngữ',
+                    labelText: 'Language',
                     border: OutlineInputBorder(),
                     contentPadding: EdgeInsets.symmetric(
                       horizontal: 12,
@@ -297,9 +293,8 @@ class _CombinedPipelineScreenState extends State<CombinedPipelineScreen> {
                 spacing: 12,
                 children: <Widget>[
                   ElevatedButton.icon(
-                    onPressed: _isRunning || _isPreparing
-                        ? null
-                        : _startPipeline,
+                    onPressed:
+                        _isRunning || _isPreparing ? null : _startPipeline,
                     icon: const Icon(Icons.play_arrow),
                     label: const Text('Start pipeline'),
                   ),
@@ -332,7 +327,7 @@ class _CombinedPipelineScreenState extends State<CombinedPipelineScreen> {
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
-                    'Lưu ý: iOS khóa micro khi đang nhận diện giọng nói, ghi âm sẽ tạm thời bị vô hiệu.',
+                    'Note: iOS locks the microphone while voice recognition is in progress, recording will be temporarily disabled.',
                     style: TextStyle(color: Colors.orange.shade700),
                   ),
                 ),
@@ -368,12 +363,12 @@ class _CombinedPipelineScreenState extends State<CombinedPipelineScreen> {
               if (_activeFilePath != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
-                  child: Text('Đang ghi vào: $_activeFilePath'),
+                  child: Text('Recording in: $_activeFilePath'),
                 ),
               if (_lastSavedFile != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 4),
-                  child: Text('Tệp đã lưu: $_lastSavedFile'),
+                  child: Text('Saved files: $_lastSavedFile'),
                 ),
             ],
           ),

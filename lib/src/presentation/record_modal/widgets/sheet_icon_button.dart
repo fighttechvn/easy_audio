@@ -60,12 +60,14 @@ class SheetIconButton extends StatelessWidget {
             ),
             child: Center(
               child: isLoading
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        color: Theme.brightnessOf(context) == Brightness.dark
+                            ? Colors.white
+                            : Colors.black,
                       ),
                     )
                   : Icon(
