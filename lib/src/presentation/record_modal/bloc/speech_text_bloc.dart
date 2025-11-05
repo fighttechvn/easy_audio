@@ -26,9 +26,6 @@ class SpeechTextBloc extends Bloc<SpeechTextEvent, SpeechTextState> {
   }
 
   final SpeechToTextUsecase _speechToTextUsecase;
-  DateTime? _recordingStartedAt;
-  Duration _totalPausedDuration = Duration.zero;
-  DateTime? _pausedAt;
 
   /// Get the microphone audio stream for real-time waveform visualization
   MicrophoneAudioStream? get microphoneStream =>
@@ -101,25 +98,49 @@ class SpeechTextBloc extends Bloc<SpeechTextEvent, SpeechTextState> {
     }
 
     try {
+      final stateUI = state.stateUI;
+      emit(
+        Recording(
+          state.stateUI.copyWith(callbackToText: event.callbackToText),
+        ),
+      );
+
+      if (stateUI.recordingStartedAt != null) {
+        return;
+      }
+
       await WakelockPlus.enable();
       await WakelockPlus.toggle(enable: true);
 
       await _speechToTextUsecase.startSpeak(
-        event.callbackToText,
+        (String text) {
+          state.stateUI.callbackToText?.call(text);
+        },
         state.stateUI.currentLocaleId,
         onError: (Object error, StackTrace stackTrace) {
           add(_SpeechPipelineErrorEvent(error, stackTrace));
         },
       );
 
-      _recordingStartedAt = DateTime.now();
-      _totalPausedDuration = Duration.zero;
-      _pausedAt = null;
-      emit(Recording(state.stateUI));
+      // _recordingStartedAt = DateTime.now();
+      // _totalPausedDuration = Duration.zero;
+      // _pausedAt = null;
+
+      emit(Recording(state.stateUI.copyWith(
+        recordingStartedAt: DateTime.now(),
+        totalPausedDuration: Duration.zero,
+        pausedAt: null,
+      )));
     } catch (error, stackTrace) {
       await WakelockPlus.toggle(enable: false);
-      _recordingStartedAt = null;
-      emit(RecordError(state.stateUI, error.toString(), error));
+      emit(RecordError(
+          state.stateUI.copyWith(
+            recordingStartedAt: null,
+            totalPausedDuration: Duration.zero,
+            pausedAt: null,
+          ),
+          error.toString(),
+          error));
       _logError('Start record failed', error, stackTrace);
     }
   }
@@ -130,8 +151,8 @@ class SpeechTextBloc extends Bloc<SpeechTextEvent, SpeechTextState> {
   ) async {
     try {
       await _speechToTextUsecase.pauseRecording();
-      _pausedAt ??= DateTime.now();
-      emit(PausedRecording(state.stateUI));
+
+      emit(PausedRecording(state.stateUI.copyWith(pausedAt: DateTime.now())));
     } catch (error, stackTrace) {
       add(_SpeechPipelineErrorEvent(error, stackTrace));
     }
@@ -142,12 +163,16 @@ class SpeechTextBloc extends Bloc<SpeechTextEvent, SpeechTextState> {
     Emitter<SpeechTextState> emit,
   ) async {
     try {
+      var stateUI = state.stateUI;
       await _speechToTextUsecase.resumeRecording();
-      if (_pausedAt != null) {
-        _totalPausedDuration += DateTime.now().difference(_pausedAt!);
-        _pausedAt = null;
+      if (stateUI.pausedAt != null) {
+        stateUI = stateUI.copyWith(
+          totalPausedDuration: stateUI.totalPausedDuration +
+              DateTime.now().difference(stateUI.pausedAt!),
+          pausedAt: null,
+        );
       }
-      emit(Recording(state.stateUI));
+      emit(Recording(stateUI));
     } catch (error, stackTrace) {
       add(_SpeechPipelineErrorEvent(error, stackTrace));
     }
@@ -162,11 +187,12 @@ class SpeechTextBloc extends Bloc<SpeechTextEvent, SpeechTextState> {
     }
 
     try {
-      emit(StopingRecord(state.stateUI));
+      final stateUI = state.stateUI;
+      emit(StopingRecord(stateUI));
 
-      final startedAt = _recordingStartedAt;
+      final startedAt = stateUI.recordingStartedAt;
       final recordedDuration = startedAt != null
-          ? DateTime.now().difference(startedAt) - _totalPausedDuration
+          ? DateTime.now().difference(startedAt) - stateUI.totalPausedDuration
           : Duration.zero;
 
       final result = await _speechToTextUsecase.stopSpeak(
@@ -174,13 +200,14 @@ class SpeechTextBloc extends Bloc<SpeechTextEvent, SpeechTextState> {
       );
 
       await WakelockPlus.toggle(enable: false);
-      _recordingStartedAt = null;
-      _totalPausedDuration = Duration.zero;
-      _pausedAt = null;
 
       emit(
         StoppedRecord(
-          state.stateUI,
+          state.stateUI.copyWith(
+            recordingStartedAt: null,
+            totalPausedDuration: Duration.zero,
+            pausedAt: null,
+          ),
           event.isSave,
           recordedDuration: recordedDuration,
           filePath: event.isSave ? result.recordingPath : null,
@@ -189,8 +216,14 @@ class SpeechTextBloc extends Bloc<SpeechTextEvent, SpeechTextState> {
       );
     } catch (error, stackTrace) {
       await WakelockPlus.toggle(enable: false);
-      _recordingStartedAt = null;
-      emit(RecordError(state.stateUI, error.toString(), error));
+      emit(RecordError(
+          state.stateUI.copyWith(
+            recordingStartedAt: null,
+            totalPausedDuration: Duration.zero,
+            pausedAt: null,
+          ),
+          error.toString(),
+          error));
       _logError('Stop record failed', error, stackTrace);
     }
   }
@@ -200,8 +233,14 @@ class SpeechTextBloc extends Bloc<SpeechTextEvent, SpeechTextState> {
     Emitter<SpeechTextState> emit,
   ) async {
     await WakelockPlus.toggle(enable: false);
-    _recordingStartedAt = null;
-    emit(RecordError(state.stateUI, event.error.toString(), event.error));
+    emit(RecordError(
+        state.stateUI.copyWith(
+          recordingStartedAt: null,
+          totalPausedDuration: Duration.zero,
+          pausedAt: null,
+        ),
+        event.error.toString(),
+        event.error));
     _logError('Speech pipeline error', event.error, event.stackTrace);
   }
 

@@ -8,6 +8,7 @@ import '../../domain/entities/record_data.dart';
 import '../../record_audio_constants.dart';
 import '../shared/widgets/waveforms_sound/fixed_wareform.dart';
 import 'bloc/speech_text_bloc.dart';
+import 'record_session_manager.dart';
 import 'widgets/control_bar.dart';
 import 'widgets/sheet_icon_button.dart';
 import 'widgets/transcription_view.dart';
@@ -20,12 +21,16 @@ class RecordModalWidget extends StatefulWidget {
     this.title,
     required this.locale,
     this.colorWaveformView,
+    this.restoreFromSession = false,
+    this.onShouldMinimize,
   });
 
   final String? title;
   final Future<bool?> Function()? onExits;
   final String locale;
   final Color? colorWaveformView;
+  final bool restoreFromSession;
+  final VoidCallback? onShouldMinimize;
 
   @override
   State<RecordModalWidget> createState() => _RecordModalWidgetState();
@@ -35,15 +40,19 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
   Timer? _timer;
   final ValueNotifier<Duration> _elapsedDuration =
       ValueNotifier<Duration>(Duration.zero);
-  final TextEditingController _textCtrl = TextEditingController();
   final AnimatedWaveformController _animatedWaveformController =
       AnimatedWaveformController();
+
+  final ValueNotifier<String> _contentController = ValueNotifier<String>('');
   DateTime? _recordStartedAt;
   Duration _pausedAccumulated = Duration.zero;
   DateTime? _pausedAt;
   bool _supportsPauseResume = true;
   bool _showTranscription = false;
   final ScrollController _scrollController = ScrollController();
+  bool _isRestoringFromSession = false;
+
+  RecordSessionManager get sessionManager => RecordSessionManager.instance;
 
   void _stopRecord(bool save) {
     context.read<SpeechTextBloc>().add(StopRecordEvent(isSave: save));
@@ -55,18 +64,23 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
         return;
       }
       context.read<SpeechTextBloc>().add(
-        StartRecordEvent(
-          callbackToText: (text) {
-            _textCtrl.text = text;
-            _scrollController.animateTo(
-              _scrollController.position.maxScrollExtent,
-              duration: const Duration(milliseconds: 100),
-              curve: Curves.linear,
-            );
-          },
-        ),
-      );
+            StartRecordEvent(
+              callbackToText: _updateContent,
+            ),
+          );
     });
+  }
+
+  void _updateContent(String content) {
+    if (content != sessionManager.content) {
+      _contentController.value = content;
+      sessionManager.updateContent(content);
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.linear,
+      );
+    }
   }
 
   void _onListenerSpeechTextBloc(BuildContext context, SpeechTextState state) {
@@ -76,6 +90,8 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
     }
 
     if (state is InitSucceeded) {
+      // Start pipeline cho cả restore và new session
+      // Vì khi restore, recording vẫn đang chạy nên cần start lại pipeline
       _startPipeline();
     } else if (state is Recording) {
       if (_recordStartedAt == null) {
@@ -86,6 +102,12 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
         _pausedAccumulated += DateTime.now().difference(_pausedAt!);
         _pausedAt = null;
       }
+      // Update session manager
+      RecordSessionManager.instance.updateRecordingMetadata(
+        recordStartedAt: _recordStartedAt,
+        pausedAccumulated: _pausedAccumulated,
+        pausedAt: _pausedAt,
+      );
     } else if (state is StoppedRecord) {
       _recordStartedAt = null;
       if (!state.isSave) {
@@ -110,7 +132,7 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
         createdAt: DateTime.now(),
         url: filePath,
         totalTime: state.recordedDuration,
-        content: _textCtrl.text,
+        content: sessionManager.content,
       );
 
       if (context.mounted) {
@@ -156,16 +178,52 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
   @override
   void initState() {
     super.initState();
+
+    // Luôn lấy từ session manager (đã được tạo trong coordinator)
+    _isRestoringFromSession = widget.restoreFromSession;
+
+    if (_isRestoringFromSession && sessionManager.hasActiveSession) {
+      // Restore state từ session manager
+      _recordStartedAt = sessionManager.recordStartedAt;
+      _pausedAccumulated = sessionManager.pausedAccumulated;
+      _pausedAt = sessionManager.pausedAt;
+      // Restore session về non-minimized state
+      sessionManager.restoreSession();
+      _updateContent(sessionManager.content ?? '');
+    }
+
     _timer =
         Timer.periodic(const Duration(milliseconds: 80), _updateElapsedTimer);
     _supportsPauseResume = _detectPauseSupport();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final currentState = context.read<SpeechTextBloc>().state;
+        if (currentState is InitSucceeded && !_isRestoringFromSession) {
+          _startPipeline();
+        }
+      }
+    });
   }
 
   @override
   void dispose() {
     _timer?.cancel();
     _elapsedDuration.dispose();
-    _textCtrl.dispose();
+
+    // Lưu state vào session manager trước khi dispose
+    final sessionManager = RecordSessionManager.instance;
+    if (sessionManager.hasActiveSession) {
+      sessionManager.updateRecordingMetadata(
+        recordStartedAt: _recordStartedAt,
+        pausedAccumulated: _pausedAccumulated,
+        pausedAt: _pausedAt,
+      );
+    }
+
+    _animatedWaveformController.pause = null;
+    _animatedWaveformController.resume = null;
+
     super.dispose();
   }
 
@@ -208,17 +266,21 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
   }
 
   void _onTogglePauseResume(SpeechTextState state) {
-    if (!_supportsPauseResume) {
+    if (!_supportsPauseResume || !mounted) {
       return;
     }
 
     if (state is Recording) {
       _pausedAt = DateTime.now();
       context.read<SpeechTextBloc>().add(PauseRecordEvent());
-      _animatedWaveformController.pause?.call();
+      if (_animatedWaveformController.pause != null) {
+        _animatedWaveformController.pause?.call();
+      }
     } else if (state is PausedRecording) {
       context.read<SpeechTextBloc>().add(ResumeRecordEvent());
-      _animatedWaveformController.resume?.call();
+      if (_animatedWaveformController.resume != null) {
+        _animatedWaveformController.resume?.call();
+      }
     }
   }
 
@@ -232,7 +294,7 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
         : 'New Recording';
 
     return GestureDetector(
-      onTap: _onTapCloseButton,
+      onTap: () {},
       behavior: HitTestBehavior.translucent,
       child: SizedBox(
         width: double.infinity,
@@ -333,16 +395,21 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
                         ),
                         const SizedBox(height: 12),
                         Container(
-                          constraints: BoxConstraints(
-                            minWidth: 100,
-                            maxHeight: screenHeight * 0.32,
-                          ),
-                          child: TranscriptionView(
-                            key: const ValueKey<String>('transcription'),
-                            controller: _textCtrl,
-                            scrollController: _scrollController,
-                          ),
-                        ),
+                            constraints: BoxConstraints(
+                              minWidth: 100,
+                              maxHeight: screenHeight * 0.32,
+                            ),
+                            child: ValueListenableBuilder(
+                              valueListenable: _contentController,
+                              builder: (context, value, child) {
+                                return TranscriptionView(
+                                  value: value,
+                                  key: const ValueKey<String>('transcription'),
+                                  onChanged: _updateContent,
+                                  scrollController: _scrollController,
+                                );
+                              },
+                            )),
                         const SizedBox(height: 12),
                         const Spacer(),
                         Container(

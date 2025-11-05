@@ -1,14 +1,37 @@
 import 'package:flutter/material.dart';
 
-class TranscriptionView extends StatelessWidget {
+class TranscriptionView extends StatefulWidget {
   const TranscriptionView({
+    required this.onChanged,
+    this.value,
     super.key,
-    required this.controller,
     this.scrollController,
   });
 
-  final TextEditingController controller;
   final ScrollController? scrollController;
+  final ValueChanged<String> onChanged;
+  final String? value;
+
+  @override
+  State<TranscriptionView> createState() => _TranscriptionViewState();
+}
+
+class _TranscriptionViewState extends State<TranscriptionView> {
+  final textController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    textController.text = widget.value ?? '';
+  }
+
+  @override
+  void didUpdateWidget(covariant TranscriptionView oldWidget) {
+    if (widget.value != oldWidget.value) {
+      textController.text = widget.value ?? '';
+    }
+    super.didUpdateWidget(oldWidget);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,10 +43,9 @@ class TranscriptionView extends StatelessWidget {
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: TextField(
-        controller: controller,
         keyboardType: TextInputType.multiline,
         minLines: 4,
-        scrollController: scrollController,
+        onChanged: widget.onChanged,
         maxLines: null,
         // style: TextStyle(
         //   color: isDarkMode == false ? Colors.white : Colors.black,
