@@ -1,5 +1,6 @@
 library;
 
+export 'package:floating_draggable_widget/floating_draggable_widget.dart';
 export 'package:speech_to_text_record/speech_to_text_record.dart';
 
 export 'src/core/dialog_coodinator.dart';
