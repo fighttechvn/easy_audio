@@ -89,7 +89,8 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
         'blocState: ${bloc.state.runtimeType}',
       );
 
-      // Sử dụng wrapper callback để luôn gọi callback hiện tại từ session manager
+      // Sử dụng wrapper callback để luôn gọi callback hiện tại
+      // từ session manager
       bloc.add(
         StartRecordEvent(
           callbackToText: (String content) {
@@ -97,12 +98,14 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
             final currentCallback = sessionManager.updateContentCallback;
             if (currentCallback != null) {
               debugPrint(
-                '🎙️ [RecordModalWidget] Calling current callback from session manager',
+                '🎙️ [RecordModalWidget] Calling current callback'
+                ' from session manager',
               );
               currentCallback(content);
             } else {
               debugPrint(
-                '🎙️ [RecordModalWidget] WARNING: No callback in session manager',
+                '🎙️ [RecordModalWidget] WARNING: No callback '
+                'in session manager',
               );
             }
           },
@@ -280,7 +283,8 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
       // Không cần restart pipeline vì wrapper callback sẽ tự động
       // gọi callback mới từ session manager
       debugPrint(
-        '🎙️ [RecordModalWidget] Pipeline will use new callback via session manager',
+        '🎙️ [RecordModalWidget] Pipeline will use new callback '
+        'via session manager',
       );
     } else {
       debugPrint('🎙️ [RecordModalWidget] Starting new recording session');
@@ -632,7 +636,6 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
                           },
                           onTogglePause: () => _onTogglePauseResume(state),
                           onStop: () => _stopRecord(true),
-                          onMinimize: widget.onShouldMinimize,
                         ),
                       ],
                     ),

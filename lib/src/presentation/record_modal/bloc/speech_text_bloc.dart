@@ -122,10 +122,6 @@ class SpeechTextBloc extends Bloc<SpeechTextEvent, SpeechTextState> {
         },
       );
 
-      // _recordingStartedAt = DateTime.now();
-      // _totalPausedDuration = Duration.zero;
-      // _pausedAt = null;
-
       emit(Recording(state.stateUI.copyWith(
         recordingStartedAt: DateTime.now(),
         totalPausedDuration: Duration.zero,
@@ -133,14 +129,17 @@ class SpeechTextBloc extends Bloc<SpeechTextEvent, SpeechTextState> {
       )));
     } catch (error, stackTrace) {
       await WakelockPlus.toggle(enable: false);
-      emit(RecordError(
+      emit(
+        RecordError(
           state.stateUI.copyWith(
             recordingStartedAt: null,
             totalPausedDuration: Duration.zero,
             pausedAt: null,
           ),
           error.toString(),
-          error));
+          error,
+        ),
+      );
       _logError('Start record failed', error, stackTrace);
     }
   }
@@ -216,14 +215,17 @@ class SpeechTextBloc extends Bloc<SpeechTextEvent, SpeechTextState> {
       );
     } catch (error, stackTrace) {
       await WakelockPlus.toggle(enable: false);
-      emit(RecordError(
+      emit(
+        RecordError(
           state.stateUI.copyWith(
             recordingStartedAt: null,
             totalPausedDuration: Duration.zero,
             pausedAt: null,
           ),
           error.toString(),
-          error));
+          error,
+        ),
+      );
       _logError('Stop record failed', error, stackTrace);
     }
   }
@@ -233,14 +235,17 @@ class SpeechTextBloc extends Bloc<SpeechTextEvent, SpeechTextState> {
     Emitter<SpeechTextState> emit,
   ) async {
     await WakelockPlus.toggle(enable: false);
-    emit(RecordError(
+    emit(
+      RecordError(
         state.stateUI.copyWith(
           recordingStartedAt: null,
           totalPausedDuration: Duration.zero,
           pausedAt: null,
         ),
         event.error.toString(),
-        event.error));
+        event.error,
+      ),
+    );
     _logError('Speech pipeline error', event.error, event.stackTrace);
   }
 

@@ -13,7 +13,6 @@ class ControlBar extends StatelessWidget {
     required this.onToggleText,
     required this.onTogglePause,
     required this.onStop,
-    this.onMinimize,
     super.key,
   });
 
@@ -26,7 +25,6 @@ class ControlBar extends StatelessWidget {
   final VoidCallback onToggleText;
   final VoidCallback onTogglePause;
   final VoidCallback onStop;
-  final VoidCallback? onMinimize;
 
   @override
   Widget build(BuildContext context) {
