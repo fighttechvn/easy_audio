@@ -49,7 +49,6 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
   DateTime? _pausedAt;
   bool _supportsPauseResume = true;
   bool _showTranscription = false;
-  final ScrollController _scrollController = ScrollController();
   bool _isRestoringFromSession = false;
 
   RecordSessionManager get sessionManager => RecordSessionManager.instance;
@@ -119,11 +118,6 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
     if (content != sessionManager.content) {
       _contentController.value = content;
       sessionManager.updateContent(content);
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 100),
-        curve: Curves.linear,
-      );
     }
   }
 
@@ -418,14 +412,12 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
     }
 
     if (state is Recording) {
-      debugPrint('🎙️ [RecordModalWidget] Pausing recording');
       _pausedAt = DateTime.now();
       bloc.add(PauseRecordEvent());
       if (_animatedWaveformController.pause != null) {
         _animatedWaveformController.pause?.call();
       }
     } else if (state is PausedRecording) {
-      debugPrint('🎙️ [RecordModalWidget] Resuming recording');
       bloc.add(ResumeRecordEvent());
       if (_animatedWaveformController.resume != null) {
         _animatedWaveformController.resume?.call();
@@ -435,9 +427,6 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final media = MediaQuery.of(context);
-    final screenHeight = media.size.height;
-
     final displayTitle = (widget.title?.trim().isNotEmpty ?? false)
         ? widget.title!.trim()
         : 'New Recording';
@@ -460,8 +449,20 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
                 onTap: () {},
                 child: Container(
                   width: double.infinity,
+                  decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(24),
+                        topRight: Radius.circular(24),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 10,
+                        ),
+                      ]),
                   padding: const EdgeInsets.symmetric(horizontal: 24)
-                      .copyWith(top: 20),
+                      .copyWith(top: 16),
                   child: SafeArea(
                     top: false,
                     minimum: const EdgeInsets.only(bottom: 12),
@@ -543,10 +544,12 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
                           ],
                         ),
                         const SizedBox(height: 12),
-                        Container(
-                            constraints: BoxConstraints(
+                        Expanded(
+                          child: Container(
+                            constraints: const BoxConstraints(
                               minWidth: 100,
-                              maxHeight: screenHeight * 0.32,
+
+                              // maxHeight: screenHeight * 0.32,
                             ),
                             child: ValueListenableBuilder(
                               valueListenable: _contentController,
@@ -555,12 +558,12 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
                                   value: value,
                                   key: const ValueKey<String>('transcription'),
                                   onChanged: _updateContent,
-                                  scrollController: _scrollController,
                                 );
                               },
-                            )),
+                            ),
+                          ),
+                        ),
                         const SizedBox(height: 12),
-                        const Spacer(),
                         Container(
                           height: 70,
                           margin: const EdgeInsets.symmetric(vertical: 12),

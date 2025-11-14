@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/easy_debounce.dart';
+
 class TranscriptionView extends StatefulWidget {
   const TranscriptionView({
     required this.onChanged,
     this.value,
     super.key,
-    this.scrollController,
   });
 
-  final ScrollController? scrollController;
   final ValueChanged<String> onChanged;
   final String? value;
 
@@ -18,6 +18,23 @@ class TranscriptionView extends StatefulWidget {
 
 class _TranscriptionViewState extends State<TranscriptionView> {
   final textController = TextEditingController();
+  late final _scrollController = ScrollController();
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        EasyDebounce.debounce(
+            '_debounceScrollTextToBttom', const Duration(milliseconds: 400),
+            () {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        });
+      }
+    });
+  }
 
   @override
   void initState() {
@@ -29,6 +46,7 @@ class _TranscriptionViewState extends State<TranscriptionView> {
   void didUpdateWidget(covariant TranscriptionView oldWidget) {
     if (widget.value != oldWidget.value) {
       textController.text = widget.value ?? '';
+      _scrollToBottom();
     }
     super.didUpdateWidget(oldWidget);
   }
@@ -42,25 +60,25 @@ class _TranscriptionViewState extends State<TranscriptionView> {
         borderRadius: BorderRadius.circular(28),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      child: TextField(
-        keyboardType: TextInputType.multiline,
-        minLines: 4,
-        onChanged: widget.onChanged,
-        maxLines: null,
-        // style: TextStyle(
-        //   color: isDarkMode == false ? Colors.white : Colors.black,
-        //   fontSize: 12,
-        //   height: 1.45,
-        // ),
-        cursorColor: const Color(0xFF0A84FF),
-        decoration: const InputDecoration(
-          border: InputBorder.none,
-          hintText: 'The transcript will be displayed here...',
-          // fillColor: Colors.transparent,
-          hintStyle: TextStyle(
-            color: Colors.white38,
-          ),
-          isCollapsed: true,
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        child: ValueListenableBuilder(
+          valueListenable: textController,
+          builder: (context, value, child) {
+            final resultRecord = value.text;
+            final isEmptyResult = resultRecord.isEmpty;
+            final colorText = isEmptyResult ? Colors.grey : Colors.black;
+            return SelectableText(
+              isEmptyResult
+                  ? 'The transcript will be displayed here...'
+                  : resultRecord,
+              style: TextStyle(
+                color: colorText,
+                fontSize: 16,
+                height: 1.45,
+              ),
+            );
+          },
         ),
       ),
     );
