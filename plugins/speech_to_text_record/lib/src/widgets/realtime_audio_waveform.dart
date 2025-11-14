@@ -146,6 +146,10 @@ class _RealtimeAudioWaveformState extends State<RealtimeAudioWaveform>
   }
 
   void _handleRecordingStateChange() {
+    if (!mounted) {
+      return;
+    }
+
     if (widget.isRecording) {
       _animationController.stop();
       _setupAudioStream();

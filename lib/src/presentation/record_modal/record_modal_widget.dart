@@ -55,19 +55,63 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
   RecordSessionManager get sessionManager => RecordSessionManager.instance;
 
   void _stopRecord(bool save) {
-    context.read<SpeechTextBloc>().add(StopRecordEvent(isSave: save));
+    final bloc = context.read<SpeechTextBloc>();
+    if (bloc.isClosed) {
+      debugPrint(
+        '🎙️ [RecordModalWidget] WARNING: Cannot stop record - '
+        'bloc is closed',
+      );
+      return;
+    }
+    debugPrint('🎙️ [RecordModalWidget] Stopping record - save: $save');
+    bloc.add(StopRecordEvent(isSave: save));
   }
 
   void _startPipeline() {
+    debugPrint('🎙️ [RecordModalWidget] Starting pipeline...');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
+        debugPrint(
+          '🎙️ [RecordModalWidget] WARNING: Cannot start pipeline - '
+          'widget not mounted',
+        );
         return;
       }
-      context.read<SpeechTextBloc>().add(
-            StartRecordEvent(
-              callbackToText: _updateContent,
-            ),
-          );
+      final bloc = context.read<SpeechTextBloc>();
+      if (bloc.isClosed) {
+        debugPrint(
+          '🎙️ [RecordModalWidget] ERROR: Cannot start pipeline - '
+          'bloc is closed',
+        );
+        return;
+      }
+      debugPrint(
+        '🎙️ [RecordModalWidget] Adding StartRecordEvent to bloc - '
+        'blocState: ${bloc.state.runtimeType}',
+      );
+
+      // Sử dụng wrapper callback để luôn gọi callback hiện tại từ session manager
+      bloc.add(
+        StartRecordEvent(
+          callbackToText: (String content) {
+            // Lấy callback hiện tại từ session manager
+            final currentCallback = sessionManager.updateContentCallback;
+            if (currentCallback != null) {
+              debugPrint(
+                '🎙️ [RecordModalWidget] Calling current callback from session manager',
+              );
+              currentCallback(content);
+            } else {
+              debugPrint(
+                '🎙️ [RecordModalWidget] WARNING: No callback in session manager',
+              );
+            }
+          },
+        ),
+      );
+      // Đánh dấu pipeline active sau khi start
+      sessionManager.setPipelineActive(true);
+      debugPrint('🎙️ [RecordModalWidget] Pipeline started');
     });
   }
 
@@ -84,7 +128,15 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
   }
 
   void _onListenerSpeechTextBloc(BuildContext context, SpeechTextState state) {
+    debugPrint(
+      '🎙️ [RecordModalWidget] Bloc state changed: ${state.runtimeType}',
+    );
+
     if (state is InitFailed && state.stateUI.isCloseFeature) {
+      debugPrint(
+        '🎙️ [RecordModalWidget] Init failed, closing modal - '
+        'error: ${state.stateUI}',
+      );
       Navigator.of(context).pop();
       return;
     }
@@ -92,15 +144,18 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
     if (state is InitSucceeded) {
       // Start pipeline cho cả restore và new session
       // Vì khi restore, recording vẫn đang chạy nên cần start lại pipeline
+      debugPrint('🎙️ [RecordModalWidget] Init succeeded, starting pipeline');
       _startPipeline();
     } else if (state is Recording) {
       if (_recordStartedAt == null) {
         _recordStartedAt = DateTime.now();
         _elapsedDuration.value = Duration.zero;
+        debugPrint('🎙️ [RecordModalWidget] Recording started');
       }
       if (_pausedAt != null) {
         _pausedAccumulated += DateTime.now().difference(_pausedAt!);
         _pausedAt = null;
+        debugPrint('🎙️ [RecordModalWidget] Recording resumed');
       }
       // Update session manager
       RecordSessionManager.instance.updateRecordingMetadata(
@@ -109,7 +164,15 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
         pausedAt: _pausedAt,
       );
     } else if (state is StoppedRecord) {
+      debugPrint(
+        '🎙️ [RecordModalWidget] Recording stopped - '
+        'isSave: ${state.isSave}, '
+        'hasFilePath: ${state.filePath != null}',
+      );
       _recordStartedAt = null;
+      // Set pipeline inactive khi recording stopped
+      sessionManager.setPipelineActive(false);
+
       if (!state.isSave) {
         Navigator.of(context).pop();
         return;
@@ -139,7 +202,14 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
         Navigator.of(context).pop(record);
       }
     } else if (state is RecordError) {
+      debugPrint(
+        '🎙️ [RecordModalWidget] Recording error - '
+        'message: ${state.message}',
+      );
       _recordStartedAt = null;
+      // Set pipeline inactive khi có error
+      sessionManager.setPipelineActive(false);
+
       if (mounted) {
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
           SnackBar(content: Text(state.message)),
@@ -179,6 +249,15 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
   void initState() {
     super.initState();
 
+    debugPrint(
+      '🎙️ [RecordModalWidget] initState - '
+      'restoreFromSession: ${widget.restoreFromSession}, '
+      'hasActiveSession: ${sessionManager.hasActiveSession}',
+    );
+
+    // Lưu callback vào session manager để có thể sử dụng lại khi restore
+    sessionManager.setUpdateContentCallback(_updateContent);
+
     // Luôn lấy từ session manager (đã được tạo trong coordinator)
     _isRestoringFromSession = widget.restoreFromSession;
 
@@ -189,7 +268,28 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
       _pausedAt = sessionManager.pausedAt;
       // Restore session về non-minimized state
       sessionManager.restoreSession();
-      _updateContent(sessionManager.content ?? '');
+
+      // Restore content - set trực tiếp vào controller
+      final restoredContent = sessionManager.content ?? '';
+      _contentController.value = restoredContent;
+      debugPrint(
+        '🎙️ [RecordModalWidget] Restored content to controller - '
+        'length: ${restoredContent.length}',
+      );
+
+      debugPrint(
+        '🎙️ [RecordModalWidget] Restoring from session - '
+        'isPipelineActive: ${sessionManager.isPipelineActive}, '
+        'contentLength: ${sessionManager.content?.length ?? 0}',
+      );
+
+      // Không cần restart pipeline vì wrapper callback sẽ tự động
+      // gọi callback mới từ session manager
+      debugPrint(
+        '🎙️ [RecordModalWidget] Pipeline will use new callback via session manager',
+      );
+    } else {
+      debugPrint('🎙️ [RecordModalWidget] Starting new recording session');
     }
 
     _timer =
@@ -197,28 +297,62 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
     _supportsPauseResume = _detectPauseSupport();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        final currentState = context.read<SpeechTextBloc>().state;
-        if (currentState is InitSucceeded && !_isRestoringFromSession) {
-          _startPipeline();
-        }
+      if (!mounted) {
+        debugPrint(
+          '🎙️ [RecordModalWidget] WARNING: Widget not mounted in '
+          'post frame callback',
+        );
+        return;
+      }
+      final bloc = context.read<SpeechTextBloc>();
+      if (bloc.isClosed) {
+        debugPrint(
+          '🎙️ [RecordModalWidget] WARNING: Bloc closed in '
+          'post frame callback',
+        );
+        return;
+      }
+      final currentState = bloc.state;
+      if (currentState is InitSucceeded && !_isRestoringFromSession) {
+        debugPrint(
+          '🎙️ [RecordModalWidget] New session initialized, '
+          'starting pipeline',
+        );
+        _startPipeline();
       }
     });
   }
 
   @override
   void dispose() {
+    debugPrint(
+      '🎙️ [RecordModalWidget] dispose - '
+      'hasActiveSession: ${sessionManager.hasActiveSession}, '
+      'isMinimized: ${sessionManager.isMinimized}',
+    );
+
     _timer?.cancel();
     _elapsedDuration.dispose();
 
     // Lưu state vào session manager trước khi dispose
-    final sessionManager = RecordSessionManager.instance;
     if (sessionManager.hasActiveSession) {
       sessionManager.updateRecordingMetadata(
         recordStartedAt: _recordStartedAt,
         pausedAccumulated: _pausedAccumulated,
         pausedAt: _pausedAt,
       );
+
+      // Clear callback nếu session đang kết thúc (không minimize)
+      if (!sessionManager.isMinimized) {
+        debugPrint(
+          '🎙️ [RecordModalWidget] Session ending, clearing callback',
+        );
+        sessionManager.setUpdateContentCallback(null);
+      } else {
+        debugPrint(
+          '🎙️ [RecordModalWidget] Session minimized, keeping callback',
+        );
+      }
     }
 
     _animatedWaveformController.pause = null;
@@ -267,17 +401,32 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
 
   void _onTogglePauseResume(SpeechTextState state) {
     if (!_supportsPauseResume || !mounted) {
+      debugPrint(
+        '🎙️ [RecordModalWidget] Cannot toggle pause/resume - '
+        'supportsPauseResume: $_supportsPauseResume, mounted: $mounted',
+      );
+      return;
+    }
+
+    final bloc = context.read<SpeechTextBloc>();
+    if (bloc.isClosed) {
+      debugPrint(
+        '🎙️ [RecordModalWidget] WARNING: Cannot toggle pause/resume - '
+        'bloc is closed',
+      );
       return;
     }
 
     if (state is Recording) {
+      debugPrint('🎙️ [RecordModalWidget] Pausing recording');
       _pausedAt = DateTime.now();
-      context.read<SpeechTextBloc>().add(PauseRecordEvent());
+      bloc.add(PauseRecordEvent());
       if (_animatedWaveformController.pause != null) {
         _animatedWaveformController.pause?.call();
       }
     } else if (state is PausedRecording) {
-      context.read<SpeechTextBloc>().add(ResumeRecordEvent());
+      debugPrint('🎙️ [RecordModalWidget] Resuming recording');
+      bloc.add(ResumeRecordEvent());
       if (_animatedWaveformController.resume != null) {
         _animatedWaveformController.resume?.call();
       }
@@ -480,6 +629,7 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
                           },
                           onTogglePause: () => _onTogglePauseResume(state),
                           onStop: () => _stopRecord(true),
+                          onMinimize: widget.onShouldMinimize,
                         ),
                       ],
                     ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'primary_record_button.dart';
+import 'secondary_control_button.dart';
 
 class ControlBar extends StatelessWidget {
   const ControlBar({
@@ -13,6 +14,7 @@ class ControlBar extends StatelessWidget {
     required this.onToggleText,
     required this.onTogglePause,
     required this.onStop,
+    this.onMinimize,
     super.key,
   });
 
@@ -25,6 +27,7 @@ class ControlBar extends StatelessWidget {
   final VoidCallback onToggleText;
   final VoidCallback onTogglePause;
   final VoidCallback onStop;
+  final VoidCallback? onMinimize;
 
   @override
   Widget build(BuildContext context) {
@@ -54,16 +57,12 @@ class ControlBar extends StatelessWidget {
           useStopIcon: useStopIcon,
           onTap: centralOnTap,
         ),
-        // TODO: Remove this when the feature is implemented
-        // const Opacity(
-        //   opacity: 0,
-        //   child: SecondaryControlButton(
-        //     icon: Icons.mic_rounded,
-        //     isActive: true,
-        //     onTap: null,
-        //     isDisabled: true,
-        //   ),
-        // ),
+        const SizedBox(width: 24),
+        SecondaryControlButton(
+          icon: Icons.remove_circle_outline_rounded,
+          isActive: false,
+          onTap: showLoading ? null : onMinimize,
+        ),
       ],
     );
   }
