@@ -79,13 +79,13 @@ class WavePainter extends CustomPainter {
   }
 
   @override
-  @override
   bool shouldRepaint(WavePainter oldDelegate) {
     return waveColor != oldDelegate.waveColor ||
         waveCap != oldDelegate.waveCap ||
         waveThickness != oldDelegate.waveThickness ||
         waveSpace != oldDelegate.waveSpace ||
         form != oldDelegate.form ||
+        animValue != oldDelegate.animValue ||
         !listEquals(oldDelegate.templates, templates);
   }
 
@@ -97,10 +97,28 @@ class WavePainter extends CustomPainter {
     final start = remainingWidth / 2 + waveThickness / 2;
     final templateCount = templates.length;
     final maxT = templates.reduce(max);
-    for (var i = 0; i <= waveAndSpaceCount; i++) {
-      final t = templates[i % templateCount];
+
+    // Tạo offset để di chuyển từ phải sang trái
+    // Loop qua toàn bộ template: animValue từ 0 -> 1 = 1 chu kỳ đầy đủ
+    final totalPatternWidth = coupleWidth * templateCount;
+    final offset = (animValue % 1.0) * totalPatternWidth;
+
+    // Vẽ thêm waves để đảm bảo luôn fill đầy màn hình khi di chuyển
+    final extraWaves = templateCount + 2;
+    for (var i = -extraWaves; i <= waveAndSpaceCount + extraWaves; i++) {
+      // Sử dụng modulo để loop pattern mượt
+      final templateIndex = i % templateCount;
+      final t = templates[
+          templateIndex < 0 ? templateCount + templateIndex : templateIndex];
       double waveHeight;
-      final start0 = start + (coupleWidth * i);
+      final start0 = start + (coupleWidth * i) + offset;
+
+      // Chỉ vẽ nếu wave nằm trong viewport (với buffer nhỏ)
+      if (start0 < -waveThickness * 2 ||
+          start0 > size.width + waveThickness * 2) {
+        continue;
+      }
+
       if (form == WaveForm.fit) {
         waveHeight = t / maxT * (size.height - waveThickness);
       } else {
@@ -126,6 +144,8 @@ class AnimatedWaveform extends StatefulWidget {
   final bool mirror;
   final double smoothing;
   final AnimatedWaveformController? controller;
+  final bool showSlider;
+  final Duration sliderDuration;
 
   const AnimatedWaveform({
     super.key,
@@ -139,6 +159,8 @@ class AnimatedWaveform extends StatefulWidget {
     this.mirror = true,
     this.smoothing = 0.25,
     this.controller,
+    this.showSlider = false,
+    this.sliderDuration = const Duration(seconds: 2),
   });
 
   @override
@@ -146,9 +168,11 @@ class AnimatedWaveform extends StatefulWidget {
 }
 
 class _AnimatedWaveformState extends State<AnimatedWaveform>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController controller;
   late final CurvedAnimation animation;
+  late final AnimationController sliderController;
+  late final Animation<double> sliderAnimation;
   final Random _random = Random();
 
   late List<double> _baseTemplate;
@@ -165,16 +189,39 @@ class _AnimatedWaveformState extends State<AnimatedWaveform>
       parent: controller,
       curve: Curves.easeInOut,
     );
+
+    sliderController = AnimationController(
+      vsync: this,
+      duration: widget.sliderDuration,
+    );
+    // Đảo ngược: begin 0.0 (trái) -> end 1.0 (phải) để chạy từ phải sang trái
+    sliderAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(
+        parent: sliderController,
+        curve: Curves.linear,
+      ),
+    );
+
     _initialiseTemplates();
     if (widget.playing) {
       controller.forward();
     }
 
+    if (widget.showSlider) {
+      sliderController.repeat();
+    }
+
     widget.controller?.pause = () {
       controller.stop();
+      if (widget.showSlider) {
+        sliderController.stop();
+      }
     };
     widget.controller?.resume = () {
       controller.forward();
+      if (widget.showSlider) {
+        sliderController.repeat();
+      }
     };
     super.initState();
   }
@@ -183,6 +230,10 @@ class _AnimatedWaveformState extends State<AnimatedWaveform>
   void didUpdateWidget(covariant AnimatedWaveform oldWidget) {
     if (widget.duration != oldWidget.duration) {
       controller.duration = widget.duration;
+    }
+
+    if (widget.sliderDuration != oldWidget.sliderDuration) {
+      sliderController.duration = widget.sliderDuration;
     }
 
     if (!listEquals(widget.templates, oldWidget.templates) ||
@@ -203,12 +254,26 @@ class _AnimatedWaveformState extends State<AnimatedWaveform>
           controller.forward(
               from: controller.value == 1 ? 0 : controller.value);
         }
+        if (widget.showSlider && !sliderController.isAnimating) {
+          sliderController.repeat();
+        }
       } else {
         controller.stop();
+        if (widget.showSlider) {
+          sliderController.stop();
+        }
         setState(() {
           _fromSamples = List<double>.from(_baseTemplate);
           _toSamples = _fromSamples;
         });
+      }
+    }
+
+    if (widget.showSlider != oldWidget.showSlider) {
+      if (widget.showSlider) {
+        sliderController.repeat();
+      } else {
+        sliderController.stop();
       }
     }
 
@@ -218,17 +283,19 @@ class _AnimatedWaveformState extends State<AnimatedWaveform>
   @override
   void dispose() {
     controller.dispose();
+    sliderController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: animation,
+      animation: Listenable.merge([animation, sliderAnimation]),
       builder: (context, child) {
         final samples = _currentSamples(animation.value);
         final maxValue =
             samples.isEmpty ? widget.waveThickness : samples.reduce(max);
+
         return ShaderMask(
           shaderCallback: (Rect bounds) {
             return const LinearGradient(
@@ -252,6 +319,7 @@ class _AnimatedWaveformState extends State<AnimatedWaveform>
                   ? Colors.white
                   : Colors.black,
               form: widget.form,
+              animValue: widget.showSlider ? sliderAnimation.value : 0,
             ),
           ),
         );

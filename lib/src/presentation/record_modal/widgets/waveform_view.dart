@@ -52,6 +52,8 @@ class WaveformView extends StatelessWidget {
                     child: AnimatedWaveform(
                       divide: 3,
                       controller: controller,
+                      showSlider: true,
+                      sliderDuration: const Duration(milliseconds: 5000),
                     ),
                   ),
                 ),
