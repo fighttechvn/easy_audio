@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:record/record.dart';
 import 'package:speech_to_text_record/speech_to_text_record.dart';
 
 import '../../domain/entities/process_player.dart';
@@ -28,10 +29,33 @@ abstract class EasyAudioInterface {
 }
 
 class EasyAudioController extends ChangeNotifier implements EasyAudioInterface {
-  EasyAudioController({int sampleRate = 16000, int numChannels = 1})
-      : _simpleRecorder = SimpleAudioRecorder(
+  EasyAudioController({
+    int sampleRate = 16000,
+    int numChannels = 1,
+    AudioInterruptionMode? audioInterruption,
+    IosRecordConfig? iosConfig,
+  }) : _simpleRecorder = SimpleAudioRecorder(
           sampleRate: sampleRate,
           numChannels: numChannels,
+          audioInterruption: audioInterruption,
+          iosConfig: iosConfig,
+        );
+  EasyAudioController.withBackgroundMode({
+    int sampleRate = 16000,
+    int numChannels = 1,
+  }) : _simpleRecorder = SimpleAudioRecorder(
+          sampleRate: sampleRate,
+          numChannels: numChannels,
+          audioInterruption: AudioInterruptionMode.pauseResume,
+          iosConfig: const IosRecordConfig(
+            categoryOptions: [
+              IosAudioCategoryOption
+                  .mixWithOthers, // Required for pauseResume mode
+              IosAudioCategoryOption.defaultToSpeaker,
+              IosAudioCategoryOption.allowBluetooth,
+              IosAudioCategoryOption.allowBluetoothA2DP,
+            ],
+          ),
         );
 
   final AudioPlayer _audioPlayer = AudioPlayer();

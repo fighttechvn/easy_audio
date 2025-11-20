@@ -52,10 +52,52 @@ File update `android/app/src/main/AndroidManifest.xml`
 
 ### Update `ios/Runner/Info.plist`
 
-```bash
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Allow $(APP_NAME) access microphone?</string>
+```xml
+<key>NSMicrophoneUsageDescription</key>
+<string>Allow $(APP_NAME) access microphone?</string>
+
+<!-- For background recording (optional) -->
+<key>UIBackgroundModes</key>
+<array>
+  <string>audio</string>
+</array>
 ```
+
+### Background Recording Support (iOS)
+
+To enable background recording on iOS, you can configure `EasyAudioController` with the following options:
+
+```dart
+import 'package:easy_audio/easy_audio.dart';
+
+// Basic usage (default behavior - pauses on interruption)
+final controller = EasyAudioController();
+
+// For background recording with automatic pause/resume
+final controller = EasyAudioController(
+  audioInterruption: AudioInterruptionMode.pauseResume,
+  iosConfig: IosRecordConfig(
+    categoryOptions: [
+      IosAudioCategoryOption.mixWithOthers,  // Required for pauseResume mode
+      IosAudioCategoryOption.defaultToSpeaker,
+      IosAudioCategoryOption.allowBluetooth,
+      IosAudioCategoryOption.allowBluetoothA2DP,
+    ],
+  ),
+);
+
+// For background recording without interruption handling
+final controller = EasyAudioController(
+  audioInterruption: AudioInterruptionMode.none,
+);
+```
+
+**AudioInterruptionMode options:**
+- `none`: Recording continues regardless of interruptions (e.g., phone calls)
+- `pause`: Automatically pauses on interruption, manual resume required
+- `pauseResume`: Automatically pauses and resumes on interruption (requires `mixWithOthers`)
+
+**Note:** Make sure `UIBackgroundModes` with `audio` is added to your `Info.plist` for background recording to work.
 
 ## Locales supported
 

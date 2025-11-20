@@ -17,6 +17,7 @@ dependencies:
   wakelock_plus: ^1.3.2
   shared_preferences: ^2.2.2
   floating_draggable_widget: ^2.3.0
+  record: ^6.1.1
   speech_to_text_record:
     path: plugins/speech_to_text_record
   vosk_flutter:

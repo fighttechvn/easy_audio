@@ -12,6 +12,8 @@ class MicrophoneAudioStream {
     this.numChannels = 1,
     RecorderFactory? recordFactory,
     int? streamBufferSize,
+    this.iosConfig,
+    this.audioInterruption,
   })  : _recordFactory = recordFactory ?? (() => AudioRecorder()),
         _streamBufferSize = streamBufferSize;
 
@@ -19,7 +21,8 @@ class MicrophoneAudioStream {
   final int numChannels;
   final AudioRecorder Function() _recordFactory;
   final int? _streamBufferSize;
-
+  final AudioInterruptionMode? audioInterruption;
+  final IosRecordConfig? iosConfig;
   final _controller = StreamController<Uint8List>.broadcast();
 
   AudioRecorder? _recorder;
@@ -49,6 +52,8 @@ class MicrophoneAudioStream {
       sampleRate: sampleRate,
       numChannels: numChannels,
       streamBufferSize: _streamBufferSize,
+      iosConfig: iosConfig ?? IosRecordConfig(),
+      audioInterruption: audioInterruption ?? AudioInterruptionMode.pause,
     );
 
     final audioStream = await recorder.startStream(config);
