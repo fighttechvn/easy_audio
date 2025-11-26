@@ -26,11 +26,13 @@ class _TranscriptionViewState extends State<TranscriptionView> {
         EasyDebounce.debounce(
             '_debounceScrollTextToBttom', const Duration(milliseconds: 400),
             () {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
+          if (_scrollController.positions.isNotEmpty) {
+            _scrollController.animateTo(
+              _scrollController.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
+          }
         });
       }
     });
