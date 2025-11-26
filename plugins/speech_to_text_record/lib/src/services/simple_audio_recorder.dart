@@ -10,13 +10,18 @@ import '../exceptions.dart';
 /// Minimal wrapper around the `record` package to provide plug-and-play audio
 /// recording into a WAV file.
 class SimpleAudioRecorder {
-  SimpleAudioRecorder({this.sampleRate = 16000, this.numChannels = 1})
-      : _recorder = AudioRecorder();
+  SimpleAudioRecorder({
+    this.sampleRate = 16000,
+    this.numChannels = 1,
+    this.audioInterruption,
+    this.iosConfig,
+  }) : _recorder = AudioRecorder();
 
   final int sampleRate;
   final int numChannels;
   final AudioRecorder _recorder;
-
+  final AudioInterruptionMode? audioInterruption;
+  final IosRecordConfig? iosConfig;
   bool _isRecording = false;
   String? _currentPath;
 
@@ -40,6 +45,8 @@ class SimpleAudioRecorder {
       encoder: AudioEncoder.wav,
       sampleRate: sampleRate,
       numChannels: numChannels,
+      iosConfig: iosConfig ?? IosRecordConfig(),
+      audioInterruption: audioInterruption ?? AudioInterruptionMode.pause,
     );
 
     await _recorder.start(config, path: targetPath);
