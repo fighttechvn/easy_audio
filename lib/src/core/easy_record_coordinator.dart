@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:speech_to_text_record/speech_to_text_record.dart';
 
-import '../application/easy_record_configuration.dart';
 import '../core/services/record_modal_service.dart';
+import '../domain/entities/easy_record_configuration.dart';
 import '../domain/entities/record_data.dart';
 import '../domain/usecase/record_usecase.dart';
 import '../presentation/language_selection/bloc/language_bloc.dart';

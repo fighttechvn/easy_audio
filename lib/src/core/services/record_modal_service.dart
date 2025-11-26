@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../application/easy_record_configuration.dart';
+import '../../domain/entities/easy_record_configuration.dart';
 import '../../domain/entities/record_data.dart';
 import '../../domain/entities/record_session_data.dart';
 import '../../domain/usecase/speech_to_text_usecase.dart';

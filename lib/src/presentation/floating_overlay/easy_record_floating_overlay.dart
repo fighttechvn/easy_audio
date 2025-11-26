@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:floating_draggable_widget/floating_draggable_widget.dart';
 import 'package:flutter/material.dart';
 
-import '../../application/easy_record_callbacks.dart';
-import '../../application/easy_record_configuration.dart';
 import '../../core/services/record_modal_service.dart';
+import '../../domain/entities/easy_record_callbacks.dart';
+import '../../domain/entities/easy_record_configuration.dart';
 import '../../domain/entities/record_session_data.dart';
 import '../record_modal/record_session_manager.dart';
 import '../record_modal/widgets/floating_record_widget.dart';
