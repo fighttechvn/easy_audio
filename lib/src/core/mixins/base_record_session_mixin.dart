@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../core/services/record_modal_service.dart';
 import '../../domain/entities/record_data.dart';
-import '../record_modal/record_session_manager.dart';
-import '../shared/record/bloc/record_bloc.dart';
-import '../shared/record/entities/record_state_ui.dart';
+import '../../presentation/record_modal/record_session_manager.dart';
+import '../../presentation/shared/record/bloc/record_bloc.dart';
+import '../../presentation/shared/record/entities/record_state_ui.dart';
+import '../services/record_modal_service.dart';
 
 /// Base mixin chứa các logic chung liên quan đến RecordSessionManager
 /// và RecordBloc cho các screen có tính năng record audio.
@@ -13,8 +13,6 @@ import '../shared/record/entities/record_state_ui.dart';
 ///
 /// Để sử dụng, extend mixin này và implement các abstract methods/getters.
 mixin BaseRecordSessionMixin<T extends StatefulWidget, D> on State<T> {
-  // ======== RecordSessionManager ========
-
   /// Truy cập RecordSessionManager singleton
   RecordSessionManager get recordSessionManager =>
       RecordSessionManager.instance;
@@ -193,6 +191,12 @@ mixin BaseRecordSessionMixin<T extends StatefulWidget, D> on State<T> {
     );
   }
 
+  /// Tạo custom data JSON để lưu vào pending recording
+  /// Subclass có thể override để thêm custom fields
+  String? createCustomData(D data) {
+    return null;
+  }
+
   // ======== Recording flow ========
 
   /// Mở record modal và xử lý kết quả
@@ -217,6 +221,7 @@ mixin BaseRecordSessionMixin<T extends StatefulWidget, D> on State<T> {
         return currentId == dataId;
       },
       validData: validateData,
+      customData: createCustomData(sessionData),
     );
 
     if (result != null && RecordModalService.instance.context.mounted) {

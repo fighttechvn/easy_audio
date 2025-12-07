@@ -1,13 +1,13 @@
 // ignore_for_file: lines_longer_than_80_chars
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../domain/entities/record_data.dart';
 import '../../domain/usecase/speech_to_text_usecase.dart';
 import '../../presentation/record_modal/bloc/speech_text_bloc.dart';
-import '../../presentation/record_modal/record_modal_widget.dart';
 import '../../presentation/record_modal/record_session_manager.dart';
+import '../../presentation/shared/app_dialog.dart';
+import '../utils/logs/debug_print/record_modal_service_log.dart';
 
 class RecordModalService {
   RecordModalService._();
@@ -19,9 +19,20 @@ class RecordModalService {
   GlobalKey<NavigatorState>? _navigatorKey;
   bool _hasOpenModal = false;
 
+  /// Current user ID for pending recording persistence.
+  /// Set this before opening the modal to enable crash recovery.
+  String? currentUserId;
+
   void initialize(GlobalKey<NavigatorState> navigatorKey) {
     _navigatorKey = navigatorKey;
-    debugPrint('[RecordModalService] Initialized with navigator key');
+    debugPrintInitialized();
+  }
+
+  /// Set the current user ID for pending recording persistence.
+  /// Call this when user logs in.
+  void setCurrentUserId(String? userId) {
+    currentUserId = userId;
+    debugPrintSetCurrentUserId(userId);
   }
 
   bool get hasOpenModal => _hasOpenModal;
@@ -34,6 +45,7 @@ class RecordModalService {
     bool restoreFromSession = false,
     required bool Function(T dataCurrent, T data) isSameData,
     required bool Function(T data) validData,
+    String? customData,
   }) async {
     // Assertion check cho navigator key initialization
     assert(
@@ -44,19 +56,13 @@ class RecordModalService {
     );
 
     if (_navigatorKey == null) {
-      debugPrint(
-        '[RecordModalService] ERROR: Navigator key not initialized! '
-        'Cannot open modal.',
-      );
+      debugPrintNavigatorKeyNotInitialized();
       return null;
     }
 
     final context = _navigatorKey!.currentContext;
     if (context == null || !context.mounted) {
-      debugPrint(
-        '[RecordModalService] ERROR: Cannot open modal - '
-        'context not available or not mounted',
-      );
+      debugPrintContextNotAvailable();
       return null;
     }
 
@@ -71,10 +77,7 @@ class RecordModalService {
 
         // Nếu appointmentIdEmr giống nhau, restore modal hiện tại
         if (dataCurrent != null || isSameData(sessionData, dataCurrent)) {
-          debugPrint(
-            '[RecordModalService] Same appointment detected, '
-            'restoring existing session',
-          );
+          debugPrintRestoringExistingSession();
 
           // Restore modal với session hiện tại
           return openModal<T>(
@@ -91,36 +94,14 @@ class RecordModalService {
         final validdataCurrent = validData(dataCurrent);
         // Nếu appointmentIdEmr khác nhau, hiện dialog cảnh báo
         if (validdataCurrent) {
-          debugPrint('[RecordModalService] Different appointment detected');
+          debugPrintDifferentAppointmentDetected();
 
           // Hiện dialog thông báo
-          final shouldRestore = await showDialog<bool>(
-            context: context,
-            barrierDismissible: false,
-            builder: (dialogContext) => AlertDialog(
-              title: const Text('Recording in Progress'),
-              content: const Text(
-                'There is currently an active recording session. '
-                'You need to end the current recording session before starting a new one.',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(false),
-                  child: const Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(true),
-                  child: const Text('Reopen Recording Session'),
-                ),
-              ],
-            ),
-          );
+          final shouldRestore = await context.showRecordingInProgressDialog();
 
           // Nếu user chọn mở lại, restore session hiện tại
           if (shouldRestore == true) {
-            debugPrint(
-              '[RecordModalService] User chose to restore existing session',
-            );
+            debugPrintUserChoseToRestore();
 
             return openModal(
               locale: sessionManager.locale ?? locale,
@@ -134,35 +115,32 @@ class RecordModalService {
           }
 
           // User chọn hủy
-          debugPrint('[RecordModalService] User cancelled opening new modal');
+          debugPrintUserCancelledOpening();
           return null;
         }
       }
     }
 
-    debugPrint('[RecordModalService] Opening modal - '
-        'restoreFromSession: $restoreFromSession, ');
+    debugPrintOpeningModal(restoreFromSession);
 
     // Nếu restore from session, sử dụng bloc hiện có
     final SpeechTextBloc bloc;
 
     // Error handling cho trường hợp restore session không tồn tại
     if (restoreFromSession && !sessionManager.hasActiveSession) {
-      debugPrint(
-        '[RecordModalService] WARNING: Restore requested but no active '
-        'session found. Creating new session instead.',
-      );
+      debugPrintWarningRestoreNoActiveSession();
     }
 
     if (restoreFromSession && sessionManager.hasActiveSession) {
       // Restore từ session đã có
       final existingBloc = sessionManager.bloc;
       if (existingBloc == null) {
-        debugPrint(
-          '[RecordModalService] ERROR: Session exists but bloc is null! '
-          'Creating new session.',
-        );
-        bloc = SpeechTextBloc(SpeechToTextUsecase(local: locale));
+        debugPrintSessionExistsButBlocNull();
+        bloc = SpeechTextBloc(_createSpeechToTextUsecase(
+          locale: locale,
+          title: transcript,
+          customData: customData,
+        ));
         sessionManager
           ..updateData(data)
           ..startSession(
@@ -173,15 +151,18 @@ class RecordModalService {
           );
       } else {
         bloc = existingBloc;
-        debugPrint(
-          '[RecordModalService] Restoring from existing session - '
-          'bloc state: ${bloc.state.runtimeType}, '
-          'isPipelineActive: ${sessionManager.isPipelineActive}',
+        debugPrintRestoringFromExistingSession(
+          bloc.state.runtimeType,
+          sessionManager.isPipelineActive,
         );
       }
     } else {
       // Tạo bloc mới và start session
-      bloc = SpeechTextBloc(SpeechToTextUsecase(local: locale));
+      bloc = SpeechTextBloc(_createSpeechToTextUsecase(
+        locale: locale,
+        title: transcript,
+        customData: customData,
+      ));
       sessionManager
         ..updateData(data)
         ..startSession(
@@ -190,9 +171,7 @@ class RecordModalService {
           title: transcript,
           onExit: onExit,
         );
-      debugPrint(
-        '[RecordModalService] Created new session - bloc state: ${bloc.state.runtimeType}',
-      );
+      debugPrintCreatedNewSession(bloc.state.runtimeType);
     }
 
     final height = MediaQuery.of(context).size.height;
@@ -204,72 +183,23 @@ class RecordModalService {
 
     RecordData? result;
     try {
-      debugPrint('[RecordModalService] Showing modal bottom sheet...');
-      result = await showModalBottomSheet<RecordData?>(
-        context: context,
-        isDismissible: false,
-        isScrollControlled: true,
-        enableDrag: true,
-        backgroundColor: Colors.transparent,
-        barrierColor: Colors.transparent,
-        constraints: BoxConstraints(maxHeight: height),
-        builder: (sheetContext) {
-          return DraggableScrollableSheet(
-            initialChildSize: 0.7,
-            minChildSize: 0.25,
-            maxChildSize: 0.7,
-            snap: true,
-            snapSizes: const [0.3, 0.5, 0.7],
-            builder: (ct, controller) {
-              return BlocProvider<SpeechTextBloc>.value(
-                value: bloc,
-                child: RecordModalWidget(
-                  onExits: () async {
-                    // User nhấn close button
-                    debugPrint(
-                      '[RecordModalService] User clicked close button',
-                    );
-                    if (context.mounted) {
-                      final shouldClose =
-                          await onExit?.call(context.mounted ? context : ct) ??
-                              true;
-                      if (shouldClose) {
-                        userExplicitlyClosed = true;
-                        debugPrint(
-                          '[RecordModalService] User confirmed close',
-                        );
-                      } else {
-                        debugPrint(
-                          '[RecordModalService] User cancelled close',
-                        );
-                      }
-                      return shouldClose;
-                    }
-                    return true;
-                  },
-                  title: transcript,
-                  locale: locale,
-                  restoreFromSession: restoreFromSession,
-                  onShouldMinimize: () {
-                    debugPrint(
-                      '[RecordModalService] Minimize button clicked',
-                    );
-                    sessionManager.minimizeSession();
-                    Navigator.of(sheetContext).pop();
-                  },
-                ),
-              );
-            },
-          );
+      debugPrintShowingModalBottomSheet();
+      result = await context.showRecordModal(
+        bloc: bloc,
+        maxHeight: height,
+        onExit: onExit,
+        transcript: transcript,
+        locale: locale,
+        restoreFromSession: restoreFromSession,
+        sessionManager: sessionManager,
+        onUpdateUserExplicitlyClosed: (shouldClose) {
+          userExplicitlyClosed = shouldClose;
         },
       );
-      debugPrint('[RecordModalService] Modal bottom sheet completed');
+
+      debugPrintModalBottomSheetCompleted();
     } catch (e, stackTrace) {
-      debugPrint(
-        '[RecordModalService] ERROR: Failed to show modal bottom sheet',
-      );
-      debugPrint('[RecordModalService] Error: $e');
-      debugPrint('[RecordModalService] StackTrace: $stackTrace');
+      debugPrintFailedToShowModal(e, stackTrace);
       _hasOpenModal = false;
 
       // End session on error to cleanup resources
@@ -280,40 +210,31 @@ class RecordModalService {
 
     _hasOpenModal = false;
 
-    debugPrint(
-      '[RecordModalService] Modal closed - '
-      'result: ${result != null ? "RecordData" : "null"}, '
-      'userExplicitlyClosed: $userExplicitlyClosed, '
-      'isMinimized: ${sessionManager.isMinimized}, '
-      'hasActiveSession: ${sessionManager.hasActiveSession}',
+    debugPrintModalClosed(
+      result,
+      userExplicitlyClosed,
+      sessionManager.isMinimized,
+      sessionManager.hasActiveSession,
     );
 
     // Xử lý kết quả modal
     if (result != null) {
       // User đã save - caller sẽ xử lý upload
-      debugPrint(
-        '[RecordModalService] User saved recording - '
-        'duration: ${result.totalTime}, '
-        'contentLength: ${result.content?.length ?? 0}',
+      debugPrintUserSavedRecording(
+        result.totalTime,
+        result.content?.length ?? 0,
       );
     } else if (userExplicitlyClosed) {
       // User nhấn close button (cancel) - dispose resources
-      debugPrint(
-        '[RecordModalService] User cancelled, ending session',
-      );
+      debugPrintUserCancelledEndingSession();
       sessionManager.endSession(disposeResources: true);
     } else if (sessionManager.isMinimized) {
       // User minimize - giữ session
-      debugPrint(
-        '[RecordModalService] User minimized, keeping session alive - '
-        'isPipelineActive: ${sessionManager.isPipelineActive}',
-      );
+      debugPrintUserMinimizedKeepingSession(sessionManager.isPipelineActive);
       // Không làm gì, session vẫn active
     } else {
       // User dismiss modal bằng swipe down hoặc tap outside - Minimize!
-      debugPrint(
-        '[RecordModalService] User dismissed modal, minimizing',
-      );
+      debugPrintUserDismissedModalMinimizing();
       sessionManager.minimizeSession();
     }
 
@@ -321,53 +242,57 @@ class RecordModalService {
   }
 
   void closeModal() {
-    debugPrint(
-      '[RecordModalService] closeModal called - '
-      'hasOpenModal: $_hasOpenModal',
-    );
+    debugPrintCloseModalCalled(_hasOpenModal);
 
     if (!_hasOpenModal) {
-      debugPrint(
-        '[RecordModalService] WARNING: closeModal called but '
-        'no modal is open',
-      );
+      debugPrintWarningCloseModalNoModal();
       return;
     }
 
     if (_navigatorKey == null) {
-      debugPrint(
-        '[RecordModalService] ERROR: Cannot close modal - '
-        'navigator key is null',
-      );
+      debugPrintCannotCloseModalNavigatorKeyNull();
       return;
     }
 
     final context = _navigatorKey!.currentContext;
     if (context == null) {
-      debugPrint(
-        '[RecordModalService] ERROR: Cannot close modal - '
-        'context is null',
-      );
+      debugPrintCannotCloseModalContextNull();
       return;
     }
 
     if (!context.mounted) {
-      debugPrint(
-        '[RecordModalService] ERROR: Cannot close modal - '
-        'context not mounted',
-      );
+      debugPrintCannotCloseModalContextNotMounted();
       return;
     }
 
     try {
       Navigator.of(context).pop();
-      debugPrint('[RecordModalService] Modal closed programmatically');
+      debugPrintModalClosedProgrammatically();
     } catch (e, stackTrace) {
-      debugPrint(
-        '[RecordModalService] ERROR: Failed to close modal',
-      );
-      debugPrint('[RecordModalService] Error: $e');
-      debugPrint('[RecordModalService] StackTrace: $stackTrace');
+      debugPrintFailedToCloseModal(e, stackTrace);
     }
+  }
+
+  /// Create a SpeechToTextUsecase with pending recording config if user is set
+  SpeechToTextUsecase _createSpeechToTextUsecase({
+    required String locale,
+    String? title,
+    String? customData,
+  }) {
+    PendingRecordingConfig? pendingConfig;
+
+    if (currentUserId != null && currentUserId!.isNotEmpty) {
+      pendingConfig = PendingRecordingConfig(
+        userId: currentUserId!,
+        title: title,
+        customData: customData,
+        enablePersistence: true,
+      );
+    }
+
+    return SpeechToTextUsecase(
+      local: locale,
+      pendingRecordingConfig: pendingConfig,
+    );
   }
 }

@@ -6,6 +6,7 @@ import 'package:record/record.dart';
 import 'package:speech_to_text_record/speech_to_text_record.dart';
 
 import '../../domain/entities/process_player.dart';
+import '../utils/logs/debug_print/easy_audio_controller_log.dart';
 
 abstract class EasyAudioInterface {
   Future<void> initPlayer([bool disposeWhenParentDisponse = true]);
@@ -155,17 +156,17 @@ class EasyAudioController extends ChangeNotifier implements EasyAudioInterface {
       _isRecording = true;
       notifyListeners();
     } on MicrophonePermissionException catch (error) {
-      debugPrint('[EasyAudioController] Microphone permission denied: $error');
+      debugPrintMicrophonePermissionDenied(error);
       _recordStartedAt = null;
       _isRecording = false;
       rethrow;
     } on AudioPipelineStateException catch (error) {
-      debugPrint('[EasyAudioController] Recorder state error: $error');
+      debugPrintRecorderStateError(error);
       _recordStartedAt = null;
       _isRecording = false;
       rethrow;
     } catch (error) {
-      debugPrint('[EasyAudioController] Failed to start recording: $error');
+      debugPrintFailedToStartRecording(error);
       _recordStartedAt = null;
       _isRecording = false;
       rethrow;

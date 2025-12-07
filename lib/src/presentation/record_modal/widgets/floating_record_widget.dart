@@ -30,14 +30,12 @@ class _FloatingRecordWidgetState extends State<FloatingRecordWidget> {
   @override
   void initState() {
     super.initState();
-    debugPrint('🎙️ [Build][SessionManager] initState');
     _timer =
         Timer.periodic(const Duration(milliseconds: 80), _updateElapsedTimer);
   }
 
   @override
   void dispose() {
-    debugPrint('🎙️ [Build][SessionManager] dispose');
     _timer?.cancel();
     _elapsedDuration.dispose();
     super.dispose();
@@ -64,7 +62,6 @@ class _FloatingRecordWidgetState extends State<FloatingRecordWidget> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('🎙️ [Build][SessionManager] build');
     final sessionManager = RecordSessionManager.instance;
     final bloc = sessionManager.bloc;
 
@@ -78,8 +75,6 @@ class _FloatingRecordWidgetState extends State<FloatingRecordWidget> {
         builder: (context, state) {
           final isPaused = state is PausedRecording;
           final isRecording = state is Recording || state is PausedRecording;
-          debugPrint(
-              '🎙️ [Build][SessionManager] build BlocBuilder state: $state');
 
           return GestureDetector(
             onTap: widget.onTap,
