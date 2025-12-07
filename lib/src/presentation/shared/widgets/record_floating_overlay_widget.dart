@@ -5,6 +5,7 @@ import 'package:floating_draggable_widget/floating_draggable_widget.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/services/record_modal_service.dart';
+import '../../../core/utils/logs/debug_print/record_floating_overlay_widget_log.dart';
 import '../../record_modal/record_session_manager.dart';
 import '../../record_modal/widgets/floating_record_widget.dart';
 
@@ -46,7 +47,7 @@ class _RecordFloatingOverlayWidgetState<T>
   void initState() {
     super.initState();
 
-    debugPrint('[RecordFloatingOverlay] initState - setting up listener');
+    debugPrintInitStateSettingUpListener();
 
     // Initialize RecordModalService với global navigator
     RecordModalService.instance.initialize(widget.navigatorKey);
@@ -55,22 +56,16 @@ class _RecordFloatingOverlayWidgetState<T>
     _minimizedStateSubscription =
         RecordSessionManager.instance.minimizedStateStream.listen(
       (isMinimized) {
-        debugPrint(
-          '[FloatingWidget] ✅ Received stream event: $isMinimized',
-        );
+        debugPrintReceivedStreamEvent(isMinimized);
         if (_showFloatingWidget.value != isMinimized) {
           _showFloatingWidget.value = isMinimized;
-          debugPrint(
-            '[FloatingWidget] _showFloatingWidget: $_showFloatingWidget',
-          );
+          debugPrintUpdateShowFloatingWidget(isMinimized);
         } else {
-          debugPrint(
-            '[FloatingWidget] ❌ Widget not mounted, cannot setState',
-          );
+          debugPrintShowFloatingWidgetNotChanged();
         }
       },
       onError: (error) {
-        debugPrint('[FloatingWidget] ❌ Stream error: $error');
+        debugPrintStreamError(error);
       },
     );
   }
@@ -124,10 +119,7 @@ class _RecordFloatingOverlayWidgetState<T>
     return ValueListenableBuilder<bool>(
       valueListenable: _showFloatingWidget,
       builder: (context, isShow, child) {
-        debugPrint(
-          '[Build][SessionManager] Building '
-          'FloatingDraggableWidget, isShow: $isShow',
-        );
+        debugPrintBuildingFloatingDraggableWidget(isShow);
         return FloatingDraggableWidget(
           floatingWidget: isShow
               ? FloatingRecordWidget(

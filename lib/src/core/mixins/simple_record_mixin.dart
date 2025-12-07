@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/record_data.dart';
-import '../../presentation/simple_api/easy_audio.dart';
+import '../../presentation/simple_record/easy_audio.dart';
 
 mixin SimpleRecordMixin<T extends StatefulWidget> on State<T> {
   Future<void> onRecordComplete(RecordData result);

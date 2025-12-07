@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/services/easy_audio_controller.dart';
+import '../../../core/utils/format_utils.dart';
 import '../../../domain/entities/process_player.dart';
 
 /// Simple audio player widget that manages its own controller.
@@ -47,7 +48,8 @@ class SimpleAudioPlayer extends StatefulWidget {
   final VoidCallback? onPlay;
 
   /// Custom play button builder.
-  final Widget Function(BuildContext context, bool isPlaying, VoidCallback onTap)?
+  final Widget Function(
+          BuildContext context, bool isPlaying, VoidCallback onTap)?
       playButtonBuilder;
 
   const SimpleAudioPlayer({
@@ -119,13 +121,6 @@ class _SimpleAudioPlayerState extends State<SimpleAudioPlayer> {
     _controller.seek(Duration(milliseconds: value.toInt()));
   }
 
-  String _formatDuration(Duration? duration) {
-    if (duration == null) return '0:00';
-    final minutes = duration.inMinutes;
-    final seconds = duration.inSeconds % 60;
-    return '$minutes:${seconds.toString().padLeft(2, '0')}';
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -163,7 +158,7 @@ class _SimpleAudioPlayerState extends State<SimpleAudioPlayer> {
                           ),
                           if (widget.createdAt != null)
                             Text(
-                              _formatDate(widget.createdAt!),
+                              FormatUtils.formatDate(widget.createdAt!),
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: theme.colorScheme.onSurface
                                     .withValues(alpha: 0.6),
@@ -232,7 +227,7 @@ class _SimpleAudioPlayerState extends State<SimpleAudioPlayer> {
                                         MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        _formatDuration(position),
+                                        FormatUtils.formatDuration(position),
                                         style:
                                             theme.textTheme.bodySmall?.copyWith(
                                           color: theme.colorScheme.onSurface
@@ -240,7 +235,7 @@ class _SimpleAudioPlayerState extends State<SimpleAudioPlayer> {
                                         ),
                                       ),
                                       Text(
-                                        _formatDuration(duration),
+                                        FormatUtils.formatDuration(duration),
                                         style:
                                             theme.textTheme.bodySmall?.copyWith(
                                           color: theme.colorScheme.onSurface
@@ -313,9 +308,5 @@ class _SimpleAudioPlayerState extends State<SimpleAudioPlayer> {
         );
       },
     );
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
 }

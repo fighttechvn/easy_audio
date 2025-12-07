@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../utils/logs/debug_print/pending_recording_service_log.dart';
 
 /// Model representing a pending recording that was interrupted
 /// (e.g., due to app crash, battery drain, or force close).
@@ -121,36 +122,6 @@ class PendingRecording {
   }
 }
 
-/// Service to manage pending recordings that may have been interrupted.
-///
-/// This service persists recording session metadata to SharedPreferences,
-/// allowing recovery of recordings when the app is reopened after an
-/// unexpected termination.
-///
-/// Usage:
-/// ```dart
-/// // Start tracking a recording session
-/// await PendingRecordingService.instance.startSession(
-///   filePath: '/path/to/recording.wav',
-///   userId: 'user123',
-///   locale: 'en-US',
-///   title: 'Consultation Note',
-///   customData: jsonEncode({'appointmentId': 'apt123'}),
-/// );
-///
-/// // Update session periodically (e.g., transcript updates)
-/// await PendingRecordingService.instance.updateSession(
-///   transcript: 'Updated transcript...',
-///   duration: Duration(seconds: 30),
-/// );
-///
-/// // End session normally (removes from pending)
-/// await PendingRecordingService.instance.endSession();
-///
-/// // On app restart, check for pending recordings
-/// final pending = await PendingRecordingService.instance
-///     .getPendingRecordingsForUser('user123');
-/// ```
 class PendingRecordingService {
   PendingRecordingService._();
 
@@ -206,10 +177,7 @@ class PendingRecordingService {
     await _saveActiveSession();
     await _addToPendingList(recording);
 
-    debugPrint(
-      '[PendingRecordingService] Started session: $sessionId '
-      'for user: $userId',
-    );
+    debugPrintStartedSession(sessionId, userId);
 
     return recording;
   }
@@ -223,10 +191,7 @@ class PendingRecordingService {
     String? customData,
   }) async {
     if (_activeSession == null) {
-      debugPrint(
-        '[PendingRecordingService] WARNING: updateSession called '
-        'but no active session',
-      );
+      debugPrintWarningUpdateSessionNoActive();
       return;
     }
 
@@ -246,16 +211,11 @@ class PendingRecordingService {
   /// completed successfully.
   Future<void> endSession() async {
     if (_activeSessionId == null) {
-      debugPrint(
-        '[PendingRecordingService] WARNING: endSession called '
-        'but no active session',
-      );
+      debugPrintWarningEndSessionNoActive();
       return;
     }
 
-    debugPrint(
-      '[PendingRecordingService] Ending session: $_activeSessionId',
-    );
+    debugPrintEndingSession(_activeSessionId!);
 
     // Remove from pending list
     await _removeFromPendingList(_activeSessionId!);
@@ -284,14 +244,10 @@ class PendingRecordingService {
         final file = File(filePath);
         if (await file.exists()) {
           await file.delete();
-          debugPrint(
-            '[PendingRecordingService] Deleted cancelled recording: $filePath',
-          );
+          debugPrintDeletedCancelledRecording(filePath);
         }
       } catch (e) {
-        debugPrint(
-          '[PendingRecordingService] Failed to delete file: $e',
-        );
+        debugPrintFailedToDeleteFile(e);
       }
     }
 
@@ -315,10 +271,7 @@ class PendingRecordingService {
       }
     }
 
-    debugPrint(
-      '[PendingRecordingService] Found ${userPending.length} pending '
-      'recordings for user: $userId',
-    );
+    debugPrintFoundPendingRecordings(userPending.length, userId);
 
     return userPending;
   }
@@ -363,10 +316,7 @@ class PendingRecordingService {
       }
     }
 
-    debugPrint(
-      '[PendingRecordingService] Marked as handled: $recordingId '
-      '(deleted: $deleteFile)',
-    );
+    debugPrintMarkedAsHandled(recordingId, deleteFile);
   }
 
   /// Clean up old pending recordings that are older than [maxAge].
@@ -387,9 +337,7 @@ class PendingRecordingService {
     }
 
     if (cleanedCount > 0) {
-      debugPrint(
-        '[PendingRecordingService] Cleaned up $cleanedCount old recordings',
-      );
+      debugPrintCleanedUpOldRecordings(cleanedCount);
     }
 
     return cleanedCount;
@@ -419,15 +367,11 @@ class PendingRecordingService {
       _activeSessionId = recording.id;
       _activeSession = recording;
 
-      debugPrint(
-        '[PendingRecordingService] Restored active session: ${recording.id}',
-      );
+      debugPrintRestoredActiveSession(recording.id);
 
       return recording;
     } catch (e) {
-      debugPrint(
-        '[PendingRecordingService] Failed to restore active session: $e',
-      );
+      debugPrintFailedToRestoreActiveSession(e);
       return null;
     }
   }
@@ -450,9 +394,7 @@ class PendingRecordingService {
       final jsonString = jsonEncode(_activeSession!.toJson());
       await prefs.setString(_keyActiveSession, jsonString);
     } catch (e) {
-      debugPrint(
-        '[PendingRecordingService] Failed to save active session: $e',
-      );
+      debugPrintFailedToSaveActiveSession(e);
     }
   }
 
@@ -461,9 +403,7 @@ class PendingRecordingService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_keyActiveSession);
     } catch (e) {
-      debugPrint(
-        '[PendingRecordingService] Failed to clear active session: $e',
-      );
+      debugPrintFailedToClearActiveSession(e);
     }
   }
 
@@ -482,9 +422,7 @@ class PendingRecordingService {
               (item) => PendingRecording.fromJson(item as Map<String, dynamic>))
           .toList();
     } catch (e) {
-      debugPrint(
-        '[PendingRecordingService] Failed to get pending recordings: $e',
-      );
+      debugPrintFailedToGetPendingRecordings(e);
       return [];
     }
   }
@@ -504,9 +442,7 @@ class PendingRecordingService {
       allPending.add(recording);
       await _savePendingList(allPending);
     } catch (e) {
-      debugPrint(
-        '[PendingRecordingService] Failed to add to pending list: $e',
-      );
+      debugPrintFailedToAddToPendingList(e);
     }
   }
 
@@ -519,9 +455,7 @@ class PendingRecordingService {
         await _savePendingList(allPending);
       }
     } catch (e) {
-      debugPrint(
-        '[PendingRecordingService] Failed to update pending list: $e',
-      );
+      debugPrintFailedToUpdatePendingList(e);
     }
   }
 
@@ -531,9 +465,7 @@ class PendingRecordingService {
       allPending.removeWhere((r) => r.id == id);
       await _savePendingList(allPending);
     } catch (e) {
-      debugPrint(
-        '[PendingRecordingService] Failed to remove from pending list: $e',
-      );
+      debugPrintFailedToRemoveFromPendingList(e);
     }
   }
 
@@ -544,9 +476,7 @@ class PendingRecordingService {
       final jsonString = jsonEncode(jsonList);
       await prefs.setString(_keyPendingRecordings, jsonString);
     } catch (e) {
-      debugPrint(
-        '[PendingRecordingService] Failed to save pending list: $e',
-      );
+      debugPrintFailedToSavePendingList(e);
     }
   }
 }

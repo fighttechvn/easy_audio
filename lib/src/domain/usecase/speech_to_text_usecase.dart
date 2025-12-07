@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:speech_to_text_record/speech_to_text_record.dart';
 
 import '../../core/services/pending_recording_service.dart';
+import '../../core/utils/logs/debug_print/speech_to_text_usecase_log.dart';
 
 class StopSpeechResult {
   const StopSpeechResult({
@@ -88,15 +89,15 @@ class SpeechToTextUsecase {
       return targetLocale;
     } on SpeechToTextNotSupportedException catch (error, stackTrace) {
       statusListener?.call('notSupported');
-      _logError('Speech recognition not supported', error, stackTrace);
+      debugPrintSpeechRecognitionNotSupported(error, stackTrace);
       rethrow;
     } on MicrophonePermissionException catch (error, stackTrace) {
       statusListener?.call('permissionDenied');
-      _logError('Microphone permission denied', error, stackTrace);
+      debugPrintMicrophonePermissionDenied(error, stackTrace);
       rethrow;
     } catch (error, stackTrace) {
       statusListener?.call('error');
-      _logError('Failed to initialise speech pipeline', error, stackTrace);
+      debugPrintFailedToInitialiseSpeechPipeline(error, stackTrace);
       rethrow;
     }
   }
@@ -119,7 +120,7 @@ class SpeechToTextUsecase {
     _partialSegment = '';
 
     if (kDebugMode) {
-      debugPrint('[SpeechToTextUsecase] start locale: $resolvedLocale');
+      debugPrintStartLocale(resolvedLocale);
     }
     await _resultsSubscription?.cancel();
     _resultsSubscription = controller.transcriptions.listen(
@@ -176,7 +177,7 @@ class SpeechToTextUsecase {
       // Cancel pending session on error
       await _cancelPendingSession();
 
-      _logError('Failed to start speech pipeline', error, stackTrace);
+      debugPrintFailedToStartSpeechPipeline(error, stackTrace);
       rethrow;
     }
   }
@@ -199,14 +200,9 @@ class SpeechToTextUsecase {
         title: config.title,
         customData: config.customData,
       );
-      debugPrint(
-        '[SpeechToTextUsecase] Started pending recording session '
-        'for user: ${config.userId}',
-      );
+      debugPrintStartedPendingRecordingSession(config.userId);
     } catch (e) {
-      debugPrint(
-        '[SpeechToTextUsecase] Failed to start pending session: $e',
-      );
+      debugPrintFailedToStartPendingSession(e);
     }
   }
 
@@ -250,9 +246,7 @@ class SpeechToTextUsecase {
         duration: duration,
       );
     } catch (e) {
-      debugPrint(
-        '[SpeechToTextUsecase] Failed to update pending session: $e',
-      );
+      debugPrintFailedToUpdatePendingSession(e);
     }
   }
 
@@ -268,9 +262,9 @@ class SpeechToTextUsecase {
 
     try {
       await PendingRecordingService.instance.endSession();
-      debugPrint('[SpeechToTextUsecase] Ended pending recording session');
+      debugPrintEndedPendingRecordingSession();
     } catch (e) {
-      debugPrint('[SpeechToTextUsecase] Failed to end pending session: $e');
+      debugPrintFailedToEndPendingSession(e);
     }
   }
 
@@ -286,11 +280,9 @@ class SpeechToTextUsecase {
 
     try {
       await PendingRecordingService.instance.cancelSession(deleteFile: false);
-      debugPrint('[SpeechToTextUsecase] Cancelled pending recording session');
+      debugPrintCancelledPendingRecordingSession();
     } catch (e) {
-      debugPrint(
-        '[SpeechToTextUsecase] Failed to cancel pending session: $e',
-      );
+      debugPrintFailedToCancelPendingSession(e);
     }
   }
 
@@ -413,7 +405,7 @@ class SpeechToTextUsecase {
   }
 
   void _handleStreamError(Object error, StackTrace stackTrace) {
-    _logError('Speech pipeline error', error, stackTrace);
+    debugPrintSpeechPipelineError(error, stackTrace);
     final errorHandler = _onError;
     if (errorHandler != null) {
       errorHandler(error, stackTrace);
@@ -430,14 +422,6 @@ class SpeechToTextUsecase {
       if (_partialSegment.isNotEmpty) _partialSegment,
     ];
     callback(buffer.join(' ').trim());
-  }
-
-  void _logError(String message, Object error, StackTrace stackTrace) {
-    if (!kDebugMode) {
-      return;
-    }
-    debugPrint('[SpeechToTextUsecase] $message: $error');
-    debugPrint(stackTrace.toString());
   }
 
   Future<String> _createRecordingPath() async {

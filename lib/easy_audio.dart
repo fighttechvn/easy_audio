@@ -6,8 +6,6 @@ export 'package:record/record.dart'
     show AudioInterruptionMode, IosRecordConfig, IosAudioCategoryOption;
 export 'package:speech_to_text_record/speech_to_text_record.dart';
 
-// Core Services
-export 'src/core/dialog_coodinator.dart';
 // Presentation - Mixins
 export 'src/core/mixins/base_record_session_mixin.dart';
 // Simple mixin
@@ -16,6 +14,9 @@ export 'src/core/services/easy_audio_controller.dart';
 export 'src/core/services/language_history_service.dart';
 export 'src/core/services/pending_recording_service.dart';
 export 'src/core/services/record_modal_service.dart';
+export 'src/domain/entities/easy_audio_config.dart';
+export 'src/domain/entities/easy_audio_localizations.dart';
+export 'src/domain/entities/easy_audio_theme.dart';
 // Domain Entities
 export 'src/domain/entities/process_player.dart';
 export 'src/domain/entities/record_data.dart';
@@ -39,10 +40,7 @@ export 'src/presentation/shared/widgets/simple_audio_player.dart';
 export 'src/presentation/shared/widgets/waveforms_sound/wareforms_sourd_widget.dart';
 export 'src/presentation/shared/widgets/waveforms_sound/waveforms_animation_widget.dart';
 export 'src/presentation/shared/widgets/waveforms_sound/waveforms_sound_constants.dart';
-// Use these for simple use cases. For advanced usage, see the full API below.
-export 'src/presentation/simple_api/easy_audio.dart';
-export 'src/presentation/simple_api/easy_audio_config.dart';
-export 'src/presentation/simple_api/easy_audio_localizations.dart';
-export 'src/presentation/simple_api/easy_audio_theme.dart';
+// Use these for simple use cases.
+export 'src/presentation/simple_record/easy_audio.dart';
 // Coordinator
 export 'src/record_audio_coodinator.dart';

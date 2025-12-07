@@ -1,17 +1,10 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'package:flutter/material.dart';
 
 import '../../core/services/easy_audio_controller.dart';
 import '../../core/services/record_modal_service.dart';
+import '../../domain/entities/easy_audio_config.dart';
 import '../../domain/entities/record_data.dart';
-import 'easy_audio_config.dart';
-
-/// Internal session data class for simplified API.
-/// Users don't need to create their own session data class.
-class _SimpleSessionData {
-  const _SimpleSessionData();
-}
+import '../shared/app_dialog.dart';
 
 class EasyAudio {
   EasyAudio._({
@@ -27,7 +20,8 @@ class EasyAudio {
   static EasyAudio get instance {
     assert(
       _instance != null,
-      'EasyAudio not initialized! Call EasyAudio.initialize() first.',
+      'EasyAudio not initialized! Call EasyAudio.initialize() '
+      'first.',
     );
     return _instance!;
   }
@@ -40,6 +34,23 @@ class EasyAudio {
 
   /// Navigator key used for showing modals.
   final GlobalKey<NavigatorState> navigatorKey;
+
+  BuildContext? get context => navigatorKey.currentContext;
+
+  /// Show confirmation dialog when user tries to exit recording.
+  Future<bool?> _showConfirmExitDialog(BuildContext context) {
+    final loc = config.localizations;
+    return context.showStopRecordingDialog(
+      title: loc.stopRecordingTitle,
+      message: loc.stopRecordingMessage,
+      cancelText: loc.cancelButton,
+      stopText: loc.stopButton,
+    );
+  }
+
+  EasyAudioController createPlayerController() {
+    return EasyAudioController.withBackgroundMode();
+  }
 
   static void initialize({
     required GlobalKey<NavigatorState> navigatorKey,
@@ -100,32 +111,10 @@ class EasyAudio {
 
     return result;
   }
+}
 
-  /// Show confirmation dialog when user tries to exit recording.
-  Future<bool?> _showConfirmExitDialog(BuildContext context) {
-    final loc = config.localizations;
-    return showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(loc.stopRecordingTitle),
-        content: Text(loc.stopRecordingMessage),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(loc.cancelButton),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(loc.stopButton),
-          ),
-        ],
-      ),
-    );
-  }
-
-  EasyAudioController createPlayerController() {
-    return EasyAudioController.withBackgroundMode();
-  }
-
-  BuildContext? get context => navigatorKey.currentContext;
+/// Internal session data class for simplified API.
+/// Users don't need to create their own session data class.
+class _SimpleSessionData {
+  const _SimpleSessionData();
 }

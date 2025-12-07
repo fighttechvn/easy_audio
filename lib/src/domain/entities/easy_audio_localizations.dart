@@ -58,26 +58,6 @@ class EasyAudioLocalizations {
     this.selectLanguageTitle = 'Select Language',
   });
 
-  /// Vietnamese localization.
-  static const EasyAudioLocalizations vi = EasyAudioLocalizations(
-    stopRecordingTitle: 'Dừng ghi âm?',
-    stopRecordingMessage:
-        'Bạn có chắc muốn dừng phiên ghi âm hiện tại không?',
-    cancelButton: 'Hủy',
-    stopButton: 'Dừng',
-    saveButton: 'Lưu',
-    permissionDeniedMessage: 'Cần cấp quyền microphone để ghi âm',
-    recordingFailedMessage: 'Ghi âm thất bại',
-    recordingInProgressTitle: 'Đang ghi âm',
-    recordingInProgressMessage:
-        'Hiện đang có phiên ghi âm đang hoạt động. '
-            'Bạn cần kết thúc phiên ghi âm hiện tại trước khi bắt đầu phiên mới.',
-    reopenRecordingButton: 'Mở lại phiên ghi âm',
-    emptyFilePathMessage: 'Đường dẫn file ghi âm trống',
-    fileNotFoundMessage: 'Không tìm thấy file ghi âm',
-    selectLanguageTitle: 'Chọn ngôn ngữ',
-  );
-
   /// Copy with modified values.
   EasyAudioLocalizations copyWith({
     String? stopRecordingTitle,

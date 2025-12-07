@@ -1,6 +1,6 @@
-import '../../domain/entities/record_data.dart';
 import 'easy_audio_localizations.dart';
 import 'easy_audio_theme.dart';
+import 'record_data.dart';
 
 class EasyAudioConfig {
   /// Supported locales include:
@@ -25,7 +25,7 @@ class EasyAudioConfig {
   /// Custom localization messages.
   ///
   /// If not provided, English defaults are used.
-  /// Use [EasyAudioLocalizations.vi] for Vietnamese.
+  /// Use [EasyAudioLocalizations.en] for Vietnamese.
   final EasyAudioLocalizations localizations;
 
   /// Callback when recording is complete.
