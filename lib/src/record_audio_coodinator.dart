@@ -3,9 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:speech_to_text_record/speech_to_text_record.dart';
 
 import 'core/services/language_history_service.dart';
+import 'core/services/pending_recording_service.dart';
 import 'core/widgets/dialog_container_widget.dart';
 import 'domain/entities/record_data.dart';
 import 'domain/usecase/speech_to_text_usecase.dart';
+import 'presentation/pending_recovery/widgets/pending_recording_dialog.dart';
 import 'presentation/record_modal/bloc/speech_text_bloc.dart';
 import 'presentation/record_modal/record_modal_widget.dart';
 import 'presentation/select_language/select_languague_dialog_widget.dart';
@@ -108,5 +110,20 @@ extension BuildContextAnimatedWaveform on BuildContext {
     );
 
     return selectedLocale;
+  }
+
+  /// Dialog hiển thị pending recording cần recovery.
+  Future<PendingRecordingResult?> showPendingRecordingDialog({
+    required PendingRecording recording,
+    PendingRecordingDialogConfig config = const PendingRecordingDialogConfig(),
+  }) {
+    return showDialog<PendingRecordingResult>(
+      context: this,
+      barrierDismissible: config.barrierDismissible,
+      builder: (ctx) => PendingRecordingDialog(
+        recording: recording,
+        config: config,
+      ),
+    );
   }
 }

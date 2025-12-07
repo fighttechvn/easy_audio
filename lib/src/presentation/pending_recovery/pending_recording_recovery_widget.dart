@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/services/pending_recording_service.dart';
 import '../../domain/entities/pending_recording_types.dart';
-import '../shared/app_dialog.dart';
+import '../../record_audio_coodinator.dart';
 
 class PendingRecordingRecoveryWidget extends StatefulWidget {
   const PendingRecordingRecoveryWidget({

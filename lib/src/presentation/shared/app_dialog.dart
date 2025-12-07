@@ -2,11 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../core/services/pending_recording_service.dart';
 import '../../core/utils/logs/debug_print/record_modal_service_log.dart';
 import '../../domain/entities/download_outcome.dart';
 import '../../domain/entities/record_data.dart';
-import '../pending_recovery/widgets/pending_recording_dialog.dart';
 import '../record_modal/bloc/speech_text_bloc.dart';
 import '../record_modal/record_modal_widget.dart';
 import '../record_modal/record_session_manager.dart';
@@ -107,21 +105,6 @@ extension AppDialog on BuildContext {
       ),
     );
     return result ?? false;
-  }
-
-  /// Dialog hiển thị pending recording cần recovery.
-  Future<PendingRecordingResult?> showPendingRecordingDialog({
-    required PendingRecording recording,
-    PendingRecordingDialogConfig config = const PendingRecordingDialogConfig(),
-  }) {
-    return showDialog<PendingRecordingResult>(
-      context: this,
-      barrierDismissible: config.barrierDismissible,
-      builder: (ctx) => PendingRecordingDialog(
-        recording: recording,
-        config: config,
-      ),
-    );
   }
 
   Future<bool> showDownloadConfirm(String label) async {
