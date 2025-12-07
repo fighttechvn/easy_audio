@@ -53,10 +53,9 @@ class _TranscriptionViewState extends State<TranscriptionView> {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.brightnessOf(context) == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: isDarkMode == false ? Colors.grey[200] : const Color(0xFF2C2C2E),
+        color: Colors.grey[200],
         borderRadius: BorderRadius.circular(28),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -67,12 +66,12 @@ class _TranscriptionViewState extends State<TranscriptionView> {
           builder: (context, value, child) {
             final resultRecord = value.text;
             final isEmptyResult = resultRecord.isEmpty;
-            final colorText = isEmptyResult ? Colors.grey : Colors.black;
+            const colorText = Colors.black;
             return SelectableText(
               isEmptyResult
                   ? 'The transcript will be displayed here...'
                   : resultRecord,
-              style: TextStyle(
+              style: const TextStyle(
                 color: colorText,
                 fontSize: 16,
                 height: 1.45,

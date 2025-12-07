@@ -207,7 +207,7 @@ extension AppDialog on BuildContext {
       isScrollControlled: true,
       enableDrag: true,
       backgroundColor: Colors.transparent,
-      barrierColor: Colors.transparent,
+      barrierColor: Colors.black54,
       constraints: BoxConstraints(maxHeight: maxHeight),
       builder: (sheetContext) {
         return DraggableScrollableSheet(
