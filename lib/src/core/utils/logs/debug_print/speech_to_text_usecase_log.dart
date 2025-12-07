@@ -85,3 +85,10 @@ void debugPrintSpeechPipelineError(Object error, StackTrace stackTrace) {
   PrintLog.debug('[SpeechToTextUsecase] Speech pipeline error: $error');
   PrintLog.debug(stackTrace.toString());
 }
+
+void debugPrintPendingRecordingKeptForUpload() {
+  PrintLog.debug(
+    '[SpeechToTextUsecase] Pending recording kept for upload - '
+    'caller must call markAsUploaded() after successful upload',
+  );
+}

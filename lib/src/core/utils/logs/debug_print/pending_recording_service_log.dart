@@ -112,3 +112,10 @@ void debugPrintCleanedUpOldRecordings(int count) {
     '[PendingRecordingService] Cleaned up $count old recordings',
   );
 }
+
+void debugPrintMarkedAsUploaded(String id) {
+  PrintLog.debug(
+    '[PendingRecordingService] Recording successfully uploaded'
+    ' and removed: $id',
+  );
+}

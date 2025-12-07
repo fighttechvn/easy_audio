@@ -319,6 +319,11 @@ class PendingRecordingService {
     debugPrintMarkedAsHandled(recordingId, deleteFile);
   }
 
+  Future<void> markAsUploaded(String recordingId) async {
+    await markAsHandled(recordingId, deleteFile: true);
+    debugPrintMarkedAsUploaded(recordingId);
+  }
+
   /// Clean up old pending recordings that are older than [maxAge].
   ///
   /// Call this periodically to prevent storage bloat.

@@ -250,24 +250,6 @@ class SpeechToTextUsecase {
     }
   }
 
-  /// End the pending session successfully
-  Future<void> _endPendingSession() async {
-    _pendingSessionUpdateTimer?.cancel();
-    _pendingSessionUpdateTimer = null;
-
-    final config = pendingRecordingConfig;
-    if (config == null || !config.enablePersistence) {
-      return;
-    }
-
-    try {
-      await PendingRecordingService.instance.endSession();
-      debugPrintEndedPendingRecordingSession();
-    } catch (e) {
-      debugPrintFailedToEndPendingSession(e);
-    }
-  }
-
   /// Cancel the pending session (recording was discarded)
   Future<void> _cancelPendingSession() async {
     _pendingSessionUpdateTimer?.cancel();
@@ -305,8 +287,10 @@ class SpeechToTextUsecase {
       // Handle pending session based on whether recording was saved
       if (discardRecording) {
         await _cancelPendingSession();
-      } else {
-        await _endPendingSession();
+      } else if (pendingRecordingConfig?.enablePersistence == true) {
+        _pendingSessionUpdateTimer?.cancel();
+        _pendingSessionUpdateTimer = null;
+        debugPrintPendingRecordingKeptForUpload();
       }
     } finally {
       await _resultsSubscription?.cancel();
