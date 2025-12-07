@@ -41,7 +41,8 @@ class RecordBloc<T, A> extends Bloc<RecordEvent, RecordState<T, A>> {
     on<ClearAudioListEvent>(_onClearAudioList);
   }
 
-  /// Expose audio controller for widgets that need direct access (e.g., AudioRecordWidget)
+  /// Expose audio controller for widgets that need direct access (e.g., 
+  /// AudioRecordWidget)
   EasyAudioController get audioController => _recordUsecase.audioController;
 
   // ============ Audio Player Handlers ============

@@ -7,11 +7,16 @@ import 'package:path/path.dart' as path;
 import 'exceptions.dart';
 
 /// Persists PCM audio frames from a broadcast stream into a WAV file.
+///
+/// This class now supports incremental WAV header updates to ensure
+/// the audio file remains valid even if the app is terminated unexpectedly
+/// (e.g., battery drain, crash, force close).
 class AudioFileSink {
   AudioFileSink({
     required this.stream,
     this.sampleRate = 16000,
     this.numChannels = 1,
+    this.headerSyncInterval = const Duration(seconds: 5),
   });
 
   /// Broadcast stream that feeds PCM 16-bit audio frames.
@@ -19,6 +24,10 @@ class AudioFileSink {
 
   final int sampleRate;
   final int numChannels;
+
+  /// How often to sync the WAV header to disk.
+  /// Default is 5 seconds to balance between safety and performance.
+  final Duration headerSyncInterval;
 
   static const _bytesPerSample = 2; // 16-bit PCM
   static const _wavHeaderSize = 44;
@@ -29,9 +38,25 @@ class AudioFileSink {
   String? _outputPath;
   int _writtenBytes = 0;
   bool _isPaused = false;
+  Timer? _headerSyncTimer;
+  int _lastSyncedBytes = 0;
 
   bool get isRecording => _subscription != null;
   bool get isPaused => _isPaused;
+
+  /// Get the current recording file path
+  String? get currentFilePath => _outputPath;
+
+  /// Get the current written bytes count
+  int get writtenBytes => _writtenBytes;
+
+  /// Get the current recording duration based on written bytes
+  Duration get currentDuration {
+    if (_writtenBytes == 0) return Duration.zero;
+    final bytesPerSecond = sampleRate * numChannels * _bytesPerSample;
+    final seconds = _writtenBytes / bytesPerSecond;
+    return Duration(milliseconds: (seconds * 1000).round());
+  }
 
   /// Begin writing audio frames to [filePath].
   Future<void> start(String filePath) async {
@@ -43,9 +68,11 @@ class AudioFileSink {
     _outputFile = await file.open(mode: FileMode.write);
     _outputPath = filePath;
     _writtenBytes = 0;
+    _lastSyncedBytes = 0;
 
-    // Reserve WAV header space.
-    await _outputFile!.writeFrom(_createHeaderPlaceholder());
+    // Write initial WAV header with zero data length.
+    // This ensures the file is valid even if we crash immediately.
+    await _outputFile!.writeFrom(_createWavHeader(0));
 
     _subscription = stream.listen(
       (chunk) {
@@ -65,6 +92,56 @@ class AudioFileSink {
       },
       cancelOnError: true,
     );
+
+    // Start periodic header sync timer
+    _startHeaderSyncTimer();
+  }
+
+  /// Start the timer that periodically syncs the WAV header to disk.
+  void _startHeaderSyncTimer() {
+    _headerSyncTimer?.cancel();
+    _headerSyncTimer = Timer.periodic(headerSyncInterval, (_) {
+      _syncHeaderToDisk();
+    });
+  }
+
+  /// Sync the WAV header to disk with current data length.
+  /// This is called periodically to ensure the file remains valid.
+  Future<void> _syncHeaderToDisk() async {
+    if (_outputFile == null || _writtenBytes == _lastSyncedBytes) {
+      return;
+    }
+
+    // Queue the header update after current writes complete
+    _writeQueue = _writeQueue.then((_) async {
+      final output = _outputFile;
+      if (output == null) return;
+
+      try {
+        // Save current position
+        final currentPosition = await output.position();
+
+        // Update header at beginning of file
+        await output.setPosition(0);
+        await output.writeFrom(_createWavHeader(_writtenBytes));
+
+        // Restore position for continued writing
+        await output.setPosition(currentPosition);
+
+        // Flush to ensure data is written to disk
+        await output.flush();
+
+        _lastSyncedBytes = _writtenBytes;
+      } catch (e) {
+        // Ignore sync errors - best effort
+      }
+    });
+  }
+
+  /// Force sync the header immediately. Useful before app goes to background.
+  Future<void> forceSyncHeader() async {
+    await _syncHeaderToDisk();
+    await _writeQueue;
   }
 
   /// Temporarily pause writing audio frames to disk.
@@ -85,6 +162,10 @@ class AudioFileSink {
 
   /// Stop recording and seal the WAV header. Returns the output file path.
   Future<String?> stop({bool deleteOnCancel = false}) async {
+    // Cancel header sync timer
+    _headerSyncTimer?.cancel();
+    _headerSyncTimer = null;
+
     final subscription = _subscription;
     final output = _outputFile;
 
@@ -117,6 +198,8 @@ class AudioFileSink {
   }
 
   Future<void> dispose() async {
+    _headerSyncTimer?.cancel();
+    _headerSyncTimer = null;
     await stop();
   }
 
@@ -125,6 +208,7 @@ class AudioFileSink {
     _outputPath = null;
     _writeQueue = Future<void>.value();
     _writtenBytes = 0;
+    _lastSyncedBytes = 0;
   }
 
   Future<void> _finalizeHeader(RandomAccessFile file) async {
@@ -134,8 +218,6 @@ class AudioFileSink {
     await file.writeFrom(headerBytes);
     await file.setPosition(dataSize + _wavHeaderSize);
   }
-
-  Uint8List _createHeaderPlaceholder() => Uint8List(_wavHeaderSize);
 
   Uint8List _createWavHeader(int dataLength) {
     final totalSize = dataLength + _wavHeaderSize - 8;

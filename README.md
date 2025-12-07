@@ -1,21 +1,131 @@
 # Easy Audio
-+ Support record audio file.
-+ Friendly support convert speed to text.
 
-# Dependencies 
+Flutter plugin for audio recording with speech-to-text support.
 
-	- [x] https://pub.dev/packages/audioplayers
-	- [x] https://pub.dev/packages/record
-	- [x] https://pub.dev/packages/speech_to_text
-	- [] https://pub.dev/packages/flutter_tts
+## Features
 
-# How to use
+- Audio recording with background mode support
+- Speech-to-text transcription (using Vosk + native STT)
+- Audio playback with controls
+- Session management (minimize/restore/resume)
+- Floating widget for recording control
+- Multi-language support (40+ languages)
+- Crash recovery for pending recordings
 
-```bash
-context.startRecord()
+---
+
+## Quick Start (Simple API)
+
+For simple use cases, use the **Simple API** - minimal setup, maximum productivity.
+
+### 1. Initialize in main.dart
+
+```dart
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  final navigatorKey = GlobalKey<NavigatorState>();
+  
+  EasyAudio.initialize(
+    navigatorKey: navigatorKey,
+    config: EasyAudioConfig(
+      defaultLocale: 'en-US',
+      confirmOnExit: true,
+      localizations: EasyAudioLocalizations(), // or EasyAudioLocalizations.vi
+    ),
+  );
+  
+  runApp(MaterialApp(
+    navigatorKey: navigatorKey,
+    home: MyHomePage(),
+  ));
+}
 ```
 
-Please make sure have handle permission. (Can use: `https://pub.dev/packages/permission_handler`)
+### 2. Open Recording Modal
+
+```dart
+// Simple - just open and get result
+final result = await EasyAudio.instance.openRecordModal(
+  title: 'My Recording',
+);
+
+if (result != null) {
+  print('Audio saved to: ${result.url}');
+  print('Transcript: ${result.content}');
+  print('Duration: ${result.totalTime}ms');
+}
+```
+
+### 3. Play Audio
+
+```dart
+// Self-contained player - just pass a URL!
+SimpleAudioPlayer(
+  url: recordingUrl,
+  title: 'My Recording',
+  expanded: true,
+),
+```
+
+### 4. Using SimpleRecordMixin (Optional)
+
+For screens with recording functionality:
+
+```dart
+class MyRecordingPage extends StatefulWidget {
+  @override
+  State<MyRecordingPage> createState() => _MyRecordingPageState();
+}
+
+class _MyRecordingPageState extends State<MyRecordingPage>
+    with SimpleRecordMixin {
+  
+  @override
+  Future<void> onRecordComplete(RecordData result) async {
+    // Handle completed recording (upload, save, etc.)
+    await uploadFile(result.url);
+  }
+
+  @override
+  Future<bool> requestPermissions() async {
+    // Use your preferred permission handler
+    return await Permission.microphone.request().isGranted;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton(
+      onPressed: startRecording, // Provided by mixin
+      child: Text('Record'),
+    );
+  }
+}
+```
+
+---
+
+## Advanced Usage
+
+For complex scenarios (custom session management, BLoC integration, etc.),
+use the advanced API with `RecordBloc`, `BaseRecordSessionMixin`, etc.
+
+See [Advanced Documentation](./docs/doc-easy-audio.md) for details.
+
+---
+
+## Dependencies 
+
+- [audioplayers](https://pub.dev/packages/audioplayers)
+- [record](https://pub.dev/packages/record)
+- [speech_to_text_record](./plugins/speech_to_text_record) (bundled)
+- [vosk_flutter](./plugins/speech_to_text_record/packages/vosk_flutter) (bundled)
+
+---
+
+## Platform Setup
+
+Please make sure to handle permissions. (Recommend: [permission_handler](https://pub.dev/packages/permission_handler))
 
 
 # How to Setup

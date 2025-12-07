@@ -19,9 +19,20 @@ class RecordModalService {
   GlobalKey<NavigatorState>? _navigatorKey;
   bool _hasOpenModal = false;
 
+  /// Current user ID for pending recording persistence.
+  /// Set this before opening the modal to enable crash recovery.
+  String? currentUserId;
+
   void initialize(GlobalKey<NavigatorState> navigatorKey) {
     _navigatorKey = navigatorKey;
     debugPrint('[RecordModalService] Initialized with navigator key');
+  }
+
+  /// Set the current user ID for pending recording persistence.
+  /// Call this when user logs in.
+  void setCurrentUserId(String? userId) {
+    currentUserId = userId;
+    debugPrint('[RecordModalService] Set current user ID: $userId');
   }
 
   bool get hasOpenModal => _hasOpenModal;
@@ -34,6 +45,7 @@ class RecordModalService {
     bool restoreFromSession = false,
     required bool Function(T dataCurrent, T data) isSameData,
     required bool Function(T data) validData,
+    String? customData,
   }) async {
     // Assertion check cho navigator key initialization
     assert(
@@ -162,7 +174,11 @@ class RecordModalService {
           '[RecordModalService] ERROR: Session exists but bloc is null! '
           'Creating new session.',
         );
-        bloc = SpeechTextBloc(SpeechToTextUsecase(local: locale));
+        bloc = SpeechTextBloc(_createSpeechToTextUsecase(
+          locale: locale,
+          title: transcript,
+          customData: customData,
+        ));
         sessionManager
           ..updateData(data)
           ..startSession(
@@ -181,7 +197,11 @@ class RecordModalService {
       }
     } else {
       // Tạo bloc mới và start session
-      bloc = SpeechTextBloc(SpeechToTextUsecase(local: locale));
+      bloc = SpeechTextBloc(_createSpeechToTextUsecase(
+        locale: locale,
+        title: transcript,
+        customData: customData,
+      ));
       sessionManager
         ..updateData(data)
         ..startSession(
@@ -369,5 +389,28 @@ class RecordModalService {
       debugPrint('[RecordModalService] Error: $e');
       debugPrint('[RecordModalService] StackTrace: $stackTrace');
     }
+  }
+
+  /// Create a SpeechToTextUsecase with pending recording config if user is set
+  SpeechToTextUsecase _createSpeechToTextUsecase({
+    required String locale,
+    String? title,
+    String? customData,
+  }) {
+    PendingRecordingConfig? pendingConfig;
+
+    if (currentUserId != null && currentUserId!.isNotEmpty) {
+      pendingConfig = PendingRecordingConfig(
+        userId: currentUserId!,
+        title: title,
+        customData: customData,
+        enablePersistence: true,
+      );
+    }
+
+    return SpeechToTextUsecase(
+      local: locale,
+      pendingRecordingConfig: pendingConfig,
+    );
   }
 }
