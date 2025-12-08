@@ -3,14 +3,14 @@ import 'package:example/src/constans.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-class EasyAudioExampleScreen extends StatefulWidget {
-  const EasyAudioExampleScreen({super.key});
+class AdvancedRecordScreen extends StatefulWidget {
+  const AdvancedRecordScreen({super.key});
 
   @override
-  State<EasyAudioExampleScreen> createState() => _EasyAudioExampleScreenState();
+  State<AdvancedRecordScreen> createState() => _AdvancedRecordScreenState();
 }
 
-class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
+class _AdvancedRecordScreenState extends State<AdvancedRecordScreen> {
   final EasyAudioController _audioController = EasyAudioController();
 
   var _offset = kOffsetHide;
@@ -36,10 +36,6 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
   }
 
   Future<bool?> askPermission() async {
-    // if (await Permission.contacts.request().isGranted) {
-    //   // Either the permission was already granted before or the user just granted it.
-    // }
-
     // You can request multiple permissions at once.
     Map<Permission, PermissionStatus> statuses = await [
       Permission.microphone,
@@ -252,7 +248,7 @@ class _EasyAudioExampleScreenState extends State<EasyAudioExampleScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Easy Audio'),
+        title: const Text('Easy Audio - Advanced'),
         actions: [
           IconButton(
             onPressed: _onTapSelectLanguage,

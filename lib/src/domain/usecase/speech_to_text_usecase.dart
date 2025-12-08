@@ -4,6 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:speech_to_text_record/speech_to_text_record.dart';
 
+import '../../core/services/pending_recording_service.dart';
+import '../../core/utils/logs/debug_print/speech_to_text_usecase_log.dart';
+
 class StopSpeechResult {
   const StopSpeechResult({
     required this.recordingEnabled,
@@ -14,13 +17,45 @@ class StopSpeechResult {
   final String? recordingPath;
 }
 
+/// Configuration for pending recording persistence
+class PendingRecordingConfig {
+  const PendingRecordingConfig({
+    required this.userId,
+    this.title,
+    this.customData,
+    this.enablePersistence = true,
+  });
+
+  /// User identifier for this recording session
+  final String userId;
+
+  /// Optional title for the recording
+  final String? title;
+
+  /// Optional custom data (JSON-encoded) from the app
+  /// e.g., appointment ID, patient info, etc.
+  final String? customData;
+
+  /// Whether to enable persistence for recovery after app crash
+  final bool enablePersistence;
+}
+
 class SpeechToTextUsecase {
-  SpeechToTextUsecase({this.local, this.enablePauseResume = true});
+  SpeechToTextUsecase({
+    this.local,
+    this.enablePauseResume = true,
+    this.pendingRecordingConfig,
+  });
 
   static const String _defaultLocale = 'en-US';
 
   final String? local;
   final bool enablePauseResume;
+
+  /// Configuration for pending recording persistence.
+  /// If provided, the recording session will be tracked and can be
+  /// recovered after an unexpected app termination.
+  final PendingRecordingConfig? pendingRecordingConfig;
 
   SpeechToTextRecordController? _controller;
   StreamSubscription<SpeechRecognitionResult>? _resultsSubscription;
@@ -30,12 +65,17 @@ class SpeechToTextUsecase {
   void Function(Object error, StackTrace stackTrace)? _onError;
   bool _recordingActive = false;
   String? _preparedLocale;
+  String? _currentRecordingPath;
+  Timer? _pendingSessionUpdateTimer;
 
   final List<String> _finalSegments = <String>[];
   String _partialSegment = '';
 
   /// Get the microphone audio stream for real-time waveform visualization
   MicrophoneAudioStream? get microphoneStream => _controller?.microphoneStream;
+
+  /// Get the current recording file path
+  String? get currentRecordingPath => _currentRecordingPath;
 
   /// Prepare the speech-to-text pipeline.
   Future<String?> initSpeechToText({
@@ -49,15 +89,15 @@ class SpeechToTextUsecase {
       return targetLocale;
     } on SpeechToTextNotSupportedException catch (error, stackTrace) {
       statusListener?.call('notSupported');
-      _logError('Speech recognition not supported', error, stackTrace);
+      debugPrintSpeechRecognitionNotSupported(error, stackTrace);
       rethrow;
     } on MicrophonePermissionException catch (error, stackTrace) {
       statusListener?.call('permissionDenied');
-      _logError('Microphone permission denied', error, stackTrace);
+      debugPrintMicrophonePermissionDenied(error, stackTrace);
       rethrow;
     } catch (error, stackTrace) {
       statusListener?.call('error');
-      _logError('Failed to initialise speech pipeline', error, stackTrace);
+      debugPrintFailedToInitialiseSpeechPipeline(error, stackTrace);
       rethrow;
     }
   }
@@ -80,7 +120,7 @@ class SpeechToTextUsecase {
     _partialSegment = '';
 
     if (kDebugMode) {
-      debugPrint('[SpeechToTextUsecase] start locale: $resolvedLocale');
+      debugPrintStartLocale(resolvedLocale);
     }
     await _resultsSubscription?.cancel();
     _resultsSubscription = controller.transcriptions.listen(
@@ -99,8 +139,12 @@ class SpeechToTextUsecase {
     try {
       Future<void> startRecord() async {
         recordingPath = await _createRecordingPath();
+        _currentRecordingPath = recordingPath;
         await controller.startRecordingTo(recordingPath!);
         recordingStarted = true;
+
+        // Start pending recording session if configured
+        await _startPendingSession(recordingPath!, resolvedLocale);
       }
 
       if (startRecordingBeforeStt) {
@@ -113,6 +157,9 @@ class SpeechToTextUsecase {
 
       _recordingActive = recordingStarted;
       _isRunning = true;
+
+      // Start periodic pending session updates
+      _startPendingSessionUpdateTimer();
     } catch (error, stackTrace) {
       if (recordingStarted) {
         try {
@@ -125,8 +172,99 @@ class SpeechToTextUsecase {
       _resultsSubscription = null;
       _recordingActive = false;
       _isRunning = false;
-      _logError('Failed to start speech pipeline', error, stackTrace);
+      _currentRecordingPath = null;
+
+      // Cancel pending session on error
+      await _cancelPendingSession();
+
+      debugPrintFailedToStartSpeechPipeline(error, stackTrace);
       rethrow;
+    }
+  }
+
+  /// Start pending recording session for crash recovery
+  Future<void> _startPendingSession(
+    String recordingPath,
+    String locale,
+  ) async {
+    final config = pendingRecordingConfig;
+    if (config == null || !config.enablePersistence) {
+      return;
+    }
+
+    try {
+      await PendingRecordingService.instance.startSession(
+        filePath: recordingPath,
+        userId: config.userId,
+        locale: locale,
+        title: config.title,
+        customData: config.customData,
+      );
+      debugPrintStartedPendingRecordingSession(config.userId);
+    } catch (e) {
+      debugPrintFailedToStartPendingSession(e);
+    }
+  }
+
+  /// Start timer to periodically update pending session
+  void _startPendingSessionUpdateTimer() {
+    _pendingSessionUpdateTimer?.cancel();
+    _pendingSessionUpdateTimer = Timer.periodic(
+      PendingRecordingService.autoSaveInterval,
+      (_) => _updatePendingSession(),
+    );
+  }
+
+  /// Update the pending session with current transcript and duration
+  Future<void> _updatePendingSession() async {
+    final config = pendingRecordingConfig;
+    if (config == null || !config.enablePersistence) {
+      return;
+    }
+
+    if (!PendingRecordingService.instance.hasActiveSession) {
+      return;
+    }
+
+    try {
+      // Get current transcript
+      final buffer = <String>[
+        ..._finalSegments,
+        if (_partialSegment.isNotEmpty) _partialSegment,
+      ];
+      final transcript = buffer.join(' ').trim();
+
+      // Get current duration from audio controller if available
+      // For now, we estimate based on session start time
+      final session = PendingRecordingService.instance.activeSession;
+      final duration = session != null
+          ? DateTime.now().difference(session.startedAt)
+          : Duration.zero;
+
+      await PendingRecordingService.instance.updateSession(
+        transcript: transcript,
+        duration: duration,
+      );
+    } catch (e) {
+      debugPrintFailedToUpdatePendingSession(e);
+    }
+  }
+
+  /// Cancel the pending session (recording was discarded)
+  Future<void> _cancelPendingSession() async {
+    _pendingSessionUpdateTimer?.cancel();
+    _pendingSessionUpdateTimer = null;
+
+    final config = pendingRecordingConfig;
+    if (config == null || !config.enablePersistence) {
+      return;
+    }
+
+    try {
+      await PendingRecordingService.instance.cancelSession(deleteFile: false);
+      debugPrintCancelledPendingRecordingSession();
+    } catch (e) {
+      debugPrintFailedToCancelPendingSession(e);
     }
   }
 
@@ -145,6 +283,15 @@ class SpeechToTextUsecase {
       recordedPath = await controller.stop(
         discardRecording: discardRecording,
       );
+
+      // Handle pending session based on whether recording was saved
+      if (discardRecording) {
+        await _cancelPendingSession();
+      } else if (pendingRecordingConfig?.enablePersistence == true) {
+        _pendingSessionUpdateTimer?.cancel();
+        _pendingSessionUpdateTimer = null;
+        debugPrintPendingRecordingKeptForUpload();
+      }
     } finally {
       await _resultsSubscription?.cancel();
       _resultsSubscription = null;
@@ -155,6 +302,7 @@ class SpeechToTextUsecase {
       _onTranscript = null;
       _onError = null;
       _recordingActive = false;
+      _currentRecordingPath = null;
     }
 
     return StopSpeechResult(
@@ -184,6 +332,9 @@ class SpeechToTextUsecase {
   }
 
   Future<void> dispose() async {
+    _pendingSessionUpdateTimer?.cancel();
+    _pendingSessionUpdateTimer = null;
+
     await _resultsSubscription?.cancel();
     _resultsSubscription = null;
     if (_isRunning) {
@@ -197,6 +348,7 @@ class SpeechToTextUsecase {
     }
     _isPrepared = false;
     _preparedLocale = null;
+    _currentRecordingPath = null;
   }
 
   Future<SpeechToTextRecordController> _ensurePrepared(
@@ -237,7 +389,7 @@ class SpeechToTextUsecase {
   }
 
   void _handleStreamError(Object error, StackTrace stackTrace) {
-    _logError('Speech pipeline error', error, stackTrace);
+    debugPrintSpeechPipelineError(error, stackTrace);
     final errorHandler = _onError;
     if (errorHandler != null) {
       errorHandler(error, stackTrace);
@@ -254,14 +406,6 @@ class SpeechToTextUsecase {
       if (_partialSegment.isNotEmpty) _partialSegment,
     ];
     callback(buffer.join(' ').trim());
-  }
-
-  void _logError(String message, Object error, StackTrace stackTrace) {
-    if (!kDebugMode) {
-      return;
-    }
-    debugPrint('[SpeechToTextUsecase] $message: $error');
-    debugPrint(stackTrace.toString());
   }
 
   Future<String> _createRecordingPath() async {

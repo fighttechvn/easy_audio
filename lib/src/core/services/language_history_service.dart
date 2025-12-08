@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:speech_to_text_record/speech_to_text_record.dart';
 import 'package:vosk_flutter/vosk_flutter.dart';
 
+import '../utils/logs/debug_print/language_history_service_log.dart';
+
 /// Service to manage language usage history
 class LanguageHistoryService {
   static const String _keyUsedLanguages = 'easy_audio_used_languages';
@@ -23,7 +25,7 @@ class LanguageHistoryService {
       final List<dynamic> jsonList = json.decode(jsonString);
       return jsonList.map((item) => item['locale'] as String).toList();
     } catch (e) {
-      debugPrint('Error parsing used languages: $e');
+      debugPrintErrorParsingUsedLanguages(e);
       return [];
     }
   }
@@ -104,7 +106,7 @@ class LanguageHistoryService {
       final modelName = _modelNameFromFileName(fileName);
       return modelLoader.isModelAlreadyLoaded(modelName);
     } catch (e) {
-      debugPrint('Error checking model download status: $e');
+      debugPrintErrorCheckingModelDownloadStatus(e);
       return false;
     }
   }

@@ -1,16 +1,16 @@
 import 'dart:async';
-import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../core/utils/logs/debug_print.dart';
+import '../../core/utils/record_modal_utils.dart';
 import '../../domain/entities/record_data.dart';
-import '../../record_audio_constants.dart';
 import '../shared/widgets/waveforms_sound/fixed_wareform.dart';
 import 'bloc/speech_text_bloc.dart';
 import 'record_session_manager.dart';
 import 'widgets/control_bar.dart';
-import 'widgets/sheet_icon_button.dart';
+import 'widgets/record_modal_header.dart';
 import 'widgets/transcription_view.dart';
 import 'widgets/waveform_view.dart';
 
@@ -56,38 +56,27 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
   void _stopRecord(bool save) {
     final bloc = context.read<SpeechTextBloc>();
     if (bloc.isClosed) {
-      debugPrint(
-        '🎙️ [RecordModalWidget] WARNING: Cannot stop record - '
-        'bloc is closed',
-      );
+      debugPrintCannotStopRecordBlocClosed();
       return;
     }
-    debugPrint('🎙️ [RecordModalWidget] Stopping record - save: $save');
+
+    debugPrintStopRecord(save);
     bloc.add(StopRecordEvent(isSave: save));
   }
 
   void _startPipeline() {
-    debugPrint('🎙️ [RecordModalWidget] Starting pipeline...');
+    debugPrintStartingPipeline();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
-        debugPrint(
-          '🎙️ [RecordModalWidget] WARNING: Cannot start pipeline - '
-          'widget not mounted',
-        );
+        debugPrintCannotStartPipelineWidgetNotMounted();
         return;
       }
       final bloc = context.read<SpeechTextBloc>();
       if (bloc.isClosed) {
-        debugPrint(
-          '🎙️ [RecordModalWidget] ERROR: Cannot start pipeline - '
-          'bloc is closed',
-        );
+        debugPrintCannotStartPipelineBlocClosed();
         return;
       }
-      debugPrint(
-        '🎙️ [RecordModalWidget] Adding StartRecordEvent to bloc - '
-        'blocState: ${bloc.state.runtimeType}',
-      );
+      debugPrintAddingStartRecordEvent(bloc.state.runtimeType);
 
       // Sử dụng wrapper callback để luôn gọi callback hiện tại
       // từ session manager
@@ -97,23 +86,17 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
             // Lấy callback hiện tại từ session manager
             final currentCallback = sessionManager.updateContentCallback;
             if (currentCallback != null) {
-              debugPrint(
-                '🎙️ [RecordModalWidget] Calling current callback'
-                ' from session manager',
-              );
+              debugPrintCallingCurrentCallbackFromSessionManager();
               currentCallback(content);
             } else {
-              debugPrint(
-                '🎙️ [RecordModalWidget] WARNING: No callback '
-                'in session manager',
-              );
+              debugPrintWarningNoCallbackInSessionManager();
             }
           },
         ),
       );
       // Đánh dấu pipeline active sau khi start
       sessionManager.setPipelineActive(true);
-      debugPrint('🎙️ [RecordModalWidget] Pipeline started');
+      debugPrintPipelineStarted();
     });
   }
 
@@ -125,15 +108,10 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
   }
 
   void _onListenerSpeechTextBloc(BuildContext context, SpeechTextState state) {
-    debugPrint(
-      '🎙️ [RecordModalWidget] Bloc state changed: ${state.runtimeType}',
-    );
+    debugPrintBlocStateChanged(state.runtimeType);
 
     if (state is InitFailed && state.stateUI.isCloseFeature) {
-      debugPrint(
-        '🎙️ [RecordModalWidget] Init failed, closing modal - '
-        'error: ${state.stateUI}',
-      );
+      debugPrintInitFailedClosingModal(state.stateUI);
       Navigator.of(context).pop();
       return;
     }
@@ -141,18 +119,18 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
     if (state is InitSucceeded) {
       // Start pipeline cho cả restore và new session
       // Vì khi restore, recording vẫn đang chạy nên cần start lại pipeline
-      debugPrint('🎙️ [RecordModalWidget] Init succeeded, starting pipeline');
+      debugPrintInitSucceededStartingPipeline();
       _startPipeline();
     } else if (state is Recording) {
       if (_recordStartedAt == null) {
         _recordStartedAt = DateTime.now();
         _elapsedDuration.value = Duration.zero;
-        debugPrint('🎙️ [RecordModalWidget] Recording started');
+        debugPrintRecordingStarted();
       }
       if (_pausedAt != null) {
         _pausedAccumulated += DateTime.now().difference(_pausedAt!);
         _pausedAt = null;
-        debugPrint('🎙️ [RecordModalWidget] Recording resumed');
+        debugPrintRecordingResumed();
       }
       // Update session manager
       RecordSessionManager.instance.updateRecordingMetadata(
@@ -161,11 +139,7 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
         pausedAt: _pausedAt,
       );
     } else if (state is StoppedRecord) {
-      debugPrint(
-        '🎙️ [RecordModalWidget] Recording stopped - '
-        'isSave: ${state.isSave}, '
-        'hasFilePath: ${state.filePath != null}',
-      );
+      debugPrintRecordingStopped(state.isSave, state.filePath != null);
       _recordStartedAt = null;
       // Set pipeline inactive khi recording stopped
       sessionManager.setPipelineActive(false);
@@ -199,10 +173,7 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
         Navigator.of(context).pop(record);
       }
     } else if (state is RecordError) {
-      debugPrint(
-        '🎙️ [RecordModalWidget] Recording error - '
-        'message: ${state.message}',
-      );
+      debugPrintRecordingError(state.message);
       _recordStartedAt = null;
       // Set pipeline inactive khi có error
       sessionManager.setPipelineActive(false);
@@ -246,11 +217,8 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
   void initState() {
     super.initState();
 
-    debugPrint(
-      '🎙️ [RecordModalWidget] initState - '
-      'restoreFromSession: ${widget.restoreFromSession}, '
-      'hasActiveSession: ${sessionManager.hasActiveSession}',
-    );
+    debugPrintInitState(
+        widget.restoreFromSession, sessionManager.hasActiveSession);
 
     // Lưu callback vào session manager để có thể sử dụng lại khi restore
     sessionManager.setUpdateContentCallback(_updateContent);
@@ -269,53 +237,35 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
       // Restore content - set trực tiếp vào controller
       final restoredContent = sessionManager.content ?? '';
       _contentController.value = restoredContent;
-      debugPrint(
-        '🎙️ [RecordModalWidget] Restored content to controller - '
-        'length: ${restoredContent.length}',
-      );
+      debugPrintRestoredContentToController(restoredContent.length);
 
-      debugPrint(
-        '🎙️ [RecordModalWidget] Restoring from session - '
-        'isPipelineActive: ${sessionManager.isPipelineActive}, '
-        'contentLength: ${sessionManager.content?.length ?? 0}',
-      );
+      debugPrintRestoringFromSession(
+          sessionManager.isPipelineActive, sessionManager.content?.length ?? 0);
 
       // Không cần restart pipeline vì wrapper callback sẽ tự động
       // gọi callback mới từ session manager
-      debugPrint(
-        '🎙️ [RecordModalWidget] Pipeline will use new callback '
-        'via session manager',
-      );
+      debugPrintPipelineWillUseNewCallback();
     } else {
-      debugPrint('🎙️ [RecordModalWidget] Starting new recording session');
+      debugPrintStartingNewRecordingSession();
     }
 
     _timer =
         Timer.periodic(const Duration(milliseconds: 80), _updateElapsedTimer);
-    _supportsPauseResume = _detectPauseSupport();
+    _supportsPauseResume = RecordModalUtils.supportsPauseResume;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
-        debugPrint(
-          '🎙️ [RecordModalWidget] WARNING: Widget not mounted in '
-          'post frame callback',
-        );
+        debugPrintWarningWidgetNotMountedInPostFrameCallback();
         return;
       }
       final bloc = context.read<SpeechTextBloc>();
       if (bloc.isClosed) {
-        debugPrint(
-          '🎙️ [RecordModalWidget] WARNING: Bloc closed in '
-          'post frame callback',
-        );
+        debugPrintWarningBlocClosedInPostFrameCallback();
         return;
       }
       final currentState = bloc.state;
       if (currentState is InitSucceeded && !_isRestoringFromSession) {
-        debugPrint(
-          '🎙️ [RecordModalWidget] New session initialized, '
-          'starting pipeline',
-        );
+        debugPrintNewSessionInitializedStartingPipeline();
         _startPipeline();
       }
     });
@@ -323,11 +273,8 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
 
   @override
   void dispose() {
-    debugPrint(
-      '🎙️ [RecordModalWidget] dispose - '
-      'hasActiveSession: ${sessionManager.hasActiveSession}, '
-      'isMinimized: ${sessionManager.isMinimized}',
-    );
+    debugPrintDispose(
+        sessionManager.hasActiveSession, sessionManager.isMinimized);
 
     _timer?.cancel();
     _elapsedDuration.dispose();
@@ -342,14 +289,10 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
 
       // Clear callback nếu session đang kết thúc (không minimize)
       if (!sessionManager.isMinimized) {
-        debugPrint(
-          '🎙️ [RecordModalWidget] Session ending, clearing callback',
-        );
+        debugPrintSessionEndingClearingCallback();
         sessionManager.setUpdateContentCallback(null);
       } else {
-        debugPrint(
-          '🎙️ [RecordModalWidget] Session minimized, keeping callback',
-        );
+        debugPrintSessionMinimizedKeepingCallback();
       }
     }
 
@@ -359,59 +302,15 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
     super.dispose();
   }
 
-  bool _detectPauseSupport() {
-    try {
-      if (Platform.isAndroid) {
-        final v = Platform.operatingSystemVersion; // e.g. 'Android 13 (SDK 33)'
-        final sdkMatch = RegExp(r'SDK\s*(\d+)').firstMatch(v);
-        if (sdkMatch != null) {
-          final sdk = int.tryParse(sdkMatch.group(1) ?? '') ?? 0;
-          return sdk >= 24;
-        }
-        // If cannot parse, be conservative and disable
-        return false;
-      }
-      // iOS/macOS/web: allow by default
-      return true;
-    } catch (_) {
-      return true;
-    }
-  }
-
-  String _formatClockTime(DateTime time) {
-    final hour = time.hour.toString().padLeft(2, '0');
-    final minute = time.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
-  }
-
-  String _formatElapsedForDisplay(Duration value) {
-    final hours = value.inHours;
-    final minutes = value.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final seconds = value.inSeconds.remainder(60).toString().padLeft(2, '0');
-    final hundredths =
-        (value.inMilliseconds.remainder(1000) ~/ 10).toString().padLeft(2, '0');
-    if (hours > 0) {
-      final hoursText = hours.toString().padLeft(2, '0');
-      return '$hoursText:$minutes:$seconds,$hundredths';
-    }
-    return '$minutes:$seconds,$hundredths';
-  }
-
   void _onTogglePauseResume(SpeechTextState state) {
     if (!_supportsPauseResume || !mounted) {
-      debugPrint(
-        '🎙️ [RecordModalWidget] Cannot toggle pause/resume - '
-        'supportsPauseResume: $_supportsPauseResume, mounted: $mounted',
-      );
+      debugPrintCannotTogglePauseResume(_supportsPauseResume, mounted);
       return;
     }
 
     final bloc = context.read<SpeechTextBloc>();
     if (bloc.isClosed) {
-      debugPrint(
-        '🎙️ [RecordModalWidget] WARNING: Cannot toggle pause/resume - '
-        'bloc is closed',
-      );
+      debugPrintWarningCannotTogglePauseResumeBlocClosed();
       return;
     }
 
@@ -447,19 +346,20 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
             builder: (context, state) {
               final bool isSaving = state is StopingRecord;
               final bool isInitialising = state is InitialingService;
-              final isDarkMode = Theme.brightnessOf(context) == Brightness.dark;
 
               return GestureDetector(
                 onTap: () {},
                 child: Container(
                   width: double.infinity,
-                  decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.only(
+                  decoration: BoxDecoration(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? const Color(0xFF1C1C1E)
+                          : Colors.white,
+                      borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(24),
                         topRight: Radius.circular(24),
                       ),
-                      boxShadow: [
+                      boxShadow: const [
                         BoxShadow(
                           color: Colors.black12,
                           blurRadius: 10,
@@ -473,79 +373,13 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Center(
-                          child: Container(
-                            width: 52,
-                            height: 5,
-                            decoration: BoxDecoration(
-                              color: isDarkMode
-                                  ? Colors.white.withValues(alpha: 0.18)
-                                  : Colors.black.withValues(alpha: 0.18),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Row(
-                          children: [
-                            SheetIconButton(
-                              icon: Icons.close_rounded,
-                              tooltip: 'Close',
-                              onTap: isSaving ? null : _onTapCloseButton,
-                              backgroundColor: Theme.brightnessOf(context) ==
-                                      Brightness.light
-                                  ? Colors.grey[200]!
-                                  : Colors.white10,
-                              iconColor:
-                                  isDarkMode ? Colors.white : Colors.black,
-                            ),
-                            Expanded(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    displayTitle,
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: Theme.brightnessOf(context) ==
-                                              Brightness.dark
-                                          ? Colors.white
-                                          : Colors.black,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  ValueListenableBuilder<Duration>(
-                                    valueListenable: _elapsedDuration,
-                                    builder: (_, duration, __) {
-                                      final reference =
-                                          _recordStartedAt ?? DateTime.now();
-                                      final subtitle =
-                                          '${_formatClockTime(reference)}  '
-                                          '${duration.formatTimeAudio}';
-                                      return Text(
-                                        subtitle,
-                                        style: TextStyle(
-                                          color: Colors.white
-                                              .withValues(alpha: 0.6),
-                                          fontSize: 13,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
-                            SheetIconButton.progressAware(
-                              icon: Icons.check_rounded,
-                              tooltip: 'Save record',
-                              onTap: isSaving ? null : () => _stopRecord(true),
-                              backgroundColor: const Color(0xFF0A84FF),
-                              iconColor: Colors.white,
-                              isLoading: isSaving,
-                            ),
-                          ],
+                        RecordModalHeader(
+                          title: displayTitle,
+                          elapsedDuration: _elapsedDuration,
+                          recordStartedAt: _recordStartedAt,
+                          isSaving: isSaving,
+                          onClose: _onTapCloseButton,
+                          onSave: () => _stopRecord(true),
                         ),
                         const SizedBox(height: 12),
                         Expanded(
@@ -582,7 +416,8 @@ class _RecordModalWidgetState extends State<RecordModalWidget> {
                           valueListenable: _elapsedDuration,
                           builder: (_, duration, __) {
                             return Text(
-                              _formatElapsedForDisplay(duration),
+                              RecordModalUtils.formatElapsedForDisplay(
+                                  duration),
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: Theme.brightnessOf(context) ==
