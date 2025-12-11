@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/utils/format_utils.dart';
+
 /// Simple audio preview widget for pending recordings.
 class SimpleAudioPreview extends StatelessWidget {
   const SimpleAudioPreview({
@@ -11,12 +13,7 @@ class SimpleAudioPreview extends StatelessWidget {
   final String filePath;
   final Duration duration;
 
-  String get _formattedDuration {
-    final minutes = duration.inMinutes;
-    final seconds = duration.inSeconds % 60;
-    return '${minutes.toString().padLeft(2, '0')}:'
-        '${seconds.toString().padLeft(2, '0')}';
-  }
+  String get _formattedDuration => FormatUtils.formatDuration(duration);
 
   @override
   Widget build(BuildContext context) {

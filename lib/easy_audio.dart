@@ -27,6 +27,7 @@ export 'src/domain/usecase/speech_to_text_usecase.dart';
 // Presentation - Widgets
 export 'src/presentation/pending_recovery/pending_recording_recovery_widget.dart';
 export 'src/presentation/pending_recovery/widgets/pending_recording_dialog.dart';
+export 'src/presentation/pending_recovery/widgets/recording_file_size_widget.dart';
 export 'src/presentation/record_modal/bloc/speech_text_bloc.dart';
 export 'src/presentation/record_modal/record_modal_widget.dart';
 export 'src/presentation/record_modal/record_session_manager.dart';

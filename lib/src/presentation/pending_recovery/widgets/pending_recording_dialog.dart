@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/services/pending_recording_service.dart';
+import '../../../core/utils/format_utils.dart';
 import '../../../domain/entities/pending_recording_types.dart';
+import 'recording_file_size_widget.dart';
 import 'simple_audio_preview.dart';
 
 export '../../../domain/entities/pending_recording_types.dart';
 
-/// Dialog widget for displaying pending recording recovery options.
 class PendingRecordingDialog extends StatefulWidget {
   const PendingRecordingDialog({
     super.key,
@@ -13,7 +15,7 @@ class PendingRecordingDialog extends StatefulWidget {
     required this.config,
   });
 
-  final dynamic recording; // PendingRecording from pending_recording_service
+  final PendingRecording recording;
   final PendingRecordingDialogConfig config;
 
   @override
@@ -24,19 +26,11 @@ class _PendingRecordingDialogState extends State<PendingRecordingDialog> {
   bool _isPreviewExpanded = false;
   bool _isLoading = false;
 
-  String get _formattedDuration {
-    final duration = widget.recording.duration as Duration;
-    final minutes = duration.inMinutes;
-    final seconds = duration.inSeconds % 60;
-    return '${minutes.toString().padLeft(2, '0')}:'
-        '${seconds.toString().padLeft(2, '0')}';
-  }
+  String get _formattedDuration =>
+      FormatUtils.formatDuration(widget.recording.duration);
 
-  String get _formattedDate {
-    final date = widget.recording.startedAt as DateTime;
-    return '${date.day}/${date.month}/${date.year} '
-        '${date.hour}:${date.minute.toString().padLeft(2, '0')}';
-  }
+  String get _formattedDate =>
+      FormatUtils.formatDate(widget.recording.startedAt);
 
   Future<void> _handleAction(PendingRecordingAction action) async {
     setState(() => _isLoading = true);
@@ -79,8 +73,7 @@ class _PendingRecordingDialogState extends State<PendingRecordingDialog> {
             Text(config.message),
             const SizedBox(height: 16),
             _buildRecordingInfo(theme),
-            if ((widget.recording.transcript as String?)?.isNotEmpty ==
-                true) ...[
+            if (widget.recording.transcript?.isNotEmpty == true) ...[
               const SizedBox(height: 12),
               _buildTranscriptPreview(theme),
             ],
@@ -134,7 +127,7 @@ class _PendingRecordingDialogState extends State<PendingRecordingDialog> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if ((widget.recording.title as String?)?.isNotEmpty == true) ...[
+          if (widget.recording.title?.isNotEmpty == true) ...[
             Row(
               children: [
                 Icon(
@@ -184,13 +177,17 @@ class _PendingRecordingDialogState extends State<PendingRecordingDialog> {
               ),
             ],
           ),
+          const SizedBox(height: 8),
+          RecordingFileSizeWidget(
+            recording: widget.recording,
+          ),
         ],
       ),
     );
   }
 
   Widget _buildTranscriptPreview(ThemeData theme) {
-    final transcript = (widget.recording.transcript as String?) ?? '';
+    final transcript = widget.recording.transcript ?? '';
     final previewText = transcript.length > 150
         ? '${transcript.substring(0, 150)}...'
         : transcript;
@@ -271,8 +268,8 @@ class _PendingRecordingDialogState extends State<PendingRecordingDialog> {
         if (_isPreviewExpanded) ...[
           const SizedBox(height: 8),
           SimpleAudioPreview(
-            filePath: widget.recording.filePath as String,
-            duration: widget.recording.duration as Duration,
+            filePath: widget.recording.filePath,
+            duration: widget.recording.duration,
           ),
         ],
       ],
