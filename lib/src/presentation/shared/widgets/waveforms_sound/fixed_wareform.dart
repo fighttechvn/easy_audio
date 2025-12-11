@@ -1,5 +1,7 @@
 import 'dart:math';
+import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../record_audio_constants.dart';
@@ -77,7 +79,15 @@ class WavePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(WavePainter oldDelegate) => false;
+  bool shouldRepaint(WavePainter oldDelegate) {
+    return waveColor != oldDelegate.waveColor ||
+        waveCap != oldDelegate.waveCap ||
+        waveThickness != oldDelegate.waveThickness ||
+        waveSpace != oldDelegate.waveSpace ||
+        form != oldDelegate.form ||
+        animValue != oldDelegate.animValue ||
+        !listEquals(oldDelegate.templates, templates);
+  }
 
   void _drawFixedWave(Size size, Canvas canvas) {
     final coupleWidth = waveThickness + waveSpace;
@@ -87,10 +97,28 @@ class WavePainter extends CustomPainter {
     final start = remainingWidth / 2 + waveThickness / 2;
     final templateCount = templates.length;
     final maxT = templates.reduce(max);
-    for (var i = 0; i <= waveAndSpaceCount; i++) {
-      final t = templates[i % templateCount];
+
+    // Tạo offset để di chuyển từ phải sang trái
+    // Loop qua toàn bộ template: animValue từ 0 -> 1 = 1 chu kỳ đầy đủ
+    final totalPatternWidth = coupleWidth * templateCount;
+    final offset = (animValue % 1.0) * totalPatternWidth;
+
+    // Vẽ thêm waves để đảm bảo luôn fill đầy màn hình khi di chuyển
+    final extraWaves = templateCount + 2;
+    for (var i = -extraWaves; i <= waveAndSpaceCount + extraWaves; i++) {
+      // Sử dụng modulo để loop pattern mượt
+      final templateIndex = i % templateCount;
+      final t = templates[
+          templateIndex < 0 ? templateCount + templateIndex : templateIndex];
       double waveHeight;
-      final start0 = start + (coupleWidth * i);
+      final start0 = start + (coupleWidth * i) + offset;
+
+      // Chỉ vẽ nếu wave nằm trong viewport (với buffer nhỏ)
+      if (start0 < -waveThickness * 2 ||
+          start0 > size.width + waveThickness * 2) {
+        continue;
+      }
+
       if (form == WaveForm.fit) {
         waveHeight = t / maxT * (size.height - waveThickness);
       } else {
@@ -111,6 +139,13 @@ class AnimatedWaveform extends StatefulWidget {
   final WaveForm form;
   final double waveThickness;
   final int divide;
+  final Duration duration;
+  final double jitter;
+  final bool mirror;
+  final double smoothing;
+  final AnimatedWaveformController? controller;
+  final bool showSlider;
+  final Duration sliderDuration;
 
   const AnimatedWaveform({
     super.key,
@@ -119,6 +154,13 @@ class AnimatedWaveform extends StatefulWidget {
     this.form = WaveForm.contain,
     this.waveThickness = 4,
     this.divide = 1,
+    this.duration = const Duration(milliseconds: 650),
+    this.jitter = 0.35,
+    this.mirror = true,
+    this.smoothing = 0.25,
+    this.controller,
+    this.showSlider = false,
+    this.sliderDuration = const Duration(seconds: 2),
   });
 
   @override
@@ -126,61 +168,134 @@ class AnimatedWaveform extends StatefulWidget {
 }
 
 class _AnimatedWaveformState extends State<AnimatedWaveform>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController controller;
-  late final Animation<double> animation;
+  late final CurvedAnimation animation;
+  late final AnimationController sliderController;
+  late final Animation<double> sliderAnimation;
+  final Random _random = Random();
 
-  AnimationStatus? last;
+  late List<double> _baseTemplate;
+  late List<double> _fromSamples;
+  late List<double> _toSamples;
 
   @override
   void initState() {
     controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 500),
-    )..addListener(() {
-        if (controller.isCompleted) {
-          last = AnimationStatus.reverse;
-          controller.reverse();
-        } else if (controller.isDismissed) {
-          last = AnimationStatus.forward;
-          controller.forward();
-        }
-      });
+      duration: widget.duration,
+    )..addStatusListener(_handleStatus);
+    animation = CurvedAnimation(
+      parent: controller,
+      curve: Curves.easeInOut,
+    );
+
+    sliderController = AnimationController(
+      vsync: this,
+      duration: widget.sliderDuration,
+    );
+    // Đảo ngược: begin 0.0 (trái) -> end 1.0 (phải) để chạy từ phải sang trái
+    sliderAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(
+        parent: sliderController,
+        curve: Curves.linear,
+      ),
+    );
+
+    _initialiseTemplates();
     if (widget.playing) {
       controller.forward();
     }
-    animation = Tween(begin: 0.3, end: 0.7).animate(controller);
+
+    if (widget.showSlider) {
+      sliderController.repeat();
+    }
+
+    widget.controller?.pause = () {
+      controller.stop();
+      if (widget.showSlider) {
+        sliderController.stop();
+      }
+    };
+    widget.controller?.resume = () {
+      controller.forward();
+      if (widget.showSlider) {
+        sliderController.repeat();
+      }
+    };
     super.initState();
   }
 
   @override
   void didUpdateWidget(covariant AnimatedWaveform oldWidget) {
-    if (widget.playing) {
-      if (last == null || last == AnimationStatus.forward) {
-        controller.forward();
-      } else {
-        controller.reverse();
-      }
-    } else {
-      controller.stop();
+    if (widget.duration != oldWidget.duration) {
+      controller.duration = widget.duration;
     }
+
+    if (widget.sliderDuration != oldWidget.sliderDuration) {
+      sliderController.duration = widget.sliderDuration;
+    }
+
+    if (!listEquals(widget.templates, oldWidget.templates) ||
+        widget.divide != oldWidget.divide ||
+        widget.mirror != oldWidget.mirror) {
+      _initialiseTemplates(
+        resetAnimation: widget.playing,
+        notify: true,
+      );
+      if (widget.playing && !controller.isAnimating) {
+        controller.forward(from: 0);
+      }
+    }
+
+    if (widget.playing != oldWidget.playing) {
+      if (widget.playing) {
+        if (!controller.isAnimating) {
+          controller.forward(
+              from: controller.value == 1 ? 0 : controller.value);
+        }
+        if (widget.showSlider && !sliderController.isAnimating) {
+          sliderController.repeat();
+        }
+      } else {
+        controller.stop();
+        if (widget.showSlider) {
+          sliderController.stop();
+        }
+        setState(() {
+          _fromSamples = List<double>.from(_baseTemplate);
+          _toSamples = _fromSamples;
+        });
+      }
+    }
+
+    if (widget.showSlider != oldWidget.showSlider) {
+      if (widget.showSlider) {
+        sliderController.repeat();
+      } else {
+        sliderController.stop();
+      }
+    }
+
     super.didUpdateWidget(oldWidget);
   }
 
   @override
   void dispose() {
     controller.dispose();
+    sliderController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final newList = widget.templates.map((e) => e * widget.divide).toList();
-    final maxValue = newList.reduce(max);
-
     return AnimatedBuilder(
-      animation: animation,
+      animation: Listenable.merge([animation, sliderAnimation]),
       builder: (context, child) {
+        final samples = _currentSamples(animation.value);
+        final maxValue =
+            samples.isEmpty ? widget.waveThickness : samples.reduce(max);
+
         return ShaderMask(
           shaderCallback: (Rect bounds) {
             return const LinearGradient(
@@ -198,22 +313,105 @@ class _AnimatedWaveformState extends State<AnimatedWaveform>
               maxValue,
             ),
             painter: WavePainter(
-              templates: [
-                ...newList.asMap().entries.map((e) {
-                  if (e.value < (maxValue / 2)) {
-                    return e.value / animation.value;
-                  } else {
-                    return e.value * animation.value;
-                  }
-                }),
-              ],
+              templates: samples,
               waveThickness: widget.waveThickness,
-              waveColor: Colors.white,
+              waveColor: Colors.black,
               form: widget.form,
+              animValue: widget.showSlider ? sliderAnimation.value : 0,
             ),
           ),
         );
       },
     );
   }
+
+  void _handleStatus(AnimationStatus status) {
+    if (!widget.playing || !mounted) {
+      return;
+    }
+    if (status == AnimationStatus.completed) {
+      setState(() {
+        _fromSamples = _toSamples;
+        _toSamples = _generateSamples();
+      });
+      controller.forward(from: 0);
+    }
+  }
+
+  void _initialiseTemplates({bool resetAnimation = true, bool notify = false}) {
+    _baseTemplate = _buildBaseTemplate();
+    _fromSamples = _smoothSamples(_baseTemplate);
+    _toSamples = widget.playing ? _generateSamples() : _fromSamples;
+    if (resetAnimation) {
+      controller.value = 0;
+    }
+    if (notify && mounted) {
+      setState(() {});
+    }
+  }
+
+  List<double> _currentSamples(double t) {
+    if (_fromSamples.isEmpty) {
+      return const <double>[];
+    }
+    final double progress = widget.playing ? t : 0;
+    return List<double>.generate(_fromSamples.length, (index) {
+      final start = _fromSamples[index];
+      final end = _toSamples[index];
+      return lerpDouble(start, end, progress)!;
+    });
+  }
+
+  List<double> _buildBaseTemplate() {
+    if (widget.templates.isEmpty) {
+      return const <double>[];
+    }
+    final scaled = widget.templates
+        .map((value) => (max(0, value) * widget.divide).toDouble())
+        .toList(growable: false);
+    if (!widget.mirror || scaled.length < 2) {
+      return scaled;
+    }
+    final mirrored = List<double>.from(scaled)
+      ..addAll(scaled.sublist(0, scaled.length - 1).reversed);
+    return mirrored;
+  }
+
+  List<double> _generateSamples() {
+    if (_baseTemplate.isEmpty) {
+      return const <double>[];
+    }
+    final jitter = widget.jitter.clamp(0.0, 1.0);
+    const lowerClamp = 0.2;
+    final upperMultiplier = 1 + (jitter * 1.4);
+
+    final samples = List<double>.generate(_baseTemplate.length, (index) {
+      final base = _baseTemplate[index];
+      final noise = (_random.nextDouble() * 2 - 1) * jitter;
+      final value = base * (1 + noise);
+      final minValue = base * lowerClamp;
+      final maxValue = base * upperMultiplier;
+      return value.clamp(minValue, maxValue).toDouble();
+    }, growable: false);
+
+    return _smoothSamples(samples);
+  }
+
+  List<double> _smoothSamples(List<double> values) {
+    final smoothing = widget.smoothing.clamp(0.0, 1.0);
+    if (values.length < 3 || smoothing <= 0) {
+      return List<double>.from(values);
+    }
+    final smoothed = List<double>.from(values);
+    for (var i = 1; i < values.length - 1; i++) {
+      final average = (values[i - 1] + values[i] + values[i + 1]) / 3;
+      smoothed[i] = lerpDouble(values[i], average, smoothing)!;
+    }
+    return smoothed;
+  }
+}
+
+class AnimatedWaveformController {
+  Function? pause;
+  Function? resume;
 }

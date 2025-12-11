@@ -27,6 +27,10 @@ class Recording extends SpeechTextState {
   const Recording(super.stateUI);
 }
 
+class PausedRecording extends SpeechTextState {
+  const PausedRecording(super.stateUI);
+}
+
 class RecordError extends SpeechTextState {
   final String message;
   final dynamic error;
@@ -39,5 +43,15 @@ class StopingRecord extends SpeechTextState {
 
 class StoppedRecord extends SpeechTextState {
   final bool isSave;
-  const StoppedRecord(super.stateUI, this.isSave);
+  final String? filePath;
+  final Duration recordedDuration;
+  final bool recordingAvailable;
+
+  const StoppedRecord(
+    super.stateUI,
+    this.isSave, {
+    required this.recordedDuration,
+    this.filePath,
+    this.recordingAvailable = false,
+  });
 }

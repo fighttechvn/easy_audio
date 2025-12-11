@@ -20,3 +20,14 @@ class StopRecordEvent extends SpeechTextEvent {
 
   StopRecordEvent({required this.isSave});
 }
+
+class PauseRecordEvent extends SpeechTextEvent {}
+
+class ResumeRecordEvent extends SpeechTextEvent {}
+
+class _SpeechPipelineErrorEvent extends SpeechTextEvent {
+  _SpeechPipelineErrorEvent(this.error, this.stackTrace);
+
+  final Object error;
+  final StackTrace stackTrace;
+}

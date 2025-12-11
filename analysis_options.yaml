@@ -11,6 +11,8 @@ analyzer:
     - "**/*.freezed.dart"
     - "**/*.config.dart"
     - "**/*.module.dart"
+    - lib/src/domain/usecase/whisper_transcribe_usecase.dart
+    - third_party/**
 
 linter:
   rules:
