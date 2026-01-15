@@ -1,0 +1,197 @@
+class EasyAudioLocaleDisplay {
+  static const Map<String, String> _labelsByLocale = <String, String>{
+    'ar-sa': 'Arabic (Saudi Arabia)',
+    'ar-tn': 'Arabic (Tunisia)',
+    'yue-cn': 'Cantonese (China mainland)',
+    'ca-es': 'Catalan (Spain)',
+    'zh-cn': 'Chinese (China mainland)',
+    'zh-hk': 'Chinese (Hong Kong)',
+    'zh-tw': 'Chinese (Taiwan)',
+    'hr-hr': 'Croatian (Croatia)',
+    'cs-cz': 'Czech (Czechia)',
+    'da-dk': 'Danish (Denmark)',
+    'nl-be': 'Dutch (Belgium)',
+    'nl-nl': 'Dutch (Netherlands)',
+    'en-au': 'English (Australia)',
+    'en-ca': 'English (Canada)',
+    'en-in': 'English (India)',
+    'en-id': 'English (Indonesia)',
+    'en-ie': 'English (Ireland)',
+    'en-nz': 'English (New Zealand)',
+    'en-ph': 'English (Philippines)',
+    'en-sa': 'English (Saudi Arabia)',
+    'en-sg': 'English (Singapore)',
+    'en-za': 'English (South Africa)',
+    'en-ae': 'English (United Arab Emirates)',
+    'en-gb': 'English (United Kingdom)',
+    'en-us': 'English (United States)',
+    'en-vn': 'English (Vietnam)',
+    'eo': 'Esperanto',
+    'fa': 'Farsi (Iran)',
+    'tl-ph': 'Filipino (Philippines)',
+    'fi-fi': 'Finnish (Finland)',
+    'fr-be': 'French (Belgium)',
+    'fr-ca': 'French (Canada)',
+    'fr-fr': 'French (France)',
+    'fr-ch': 'French (Switzerland)',
+    'de-at': 'German (Austria)',
+    'de-de': 'German (Germany)',
+    'de-ch': 'German (Switzerland)',
+    'el-gr': 'Greek (Greece)',
+    'gu': 'Gujarati (India)',
+    'he-il': 'Hebrew (Israel)',
+    'hi-in': 'Hindi (India)',
+    'hi-latn': 'Hindi (Latin)',
+    'hu-hu': 'Hungarian (Hungary)',
+    'id-id': 'Indonesian (Indonesia)',
+    'it-it': 'Italian (Italy)',
+    'it-ch': 'Italian (Switzerland)',
+    'ja-jp': 'Japanese (Japan)',
+    'kz': 'Kazakh (Kazakhstan)',
+    'ko-kr': 'Korean (South Korea)',
+    'ms-my': 'Malay (Malaysia)',
+    'nb-no': 'Norwegian Bokmål (Norway)',
+    'pl-pl': 'Polish (Poland)',
+    'pt-br': 'Portuguese (Brazil)',
+    'pt-pt': 'Portuguese (Portugal)',
+    'ro-ro': 'Romanian (Romania)',
+    'ru-ru': 'Russian (Russia)',
+    'wuu-cn': 'Shanghainese (China mainland)',
+    'sk-sk': 'Slovak (Slovakia)',
+    'es-cl': 'Spanish (Chile)',
+    'es-co': 'Spanish (Colombia)',
+    'es-419': 'Spanish (Latin America)',
+    'es-mx': 'Spanish (Mexico)',
+    'es-es': 'Spanish (Spain)',
+    'es-us': 'Spanish (United States)',
+    'sv-se': 'Swedish (Sweden)',
+    'tg': 'Tajik (Tajikistan)',
+    'te': 'Telugu (India)',
+    'th-th': 'Thai (Thailand)',
+    'tr-tr': 'Turkish (Türkiye)',
+    'uk-ua': 'Ukrainian (Ukraine)',
+    'uz': 'Uzbek (Uzbekistan)',
+    'vi-vn': 'Vietnamese (Vietnam)',
+  };
+
+  static String labelForLocaleId(String? localeId, {String? fallback}) {
+    final raw = (localeId ?? '').trim();
+    if (raw.isEmpty) {
+      return fallback ?? 'Unknown';
+    }
+
+    final normalized = raw.replaceAll('_', '-');
+    final lookupKey = normalized.toLowerCase();
+    final directLabel = _labelsByLocale[lookupKey];
+    if (directLabel != null && directLabel.isNotEmpty) {
+      return directLabel;
+    }
+
+    final parts = normalized.split('-');
+    final language = parts.isNotEmpty ? parts.first.toLowerCase() : normalized;
+    final region = parts.length >= 2 ? parts[1].toUpperCase() : null;
+
+    final languageName = switch (language) {
+      'en' => 'English',
+      'vi' => 'Vietnamese',
+      'fr' => 'French',
+      'es' => 'Spanish',
+      'de' => 'German',
+      'ja' => 'Japanese',
+      'ko' => 'Korean',
+      'zh' => 'Chinese',
+      'ar' => 'Arabic',
+      'ca' => 'Catalan',
+      'cs' => 'Czech',
+      'da' => 'Danish',
+      'nl' => 'Dutch',
+      'eo' => 'Esperanto',
+      'fa' => 'Farsi',
+      'fi' => 'Finnish',
+      'el' => 'Greek',
+      'gu' => 'Gujarati',
+      'he' => 'Hebrew',
+      'hi' => 'Hindi',
+      'hu' => 'Hungarian',
+      'id' => 'Indonesian',
+      'it' => 'Italian',
+      'kz' => 'Kazakh',
+      'ms' => 'Malay',
+      'nb' => 'Norwegian Bokmål',
+      'pl' => 'Polish',
+      'pt' => 'Portuguese',
+      'ro' => 'Romanian',
+      'ru' => 'Russian',
+      'sk' => 'Slovak',
+      'sv' => 'Swedish',
+      'tg' => 'Tajik',
+      'te' => 'Telugu',
+      'th' => 'Thai',
+      'tl' => 'Filipino',
+      'tr' => 'Turkish',
+      'uk' => 'Ukrainian',
+      'uz' => 'Uzbek',
+      _ => raw,
+    };
+
+    if (region == null || region.isEmpty) {
+      return languageName;
+    }
+
+    final regionName = switch (region) {
+      'VN' => 'Vietnam',
+      'US' => 'United States',
+      'GB' => 'United Kingdom',
+      'AU' => 'Australia',
+      'CA' => 'Canada',
+      'IN' => 'India',
+      'PH' => 'Philippines',
+      'ID' => 'Indonesia',
+      'IE' => 'Ireland',
+      'NZ' => 'New Zealand',
+      'SG' => 'Singapore',
+      'ZA' => 'South Africa',
+      'AE' => 'United Arab Emirates',
+      'SA' => 'Saudi Arabia',
+      'TN' => 'Tunisia',
+      'ES' => 'Spain',
+      'MX' => 'Mexico',
+      'CL' => 'Chile',
+      'CO' => 'Colombia',
+      'HK' => 'Hong Kong',
+      'TW' => 'Taiwan',
+      'CN' => 'China',
+      'CZ' => 'Czechia',
+      'DK' => 'Denmark',
+      'BE' => 'Belgium',
+      'NL' => 'Netherlands',
+      'FI' => 'Finland',
+      'FR' => 'France',
+      'CH' => 'Switzerland',
+      'AT' => 'Austria',
+      'GR' => 'Greece',
+      'IL' => 'Israel',
+      'HU' => 'Hungary',
+      'MY' => 'Malaysia',
+      'NO' => 'Norway',
+      'PL' => 'Poland',
+      'BR' => 'Brazil',
+      'PT' => 'Portugal',
+      'RO' => 'Romania',
+      'RU' => 'Russia',
+      'SE' => 'Sweden',
+      'TH' => 'Thailand',
+      'TR' => 'Türkiye',
+      'UA' => 'Ukraine',
+      'HR' => 'Croatia',
+      '419' => 'Latin America',
+      _ => region,
+    };
+
+    if (languageName == raw) {
+      return raw;
+    }
+
+    return '$languageName ($regionName)';
+  }
+}

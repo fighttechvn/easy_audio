@@ -1,16 +1,38 @@
-# example
+# Easy Audio Demo (example)
 
-A new Flutter project.
+This is the demo app for the `easy_audio` package.
 
-## Getting Started
+## Demo features
 
-This project is a starting point for a Flutter application.
+- Record audio to a file (via `easy_audio`)
+- Streaming transcript (speech-to-text)
+- “Recent Recordings” list
+- Play/Pause/Seek recorded files (via `just_audio`)
+- “Detail mode” UI:
+  - Select an audio item → shows playback controls
+  - Select a transcript-only item → shows transcript card
+  - Close button to exit detail mode
 
-A few resources to get you started if this is your first Flutter project:
+## Run the project
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+```bash
+cd example
+flutter pub get
+flutter run
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Platform setup
+
+### Android (background recording)
+
+The demo already declares the required permissions + service in `android/app/src/main/AndroidManifest.xml` to enable background recording via a foreground service.
+
+Note: On Android 13+ you may need to request runtime permission `POST_NOTIFICATIONS` so the foreground-service notification is shown correctly.
+
+### iOS
+
+`ios/Runner/Info.plist` already includes:
+
+- `NSMicrophoneUsageDescription`
+- `NSSpeechRecognitionUsageDescription`
+- `UIBackgroundModes` (audio)
