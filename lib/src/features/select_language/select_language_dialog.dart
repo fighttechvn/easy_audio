@@ -28,7 +28,7 @@ class SelectLanguageDialogWidget extends StatelessWidget {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(14),
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
+                    padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
                     child: ConstrainedBox(
                       constraints: BoxConstraints(
                         maxHeight: MediaQuery.of(context).size.height * 0.72,
@@ -70,8 +70,8 @@ class SelectLanguageDialogWidget extends StatelessWidget {
                             ),
                             onChanged: (value) {
                               context.read<SelectLanguageCubit>().applyFilter(
-                                value,
-                              );
+                                    value,
+                                  );
                             },
                           ),
                           const SizedBox(height: 12),
@@ -82,82 +82,78 @@ class SelectLanguageDialogWidget extends StatelessWidget {
                             )
                           else
                             Flexible(
-                              child: ListView(
-                                padding: EdgeInsets.zero,
-                                children: [
-                                  if (showRecent) ...[
-                                    const SizedBox(height: 2),
-                                    const Text(
-                                      'Recent',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xFF6B7280),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    for (final l in state.filteredRecent)
-                                      SelectLanguageRow(
-                                        locale: l,
-                                        selected:
-                                            l.localeId ==
-                                            state.selectedLocaleId,
-                                        loading: state.loading,
-                                        accentColor: _kAccentColor,
-                                        onSelected: (id) {
-                                          context
-                                              .read<SelectLanguageCubit>()
-                                              .selectLocale(id);
-                                        },
-                                      ),
-                                    const SizedBox(height: 6),
+                              child: Scrollbar(
+                                child: ListView(
+                                  padding: EdgeInsets.zero,
+                                  children: [
+                                    if (showRecent) ...[
+                                      const SizedBox(height: 2),
+                                      // const Text(
+                                      //   'Recent',
+                                      //   style: TextStyle(
+                                      //     fontSize: 13,
+                                      //     fontWeight: FontWeight.w600,
+                                      //     color: Color(0xFF6B7280),
+                                      //   ),
+                                      // ),
+                                      const SizedBox(height: 6),
+                                      for (final l in state.filteredRecent)
+                                        SelectLanguageRow(
+                                          locale: l,
+                                          selected: l.localeId ==
+                                              state.selectedLocaleId,
+                                          loading: state.loading,
+                                          accentColor: _kAccentColor,
+                                          onSelected: (id) {
+                                            context
+                                                .read<SelectLanguageCubit>()
+                                                .selectLocale(id);
+                                          },
+                                        ),
+                                      const SizedBox(height: 6),
+                                    ],
+                                    for (final l in state.filteredAll)
+                                      if (!showRecent ||
+                                          !recentIdSet.contains(l.localeId))
+                                        SelectLanguageRow(
+                                          locale: l,
+                                          selected: l.localeId ==
+                                              state.selectedLocaleId,
+                                          loading: state.loading,
+                                          accentColor: _kAccentColor,
+                                          onSelected: (id) {
+                                            context
+                                                .read<SelectLanguageCubit>()
+                                                .selectLocale(id);
+                                          },
+                                        ),
                                   ],
-                                  for (final l in state.filteredAll)
-                                    if (!showRecent ||
-                                        !recentIdSet.contains(l.localeId))
-                                      SelectLanguageRow(
-                                        locale: l,
-                                        selected:
-                                            l.localeId ==
-                                            state.selectedLocaleId,
-                                        loading: state.loading,
-                                        accentColor: _kAccentColor,
-                                        onSelected: (id) {
-                                          context
-                                              .read<SelectLanguageCubit>()
-                                              .selectLocale(id);
-                                        },
-                                      ),
-                                ],
-                              ),
-                            ),
-                          const SizedBox(height: 14),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 52,
-                            child: ElevatedButton(
-                              onPressed: state.loading
-                                  ? null
-                                  : () async {
-                                      final selection = await context
-                                          .read<SelectLanguageCubit>()
-                                          .confirm();
-                                      if (context.mounted) {
-                                        Navigator.of(context).pop(selection);
-                                      }
-                                    },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: _kAccentColor,
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
-                              child: const Text(
-                                'Confirm',
-                                style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                          const SizedBox(height: 8),
+                          ElevatedButton(
+                            onPressed: state.loading
+                                ? null
+                                : () async {
+                                    final selection = await context
+                                        .read<SelectLanguageCubit>()
+                                        .confirm();
+                                    if (context.mounted) {
+                                      Navigator.of(context).pop(selection);
+                                    }
+                                  },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _kAccentColor,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
+                            ),
+                            child: const Text(
+                              'Confirm',
+                              style: TextStyle(fontWeight: FontWeight.w600),
                             ),
                           ),
                         ],

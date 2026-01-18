@@ -31,9 +31,19 @@ class SelectLanguageUseCase {
       }
     }
 
-    final selectedId = recentLocales.isNotEmpty
-        ? recentLocales.first.localeId
-        : (locales.isNotEmpty ? locales.first.localeId : null);
+    String? selectedId;
+    if (recentLocales.isNotEmpty) {
+      selectedId = recentLocales.first.localeId;
+    } else if (locales.isNotEmpty) {
+      final englishLocale = locales.firstWhere(
+        (l) => l.localeId == 'en_US' || l.localeId == 'en-US',
+        orElse: () => locales.firstWhere(
+          (l) => l.localeId.startsWith('en'),
+          orElse: () => locales.first,
+        ),
+      );
+      selectedId = englishLocale.localeId;
+    }
 
     return SelectLanguageData(
       allLocales: locales,
