@@ -35,14 +35,24 @@ class SelectLanguageUseCase {
     if (recentLocales.isNotEmpty) {
       selectedId = recentLocales.first.localeId;
     } else if (locales.isNotEmpty) {
-      final englishLocale = locales.firstWhere(
+      var index = locales.indexWhere(
         (l) => l.localeId == 'en_US' || l.localeId == 'en-US',
-        orElse: () => locales.firstWhere(
-          (l) => l.localeId.startsWith('en'),
-          orElse: () => locales.first,
-        ),
       );
-      selectedId = englishLocale.localeId;
+
+      if (index == -1) {
+        index = locales.indexWhere(
+          (l) => l.localeId.startsWith('en'),
+        );
+
+        if (index == -1) {
+          index = 0;
+        }
+      }
+
+      final itemSelected = locales[index];
+      selectedId = itemSelected.localeId;
+      locales.removeAt(index);
+      locales.insert(0, itemSelected);
     }
 
     return SelectLanguageData(

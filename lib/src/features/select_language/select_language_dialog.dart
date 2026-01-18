@@ -37,13 +37,28 @@ class SelectLanguageDialogWidget extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const Text(
-                            'Select lanuage to use',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black,
-                            ),
+                          Row(
+                            children: [
+                              const Expanded(
+                                child: Text(
+                                  'Select Language to use',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.of(context).pop();
+                                },
+                                child: const Icon(
+                                  Icons.close,
+                                  size: 20,
+                                  color: Color(0xFF6B7280),
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 12),
                           TextFormField(
