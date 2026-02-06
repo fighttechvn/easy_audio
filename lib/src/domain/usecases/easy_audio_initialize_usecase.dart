@@ -49,8 +49,7 @@ class EasyAudioInitializeUseCase {
     EasyAudioConfig config, {
     required Future<void> Function() reinitialize,
   }) async {
-    final isRecording =
-        ctx.currentState == EasyAudioState.recording ||
+    final isRecording = ctx.currentState == EasyAudioState.recording ||
         ctx.currentState == EasyAudioState.paused;
 
     if (isRecording) {

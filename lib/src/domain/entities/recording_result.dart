@@ -1,4 +1,4 @@
-import '../../core/utils/duration_format.dart';
+import '../../core/utils/duration_ext.dart';
 
 class RecordingResult {
   final String? filePath;
@@ -25,7 +25,7 @@ class RecordingResult {
 
   bool get hasTranscript => transcript != null && transcript!.isNotEmpty;
 
-  String get formattedDuration => formatDuration(duration);
+  String get formattedDuration => duration.formatDuration();
 
   String? get formattedFileSize {
     if (fileSizeBytes == null) {

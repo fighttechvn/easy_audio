@@ -8,8 +8,7 @@ class EasyAudioPaths {
   EasyAudioPaths._();
 
   static Future<String> generateFilePath(EasyAudioConfig config) async {
-    final directory =
-        config.outputDirectory ??
+    final directory = config.outputDirectory ??
         (await getApplicationDocumentsDirectory()).path;
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final extension = config.resolvedFileExtension;

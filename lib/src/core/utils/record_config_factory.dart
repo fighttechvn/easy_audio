@@ -27,10 +27,10 @@ class RecordConfigFactory {
       androidConfig: AndroidRecordConfig(
         service: config.enableBackgroundRecording
             ? (config.androidService ??
-                  const AndroidService(
-                    title: 'Recording in progress',
-                    content: 'Tap to return to the app',
-                  ))
+                const AndroidService(
+                  title: 'Recording in progress',
+                  content: 'Tap to return to the app',
+                ))
             : null,
       ),
     );

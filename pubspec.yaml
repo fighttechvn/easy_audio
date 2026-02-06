@@ -11,15 +11,28 @@ dependencies:
   flutter:
     sdk: flutter
 
+  intl:
   just_audio: ^0.10.5
   audio_session: ^0.2.2
   record: 6.0.0
   path_provider: ^2.1.5
   speech_to_text: 7.0.0
-  flutter_bloc: ^9.1.0
+  flutter_bloc: ^9.1.1
   shared_preferences: ^2.5.4
-
+  injectable: ^2.3.2
+  get_it: ^7.6.7
+  json_annotation: ^4.9.0
+  freezed_annotation: ^2.1.0
+  permission_handler: ^12.0.0+1
+  floating_draggable_widget: ^2.3.0
+  path: ^1.9.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
+
+  # flutter packages pub run build_runner build --delete-conflicting-outputs
+  injectable_generator:
+  build_runner: ^2.4.4
+  json_serializable: ^6.5.4
+  freezed: ^2.1.0+1

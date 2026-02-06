@@ -19,8 +19,7 @@ class EasyAudioRecordingUseCase {
   Future<void> start(EasyAudioServiceContext ctx) async {
     ctx.ensureInitialized();
 
-    final isRecording =
-        ctx.currentState == EasyAudioState.recording ||
+    final isRecording = ctx.currentState == EasyAudioState.recording ||
         ctx.currentState == EasyAudioState.paused;
 
     if (isRecording) {
@@ -135,8 +134,7 @@ class EasyAudioRecordingUseCase {
   Future<RecordingResult> stop(EasyAudioServiceContext ctx) async {
     ctx.ensureInitialized();
 
-    final isRecording =
-        ctx.currentState == EasyAudioState.recording ||
+    final isRecording = ctx.currentState == EasyAudioState.recording ||
         ctx.currentState == EasyAudioState.paused;
 
     if (!isRecording) {
@@ -199,8 +197,7 @@ class EasyAudioRecordingUseCase {
   Future<void> cancel(EasyAudioServiceContext ctx) async {
     ctx.ensureInitialized();
 
-    final isRecording =
-        ctx.currentState == EasyAudioState.recording ||
+    final isRecording = ctx.currentState == EasyAudioState.recording ||
         ctx.currentState == EasyAudioState.paused;
 
     if (!isRecording && ctx.currentState != EasyAudioState.processing) {

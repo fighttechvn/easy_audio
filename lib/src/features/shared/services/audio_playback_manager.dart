@@ -265,8 +265,7 @@ class AudioPlaybackManager {
 
     _playerStateSub = _player.playerStateStream.listen((state) {
       final processing = state.processingState;
-      final isLoading =
-          processing == ProcessingState.loading ||
+      final isLoading = processing == ProcessingState.loading ||
           processing == ProcessingState.buffering;
 
       snapshot.value = snapshot.value.copyWith(
