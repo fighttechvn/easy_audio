@@ -45,6 +45,10 @@ dependencies:
   easy_audio:
     path: ../
 
+  # Dependency injection (used by record session flow demo)
+  get_it: ^7.6.7
+  injectable: ^2.3.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -55,6 +59,10 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+
+  # DI codegen
+  build_runner: ^2.4.4
+  injectable_generator: ^2.4.1
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

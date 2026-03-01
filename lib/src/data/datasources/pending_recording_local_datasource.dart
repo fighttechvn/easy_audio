@@ -20,9 +20,31 @@ class PendingRecordingLocalDataSource {
   late final SharedPreferences _prefs;
 
   bool _initialized = false;
+  Future<void>? _initInFlight;
   late final Directory _baseDir;
 
   Future<void> init() async {
+    if (_initialized) {
+      return;
+    }
+
+    final inflight = _initInFlight;
+    if (inflight != null) {
+      await inflight;
+      return;
+    }
+
+    final future = _doInit();
+    _initInFlight = future;
+    try {
+      await future;
+    } finally {
+      // Ensure we don't hold onto the future forever (also clears on error).
+      _initInFlight = null;
+    }
+  }
+
+  Future<void> _doInit() async {
     if (_initialized) {
       return;
     }

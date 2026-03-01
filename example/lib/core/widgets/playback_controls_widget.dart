@@ -1,7 +1,7 @@
 import 'package:easy_audio/easy_audio.dart';
 import 'package:flutter/material.dart';
 
-import '../format_duration.dart';
+import '../utils/format_duration.dart';
 import 'control_button_widget.dart';
 
 class PlaybackControlsWidget extends StatelessWidget {

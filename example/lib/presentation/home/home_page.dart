@@ -1,19 +1,19 @@
+import 'dart:async';
+
 import 'package:easy_audio/easy_audio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'dart:async';
 
+import '../../core/widgets/header_widget.dart';
+import '../../core/widgets/language_selector_dialog.dart';
+import '../../core/widgets/main_content_widget.dart';
+import '../../core/widgets/mode_selector_widget.dart';
+import '../../core/widgets/playback_controls_widget.dart';
+import '../../core/widgets/recording_controls_widget.dart';
+import '../../core/widgets/recordings_list_widget.dart';
+import '../../core/widgets/transcript_card_widget.dart';
 import '../../domain/entities/home_data.dart';
 import 'bloc/home_bloc.dart';
-
-import '../../core/utils/widgets/header_widget.dart';
-import '../../core/utils/widgets/language_selector_dialog.dart';
-import '../../core/utils/widgets/main_content_widget.dart';
-import '../../core/utils/widgets/mode_selector_widget.dart';
-import '../../core/utils/widgets/playback_controls_widget.dart';
-import '../../core/utils/widgets/recording_controls_widget.dart';
-import '../../core/utils/widgets/recordings_list_widget.dart';
-import '../../core/utils/widgets/transcript_card_widget.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
