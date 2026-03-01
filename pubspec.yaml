@@ -25,7 +25,8 @@ dependencies:
   get_it: ^9.2.1
 
   json_annotation: ^4.9.0
-  freezed_annotation: ^2.1.0
+  freezed_annotation: ^3.1.0
+
   permission_handler: ^12.0.0+1
   floating_draggable_widget: ^2.3.0
   path: ^1.9.0
@@ -37,6 +38,7 @@ dev_dependencies:
 
   # flutter packages pub run build_runner build --delete-conflicting-outputs
   injectable_generator:
-  build_runner: ^2.4.4
-  json_serializable: ^6.5.4
-  freezed: ^2.1.0+1
+  build_runner: ^2.10.4
+
+  json_serializable: ^6.1.4
+  freezed: ^3.2.0
