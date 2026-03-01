@@ -10,11 +10,11 @@ import '../datasources/pending_recording_local_datasource.dart';
 
 @LazySingleton(as: PendingRecordingRepository)
 class PendingRecordingRepositoryImpl implements PendingRecordingRepository {
+  final PendingRecordingLocalDataSource _local;
+
   PendingRecordingRepositoryImpl({
     required PendingRecordingLocalDataSource local,
   }) : _local = local;
-
-  final PendingRecordingLocalDataSource _local;
 
   bool _initialized = false;
   List<PendingRecording> _items = const <PendingRecording>[];

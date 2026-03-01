@@ -6,6 +6,7 @@ import '../entities/record_session.dart';
 abstract class PendingRecordingRepository {
   Future<void> init();
   String get baseDirectoryPath;
+
   File fileFor(String fileName);
   List<PendingRecording> listForUser(int? userId);
   List<PendingRecording> listForAppointment({

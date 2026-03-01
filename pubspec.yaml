@@ -15,6 +15,9 @@ dependencies:
   path_provider: ^2.1.5
   shared_preferences: ^2.5.4
   flutter_bloc: ^9.1.1
+  permission_handler: ^12.0.0+1
+  floating_draggable_widget: ^2.3.0
+  path: ^1.9.0
 
   just_audio: ^0.10.5
   audio_session: ^0.2.2
@@ -26,10 +29,6 @@ dependencies:
 
   json_annotation: ^4.9.0
   freezed_annotation: ^3.1.0
-
-  permission_handler: ^12.0.0+1
-  floating_draggable_widget: ^2.3.0
-  path: ^1.9.0
 
 dev_dependencies:
   flutter_test:
