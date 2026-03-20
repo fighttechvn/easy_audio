@@ -16,8 +16,9 @@ dependencies:
   shared_preferences: ^2.5.4
   flutter_bloc: ^9.1.1
   permission_handler: ^12.0.0+1
-  floating_draggable_widget: ^2.3.0
   path: ^1.9.0
+  
+  floating_draggable_widget: ^2.3.0
 
   just_audio: ^0.10.5
   audio_session: ^0.2.2
