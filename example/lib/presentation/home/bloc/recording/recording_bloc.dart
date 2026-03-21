@@ -128,7 +128,9 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     RecordingPausePressed event,
     Emitter<RecordingState> emit,
   ) async {
-    if (state.ui.audioState != EasyAudioState.recording) return;
+    if (state.ui.audioState != EasyAudioState.recording) {
+      return;
+    }
 
     emit(
       RecordingLoadingState(

@@ -160,7 +160,9 @@ class EasyAudioManageBloc
     EasyAudioManageLocalesRequested event,
     Emitter<EasyAudioManageState> emit,
   ) async {
-    if (state.ui.isLocalesLoading) return;
+    if (state.ui.isLocalesLoading) {
+      return;
+    }
 
     emit(
       EasyAudioManageReadyState(ui: state.ui.copyWith(isLocalesLoading: true)),

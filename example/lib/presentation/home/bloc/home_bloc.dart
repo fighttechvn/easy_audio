@@ -46,11 +46,8 @@ class HomeBloc extends Cubit<void> {
 
   void _setupCallbacks() {
     // When EasyAudio is initialized, setup recording subscriptions
-    easyAudioManageBloc.onInitialized = () {
-      recordingBloc.setupSubscriptions();
-    };
+    easyAudioManageBloc.onInitialized = recordingBloc.setupSubscriptions;
 
-    // When mode is changing, close the selected item (stop playback and reset selection)
     easyAudioManageBloc.onModeChanging = () {
       playbackBloc.add(const PlaybackClosed());
     };

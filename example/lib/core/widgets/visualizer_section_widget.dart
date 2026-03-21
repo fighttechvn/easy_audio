@@ -28,7 +28,7 @@ class VisualizerSectionWidget extends StatelessWidget {
             letterSpacing: 8,
           ),
         ),
-        Spacer(),
+        const Spacer(),
       ],
     );
   }

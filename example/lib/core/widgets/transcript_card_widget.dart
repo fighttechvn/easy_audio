@@ -12,7 +12,9 @@ class TranscriptCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (transcript.trim().isEmpty) return const SizedBox.shrink();
+    if (transcript.trim().isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),

@@ -127,7 +127,9 @@ class PlaybackBloc extends Bloc<PlaybackEvent, PlaybackState> {
     PlaybackTogglePressed event,
     Emitter<PlaybackState> emit,
   ) async {
-    if (state.ui.selectedRecording?.filePath == null) return;
+    if (state.ui.selectedRecording?.filePath == null) {
+      return;
+    }
 
     try {
       await _useCase.togglePlayPause();
@@ -183,7 +185,9 @@ class PlaybackBloc extends Bloc<PlaybackEvent, PlaybackState> {
     PlaybackPositionChanged event,
     Emitter<PlaybackState> emit,
   ) {
-    if (state.ui.selectedRecording == null) return;
+    if (state.ui.selectedRecording == null) {
+      return;
+    }
     emit(PlaybackActiveState(ui: state.ui.copyWith(position: event.position)));
   }
 
@@ -192,7 +196,9 @@ class PlaybackBloc extends Bloc<PlaybackEvent, PlaybackState> {
     Emitter<PlaybackState> emit,
   ) {
     final duration = event.duration;
-    if (duration == null) return;
+    if (duration == null) {
+      return;
+    }
     emit(PlaybackActiveState(ui: state.ui.copyWith(duration: duration)));
   }
 
@@ -200,7 +206,9 @@ class PlaybackBloc extends Bloc<PlaybackEvent, PlaybackState> {
     PlaybackPlayerStateChanged event,
     Emitter<PlaybackState> emit,
   ) {
-    if (state.ui.selectedRecording == null) return;
+    if (state.ui.selectedRecording == null) {
+      return;
+    }
 
     final ps = event.playerState;
     final isPlaying = ps.playing;
@@ -209,7 +217,7 @@ class PlaybackBloc extends Bloc<PlaybackEvent, PlaybackState> {
     emit(
       PlaybackActiveState(
         ui: state.ui.copyWith(
-          isPlaying: isCompleted ? false : isPlaying,
+          isPlaying: !isCompleted && isPlaying,
           position: isCompleted ? state.ui.duration : state.ui.position,
         ),
       ),

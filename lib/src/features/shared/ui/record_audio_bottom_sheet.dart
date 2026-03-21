@@ -7,7 +7,6 @@ import '../../../core/controllers/elapsed_ticker.dart';
 import '../../../core/utils/duration_ext.dart';
 import '../../../domain/entities/easy_audio_state.dart';
 import '../../../domain/entities/record_audio_transcript_state.dart';
-
 import '../../../domain/entities/transcript_result.dart';
 import '../../../record_coordinator.dart';
 import '../services/easy_audio/easy_audio_service.dart';

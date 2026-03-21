@@ -5,9 +5,6 @@ import 'package:easy_audio/easy_audio.dart';
 
 import '../../domain/entities/server_recording.dart';
 
-/// Simulate a server-side store:
-/// - Upload copies the local file into a dedicated "uploaded" folder.
-/// - Listing reads those uploaded files back.
 class FakeServerStore {
   FakeServerStore(this._pendingRecordingsUsecase);
 
@@ -39,6 +36,7 @@ class FakeServerStore {
 
     final items = <ServerRecording>[];
     final key = appointmentIdEmr.trim();
+    final safeKey = key.replaceAll(RegExp(r'\s+'), '_');
 
     await for (final entity in dir.list()) {
       if (entity is! File) {
@@ -47,7 +45,8 @@ class FakeServerStore {
       final name = entity.uri.pathSegments.isNotEmpty
           ? entity.uri.pathSegments.last
           : '';
-      if (name.isEmpty || !name.contains(key)) {
+
+      if (name.isEmpty || (!name.contains(key) && !name.contains(safeKey))) {
         continue;
       }
 

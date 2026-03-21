@@ -72,7 +72,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     _recordingTimer?.cancel();
     _recordingTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       final startedAt = _recordingStartedAt;
-      if (startedAt == null) return;
+      if (startedAt == null) {
+        return;
+      }
       setState(() {
         _recordingDuration =
             _recordingAccumulated + DateTime.now().difference(startedAt);
@@ -196,7 +198,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           BlocListener<EasyAudioManageBloc, EasyAudioManageState>(
             listenWhen: (prev, next) =>
                 next is EasyAudioManageReadyState &&
-                (next).recoveredRecording != null,
+                next.recoveredRecording != null,
             listener: (context, state) {
               if (state is EasyAudioManageReadyState &&
                   state.recoveredRecording != null) {
@@ -209,14 +211,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         ],
         child: Scaffold(
           body: Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  const Color(0xFF1A1A2E),
-                  const Color(0xFF16213E),
-                  const Color(0xFF0F3460),
+                  Color(0xFF1A1A2E),
+                  Color(0xFF16213E),
+                  Color(0xFF0F3460),
                 ],
               ),
             ),

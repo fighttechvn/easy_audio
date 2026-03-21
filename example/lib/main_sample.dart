@@ -1,15 +1,36 @@
+import 'dart:async';
+import 'dart:developer';
+
+import 'package:easy_audio/easy_audio.dart';
 import 'package:flutter/material.dart';
 
-import 'core/di/record_flow_deps.dart';
 import 'core/di/record_flow_injector.dart';
-import 'presentation/record_session_flow/customer_record_flow_demo_screen.dart';
+import 'data/datasources/fake_server_store.dart';
 import 'presentation/record_session_flow/record_floating_overlay_host.dart';
+import 'presentation/record_session_flow/sample_screen.dart';
 
-/// Run this example with:
-/// `flutter run -t lib/main_record_session_flow.dart`
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  runApp(const EasyAudioRecordSessionFlowExampleApp());
+  runZonedGuarded(
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
+      await configureDependencies();
+      final pendingUploadOrchestratorBloc = injector
+          .get<PendingUploadOrchestratorBloc>();
+      final fakeServerStore = injector.get<FakeServerStore>();
+      pendingUploadOrchestratorBloc.setUploadRecordingProgressCallback(
+        fakeServerStore.uploadAndPersistCopy,
+      );
+
+      runApp(const EasyAudioRecordSessionFlowExampleApp());
+    },
+    (error, trace) {
+      log('------------------------------------');
+      log('[AppDelegate]');
+      log('$error');
+      log('$trace');
+      log('------------------------------------');
+    },
+  );
 }
 
 class EasyAudioRecordSessionFlowExampleApp extends StatefulWidget {
@@ -23,19 +44,15 @@ class EasyAudioRecordSessionFlowExampleApp extends StatefulWidget {
 class _EasyAudioRecordSessionFlowExampleAppState
     extends State<EasyAudioRecordSessionFlowExampleApp> {
   final _navigatorKey = GlobalKey<NavigatorState>();
-
-  late final RecordFlowDeps _deps;
+  final _fakeServerStore = injector.get<FakeServerStore>();
 
   @override
   void initState() {
     super.initState();
-    configureRecordFlowInjector();
-    _deps = injector.get<RecordFlowDeps>();
   }
 
   @override
   void dispose() {
-    _deps.dispose();
     injector.reset(dispose: true);
     super.dispose();
   }
@@ -48,7 +65,7 @@ class _EasyAudioRecordSessionFlowExampleAppState
       theme: ThemeData(useMaterial3: true),
       home: RecordFloatingOverlayHost(
         navigatorKey: _navigatorKey,
-        child: CustomerRecordFlowDemoScreen(serverStore: _deps.fakeServerStore),
+        child: SampleScreen(serverStore: _fakeServerStore),
       ),
     );
   }
