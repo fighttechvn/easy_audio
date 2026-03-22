@@ -62,6 +62,7 @@ class RecordSessionUsecase {
       mode: mode,
       encoder: isIOS ? AudioEncoder.wav : AudioEncoder.aacLc,
       locale: session.localeId ?? fallbackLocale,
+      autoResumeAfterInterruption: true,
       enableBackgroundRecording: Platform.isAndroid,
       androidService: Platform.isAndroid
           ? const AndroidService(
@@ -134,7 +135,7 @@ class RecordSessionUsecase {
     }
 
     final locale = session.localeId ?? fallbackLocale;
-    final content = result.transcript ?? '';
+    final content = (result.transcript ?? '').trim();
 
     await _pendingRecordingsUsecase.init();
 
@@ -142,6 +143,12 @@ class RecordSessionUsecase {
     if (pendingRecordingId != null) {
       existing = _pendingRecordingsUsecase.getById(pendingRecordingId);
     }
+
+    final resolvedContent = content.isNotEmpty
+        ? content
+        : (existing?.content.trim().isNotEmpty == true)
+            ? existing!.content
+            : content;
 
     final id = existing?.id ??
         pendingRecordingId ??
@@ -156,7 +163,7 @@ class RecordSessionUsecase {
               id: id,
               userId: userId,
               locale: locale,
-              content: content,
+              content: resolvedContent,
               filePath: filePath,
               fileSizeBytes: resolvedFileSizeBytes,
               durationMs: result.duration.inMilliseconds,
@@ -170,7 +177,7 @@ class RecordSessionUsecase {
       bookingDate: session.bookingDate,
       bookingTime: session.bookingTime,
       locale: locale,
-      content: content,
+      content: resolvedContent,
       filePath: filePath,
       fileSizeBytes: resolvedFileSizeBytes,
       durationMs: result.duration.inMilliseconds,

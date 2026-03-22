@@ -1,11 +1,12 @@
 import 'package:speech_to_text/speech_to_text.dart';
 
-import '../../core/utils/speech_to_text_utils.dart';
 import '../entities/easy_audio_mode.dart';
 import '../entities/easy_audio_service_context.dart';
 import '../entities/supported_locale.dart';
 
 class EasyAudioPermissionsUseCase {
+  Future<void> Function()? initSpeechToText;
+
   Future<bool> hasRecordPermission(EasyAudioServiceContext ctx) async {
     ctx.ensureInitialized();
     return ctx.recorder!.hasPermission();
@@ -28,9 +29,7 @@ class EasyAudioPermissionsUseCase {
 
     if (ctx.config.mode != EasyAudioMode.recordOnly) {
       if (!ctx.speechAvailable) {
-        return ctx.speechAvailable = await SpeechToTextUtils.ensureInitialized(
-          ctx.speechToText!,
-        );
+        await initSpeechToText?.call();
       }
     }
 
@@ -44,9 +43,7 @@ class EasyAudioPermissionsUseCase {
 
     ctx.speechToText ??= SpeechToText();
     if (!ctx.speechAvailable) {
-      ctx.speechAvailable = await SpeechToTextUtils.ensureInitialized(
-        ctx.speechToText!,
-      );
+      await initSpeechToText?.call();
     }
 
     if (!ctx.speechAvailable) {

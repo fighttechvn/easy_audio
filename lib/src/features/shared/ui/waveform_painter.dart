@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class WaveformPainter extends CustomPainter {
-  WaveformPainter({required this.samples, required this.color});
+  WaveformPainter({required List<double> samples, required this.color})
+      : samples = List<double>.unmodifiable(samples);
 
   final List<double> samples;
   final Color color;
@@ -47,6 +49,7 @@ class WaveformPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant WaveformPainter oldDelegate) {
-    return oldDelegate.samples != samples || oldDelegate.color != color;
+    return oldDelegate.color != color ||
+        !listEquals(oldDelegate.samples, samples);
   }
 }

@@ -12,7 +12,33 @@ import '../entities/easy_audio_mode.dart';
 import '../entities/easy_audio_service_context.dart';
 import '../entities/easy_audio_state.dart';
 
+bool _restartScheduled = false;
+
 class EasyAudioInitializeUseCase {
+  Future<void> Function()? resumeAfterInterruption;
+
+  Future<bool> initSpeechToText(EasyAudioServiceContext ctx) async {
+    // ignore: join_return_with_assignment
+    ctx.speechAvailable = await SpeechToTextUtils.ensureInitialized(
+      ctx.speechToText!,
+      onStatus: (status) {
+        if (status == 'done' || status == 'notListening') {
+          _scheduleSpeechRecovery(ctx);
+          return;
+        }
+      },
+      onError: (error) {
+        if (error.contains(
+          'error_speech_recognizer_connection_interrupted',
+        )) {
+          _scheduleSpeechRecovery(ctx);
+        }
+      },
+    );
+
+    return ctx.speechAvailable;
+  }
+
   Future<void> initialize(
     EasyAudioServiceContext ctx, {
     EasyAudioConfig? config,
@@ -30,9 +56,7 @@ class EasyAudioInitializeUseCase {
 
     if (ctx.config.mode != EasyAudioMode.recordOnly) {
       ctx.speechToText = SpeechToText();
-      ctx.speechAvailable = await SpeechToTextUtils.ensureInitialized(
-        ctx.speechToText!,
-      );
+      await initSpeechToText(ctx);
 
       if (!ctx.speechAvailable &&
           ctx.config.mode == EasyAudioMode.speechToTextOnly) {
@@ -42,6 +66,22 @@ class EasyAudioInitializeUseCase {
 
     ctx.isInitialized = true;
     ctx.updateState(EasyAudioState.idle);
+  }
+
+  void _scheduleSpeechRecovery(EasyAudioServiceContext ctx) {
+    if (_restartScheduled) {
+      return;
+    }
+    _restartScheduled = true;
+    final recovery = resumeAfterInterruption;
+    if (recovery == null) {
+      _restartScheduled = false;
+      return;
+    }
+
+    recovery().whenComplete(() {
+      _restartScheduled = false;
+    });
   }
 
   Future<void> updateConfig(

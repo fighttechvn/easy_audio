@@ -54,6 +54,7 @@ class RecordAudioSessionController {
     final config = EasyAudioConfig(
       mode: mode,
       locale: localeId,
+      autoResumeAfterInterruption: true,
       enableBackgroundRecording: enableAndroidBackgroundRecording,
       androidService: enableAndroidBackgroundRecording
           ? const AndroidService(
@@ -79,8 +80,9 @@ class RecordAudioSessionController {
       await _stateSub?.cancel();
       _stateSub = easyAudio.stateStream.listen(onStateChanged);
 
-      await _ampSub?.cancel();
-      _ampSub = easyAudio.amplitudeStream.listen(onAmplitude);
+      await updateAmplitudeStream();
+
+      easyAudio.resetAmplitudeOnStateChange = updateAmplitudeStream;
 
       await _transcriptSub?.cancel();
       _transcriptSub = easyAudio.transcriptStream.listen(onTranscript);
@@ -101,6 +103,11 @@ class RecordAudioSessionController {
         onInitFailed();
       }
     }
+  }
+
+  Future<void> updateAmplitudeStream() async {
+    await _ampSub?.cancel();
+    _ampSub = easyAudio.amplitudeStream.listen(onAmplitude);
   }
 
   Future<void> dispose() async {

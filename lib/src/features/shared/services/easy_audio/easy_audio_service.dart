@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:audio_session/audio_session.dart';
 import 'package:record/record.dart';
@@ -10,6 +11,7 @@ import '../../../../core/controllers/speech_recognition_controller.dart';
 import '../../../../core/errors/easy_audio_exception.dart';
 import '../../../../core/utils/recording_recovery.dart';
 import '../../../../domain/entities/easy_audio_config.dart';
+import '../../../../domain/entities/easy_audio_mode.dart';
 import '../../../../domain/entities/easy_audio_service_context.dart';
 import '../../../../domain/entities/easy_audio_state.dart';
 import '../../../../domain/entities/recording_result.dart';
@@ -45,6 +47,7 @@ class EasyAudioService
   bool _pausedByInterruption = false;
 
   EasyAudioConfig _config = const EasyAudioConfig();
+  Future<void> Function()? resetAmplitudeOnStateChange;
 
   EasyAudioState _currentState = EasyAudioState.idle;
   bool _isInitialized = false;
@@ -62,6 +65,9 @@ class EasyAudioService
   Timer? _maxDurationTimer;
 
   SpeechRecognitionController? _speechRecognition;
+
+  bool _speechRecoveryInProgress = false;
+  // DateTime? _lastSpeechRecoveryAt;
 
   @override
   Stream<EasyAudioState> get stateStream => _stateController.stream;
@@ -100,11 +106,116 @@ class EasyAudioService
 
   @override
   Future<void> initialize([EasyAudioConfig? config]) async {
+    _initializeUseCase.resumeAfterInterruption = _recoverFromSpeechInterruption;
+    _permissionsUseCase.initSpeechToText = _initSpeechToText;
+
     await _initializeUseCase.initialize(
       this,
       config: config,
       onAutoResume: resume,
     );
+  }
+
+  Future<void> _initSpeechToText() async {
+    speechToText ??= SpeechToText();
+    if (!speechAvailable) {
+      await _initializeUseCase.initSpeechToText(this);
+    }
+  }
+
+  Future<void> _recoverFromSpeechInterruption() async {
+    if (!_isInitialized) {
+      return;
+    }
+
+    if (_config.mode == EasyAudioMode.recordOnly) {
+      return;
+    }
+
+    final curState = _currentState;
+    if (curState != EasyAudioState.recording &&
+        curState != EasyAudioState.paused) {
+      return;
+    }
+
+    if (_speechRecoveryInProgress) {
+      return;
+    }
+
+    _speechRecoveryInProgress = true;
+
+    try {
+      if (_currentState == EasyAudioState.recording) {
+        await _pauseResumeCycleForRecovery();
+      } else if (_currentState == EasyAudioState.paused) {
+        await _resetSpeechToTextForRecovery();
+      }
+    } finally {
+      _speechRecoveryInProgress = false;
+      await resetAmplitudeOnStateChange?.call();
+    }
+  }
+
+  Future<void> _pauseResumeCycleForRecovery() async {
+    if (_currentState != EasyAudioState.recording) {
+      return;
+    }
+
+    try {
+      await pause();
+    } catch (e) {
+      log('Error: Failed to pause during speech interruption recovery: $e');
+      try {
+        await _speechRecognition?.stop();
+      } catch (e) {
+        log('Error: Failed to stop speech recognition during recovery: $e');
+      }
+      _amplitudeMonitor?.stop();
+      updateState(EasyAudioState.paused);
+    }
+
+    if (_currentState != EasyAudioState.paused) {
+      return;
+    }
+
+    await _resetSpeechToTextForRecovery();
+
+    await Future.delayed(const Duration(milliseconds: 400));
+
+    try {
+      await resume();
+    } catch (e) {
+      log('Error: Failed to resume after speech interruption recovery: $e');
+    }
+  }
+
+  Future<void> _resetSpeechToTextForRecovery() async {
+    if (_config.mode == EasyAudioMode.recordOnly) {
+      return;
+    }
+
+    try {
+      await _speechRecognition?.stop();
+    } catch (e) {
+      log('Error: Failed to stop speech recognition during recovery: $e');
+    }
+
+    try {
+      await _speechToText?.cancel();
+    } catch (e) {
+      log('Error: Failed to cancel speech to text during recovery: $e');
+    }
+
+    _speechRecognition = null;
+    _speechToText = SpeechToText();
+
+    try {
+      await _initSpeechToText();
+      _speechAvailable = true;
+    } catch (e) {
+      log('Error: Failed to initialize speech to text during recovery: $e');
+      _speechAvailable = false;
+    }
   }
 
   @override

@@ -35,6 +35,7 @@ class EasyAudioRecordingUseCase {
     ctx.updateState(EasyAudioState.initializing);
     ctx.recordingStartTime = DateTime.now();
     ctx.transcriptBuffer.clear();
+    ctx.speechRecognition?.resetCommittedTranscript();
     ctx.pausedByInterruption = false;
 
     try {

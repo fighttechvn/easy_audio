@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
+import '../../core/utils/transcript_persistence.dart';
 import '../../domain/entities/easy_audio_state.dart';
 import '../../domain/entities/record_session.dart';
 import '../../domain/entities/recording_result.dart';
@@ -231,9 +232,26 @@ class RecordSessionCubit extends Cubit<RecordSessionState>
     }
 
     try {
+      final resolvedTranscript = resolveTranscriptForPersistence(
+        resultTranscript: result.transcript,
+        finalTranscript: _finalTranscript,
+        liveTranscript: _liveTranscript,
+      );
+
+      final normalizedResult = RecordingResult(
+        filePath: result.filePath,
+        duration: result.duration,
+        transcript: resolvedTranscript,
+        wasRecovered: result.wasRecovered,
+        startTime: result.startTime,
+        endTime: result.endTime,
+        fileSizeBytes: result.fileSizeBytes,
+        localeId: result.localeId,
+      );
+
       final id = await _recordSessionUsecase.persistSheetResult(
         session: session,
-        result: result,
+        result: normalizedResult,
         userId: userId,
         fallbackLocale: fallbackLocale,
         pendingRecordingId: state.pendingRecordingId,
@@ -251,7 +269,7 @@ class RecordSessionCubit extends Cubit<RecordSessionState>
             lastSavedAt: DateTime.now(),
             lastSavedFilePath: fileUri,
             lastSavedAppointmentIdEmr: session.appointmentIdEmr,
-            lastSavedContent: result.transcript,
+            lastSavedContent: normalizedResult.transcript,
           ),
         );
         unawaited(_pendingUploadCubit.enqueue(id));
