@@ -12,7 +12,10 @@ import 'widgets/customer_record_flow_body.dart';
 import 'widgets/record_bottom_bar.dart';
 
 class SampleScreen extends StatefulWidget {
-  const SampleScreen({super.key, required this.serverStore});
+  const SampleScreen({
+    super.key,
+    required this.serverStore,
+  });
 
   final FakeServerStore serverStore;
 
