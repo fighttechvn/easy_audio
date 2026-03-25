@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/utils/datetime_ext.dart' show RecordAudioDateTimeExt;
-import '../../../domain/entities/pending_recording.dart';
+import '../../core/utils/datetime_ext.dart' show RecordAudioDateTimeExt;
+import '../../domain/entities/pending_recording.dart';
 
 typedef ProgressForFn = double? Function(String id);
 typedef EnqueueUploadFn = void Function(String id);

@@ -1,8 +1,8 @@
-import '../../../../domain/entities/easy_audio_config.dart';
-import '../../../../domain/entities/easy_audio_state.dart';
-import '../../../../domain/entities/recording_result.dart';
-import '../../../../domain/entities/supported_locale.dart';
-import '../../../../domain/entities/transcript_result.dart';
+import '../../../domain/entities/easy_audio_config.dart';
+import '../../../domain/entities/easy_audio_state.dart';
+import '../../../domain/entities/recording_result.dart';
+import '../../../domain/entities/supported_locale.dart';
+import '../../../domain/entities/transcript_result.dart';
 
 abstract class EasyAudioServiceInterface {
   // Streams

@@ -4,7 +4,7 @@ import 'package:injectable/injectable.dart';
 
 import '../../../core/constants/easy_audio_locale_display.dart';
 import '../../../core/utils/record_session_helper.dart';
-import '../../../features/shared/services/easy_audio/easy_audio_service.dart';
+import '../../../integration/audio/easy_audio/easy_audio_service.dart';
 import '../../entities/easy_audio_config.dart';
 import '../../entities/pending_recording.dart';
 import '../../entities/recording_result.dart';

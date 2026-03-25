@@ -5,7 +5,7 @@ import 'domain/entities/language_selection.dart';
 import 'domain/usecases/select_language_usecase.dart';
 import 'features/select_language/cubit/select_language_cubit.dart';
 import 'features/select_language/select_language_dialog.dart';
-import 'features/shared/services/easy_audio/easy_audio_service.dart';
+import 'integration/audio/easy_audio/easy_audio_service.dart';
 
 extension EasyAudioCoordinator on BuildContext {
   Future<LanguageSelection?> openSelectLanguages(

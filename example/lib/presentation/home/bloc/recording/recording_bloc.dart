@@ -12,9 +12,12 @@ export 'recording_event.dart';
 export 'recording_state.dart';
 
 class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
-  RecordingBloc({required EasyAudioUseCase useCase})
-    : _useCase = useCase,
-      super(RecordingIdleState(ui: RecordingStateUi.initial())) {
+  final EasyAudioUseCase _useCase;
+
+  RecordingBloc({
+    required EasyAudioUseCase useCase,
+  }) : _useCase = useCase,
+       super(RecordingIdleState(ui: RecordingStateUi.initial())) {
     on<RecordingTogglePressed>(_onTogglePressed);
     on<RecordingPausePressed>(_onPausePressed);
     on<RecordingCancelPressed>(_onCancelPressed);
@@ -23,8 +26,6 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     on<RecordingAmplitudeChanged>(_onAmplitudeChanged);
     on<RecordingAdded>(_onRecordingAdded);
   }
-
-  final EasyAudioUseCase _useCase;
 
   StreamSubscription<EasyAudioState>? _stateSubscription;
   StreamSubscription<TranscriptResult>? _transcriptSubscription;

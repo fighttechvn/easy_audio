@@ -5,21 +5,21 @@ import 'package:audio_session/audio_session.dart';
 import 'package:record/record.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
-import '../../../../core/controllers/amplitude_monitor.dart';
-import '../../../../core/controllers/recorder_state_observer.dart';
-import '../../../../core/controllers/speech_recognition_controller.dart';
-import '../../../../core/errors/easy_audio_exception.dart';
-import '../../../../core/utils/recording_recovery.dart';
-import '../../../../domain/entities/easy_audio_config.dart';
-import '../../../../domain/entities/easy_audio_mode.dart';
-import '../../../../domain/entities/easy_audio_service_context.dart';
-import '../../../../domain/entities/easy_audio_state.dart';
-import '../../../../domain/entities/recording_result.dart';
-import '../../../../domain/entities/supported_locale.dart';
-import '../../../../domain/entities/transcript_result.dart';
-import '../../../../domain/usecases/easy_audio_initialize_usecase.dart';
-import '../../../../domain/usecases/easy_audio_permissions_usecase.dart';
-import '../../../../domain/usecases/easy_audio_recording_usecase.dart';
+import '../../../core/controllers/amplitude_monitor.dart';
+import '../../../core/controllers/recorder_state_observer.dart';
+import '../../../core/controllers/speech_recognition_controller.dart';
+import '../../../core/errors/easy_audio_exception.dart';
+import '../../../core/utils/recording_recovery.dart';
+import '../../../domain/entities/easy_audio_config.dart';
+import '../../../domain/entities/easy_audio_mode.dart';
+import '../../../domain/entities/easy_audio_service_context.dart';
+import '../../../domain/entities/easy_audio_state.dart';
+import '../../../domain/entities/recording_result.dart';
+import '../../../domain/entities/supported_locale.dart';
+import '../../../domain/entities/transcript_result.dart';
+import '../../../domain/usecases/easy_audio_initialize_usecase.dart';
+import '../../../domain/usecases/easy_audio_permissions_usecase.dart';
+import '../../../domain/usecases/easy_audio_recording_usecase.dart';
 import 'easy_audio_service_interface.dart';
 
 class EasyAudioService

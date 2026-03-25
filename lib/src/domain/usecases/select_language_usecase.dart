@@ -1,6 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../features/shared/services/easy_audio/easy_audio_service.dart';
+import '../../integration/audio/easy_audio/easy_audio_service.dart';
 import '../entities/select_language_data.dart';
 import '../entities/supported_locale.dart';
 

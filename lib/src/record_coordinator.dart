@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'domain/entities/pending_recording.dart';
-import 'features/shared/ui/record_audio_preview_widget.dart';
-import 'features/shared/ui/unfinished_recording_dialog.dart';
+import 'features/audio_widget/record_audio_preview_widget.dart';
+import 'features/audio_widget/unfinished_recording_dialog.dart';
 
 extension RecordCoordinator on BuildContext {
   Future<bool> confirmCloseRecording({required bool isActiveSession}) async {

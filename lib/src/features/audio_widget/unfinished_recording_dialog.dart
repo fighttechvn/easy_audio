@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
-import '../../../core/utils/datetime_ext.dart';
-import '../../../domain/entities/pending_recording.dart';
+import '../../core/utils/datetime_ext.dart';
+import '../../domain/entities/pending_recording.dart';
 
 class UnfinishedRecordingDialog extends StatelessWidget {
   const UnfinishedRecordingDialog({
