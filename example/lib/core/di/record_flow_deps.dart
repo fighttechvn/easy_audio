@@ -1,4 +1,3 @@
-
 import 'package:easy_audio/easy_audio.dart';
 import 'package:injectable/injectable.dart';
 

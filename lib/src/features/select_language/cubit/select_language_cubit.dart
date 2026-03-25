@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../domain/entities/language_selection.dart';
 import '../../../domain/entities/supported_locale.dart';
 import '../../../domain/usecases/select_language_usecase.dart';
-import '../../shared/services/easy_audio/easy_audio_service.dart';
+import '../../../integration/audio/easy_audio/easy_audio_service.dart';
 import 'select_language_state.dart';
 
 class SelectLanguageCubit extends Cubit<SelectLanguageState> {

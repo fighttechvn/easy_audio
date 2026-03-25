@@ -2,14 +2,14 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
-import '../../../core/constants/easy_audio_locale_display.dart';
-import '../../../core/controllers/elapsed_ticker.dart';
-import '../../../core/utils/duration_ext.dart';
-import '../../../domain/entities/easy_audio_state.dart';
-import '../../../domain/entities/record_audio_transcript_state.dart';
-import '../../../domain/entities/transcript_result.dart';
-import '../../../record_coordinator.dart';
-import '../services/easy_audio/easy_audio_service.dart';
+import '../../core/constants/easy_audio_locale_display.dart';
+import '../../core/controllers/elapsed_ticker.dart';
+import '../../core/utils/duration_ext.dart';
+import '../../domain/entities/easy_audio_state.dart';
+import '../../domain/entities/record_audio_transcript_state.dart';
+import '../../domain/entities/transcript_result.dart';
+import '../../integration/audio/easy_audio/easy_audio_service.dart';
+import '../../record_coordinator.dart';
 import 'record_audio_pause_button.dart';
 import 'record_audio_session_controller.dart';
 import 'record_audio_sheet_header.dart';

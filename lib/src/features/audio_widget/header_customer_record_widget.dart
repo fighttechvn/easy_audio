@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../domain/entities/pending_recording.dart';
+import '../../domain/entities/pending_recording.dart';
 import 'pending_record_card_widget.dart';
 
 typedef ListForAppoinmentFn = List<PendingRecording> Function({

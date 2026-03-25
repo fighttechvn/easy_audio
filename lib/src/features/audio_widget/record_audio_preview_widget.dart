@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/utils/datetime_ext.dart';
-import '../../../core/utils/duration_ext.dart';
-import '../../../domain/entities/audio_playback_snapshot.dart';
-import '../services/audio_playback_manager.dart';
+import '../../core/utils/datetime_ext.dart';
+import '../../core/utils/duration_ext.dart';
+import '../../domain/entities/audio_playback_snapshot.dart';
+import '../../integration/audio/audio_playback_manager.dart';
 
 class RecordAudioPreviewWidget extends StatefulWidget {
   const RecordAudioPreviewWidget({
