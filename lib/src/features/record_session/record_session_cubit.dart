@@ -12,6 +12,7 @@ import '../../domain/entities/recording_result.dart';
 import '../../domain/entities/transcript_result.dart';
 import '../../domain/usecases/recording/record_session_usecase.dart';
 import '../../integration/audio/easy_audio/easy_audio_service.dart';
+import '../../integration/wakelock/wakelock_integration.dart';
 import '../pending_upload/pending_upload_bloc.dart';
 
 part 'record_session_state.dart';
@@ -143,6 +144,9 @@ class RecordSessionCubit extends Cubit<RecordSessionState>
       unawaited(_recordSessionUsecase.saveSessionToCache(state.session!));
 
       _requestOpenSheet();
+
+      unawaited(enableWakelock(enable: true));
+
       return RecordSessionStartResult.started;
     } on EasyAudioPermissionDeniedException {
       await _cancelAndEnd(deletePendingFile: false);
@@ -152,6 +156,7 @@ class RecordSessionCubit extends Cubit<RecordSessionState>
         print(e);
         print(trace);
       }
+
       await _cancelAndEnd(deletePendingFile: false);
       return RecordSessionStartResult.failed;
     }
@@ -283,6 +288,8 @@ class RecordSessionCubit extends Cubit<RecordSessionState>
         print(trace);
       }
     } finally {
+      unawaited(enableWakelock(enable: false));
+
       _endSession();
     }
   }
