@@ -50,7 +50,9 @@ class CustomerRecordFloatingBadge extends StatelessWidget {
       child: InkWell(
         customBorder: shape ?? const CircleBorder(),
         onTap: onTap,
-        child: Center(child: child),
+        child: Center(
+          child: child,
+        ),
       ),
     );
   }
@@ -61,10 +63,16 @@ class CustomerRecordRecordingBadgeContent extends StatelessWidget {
     super.key,
     required this.blinkOn,
     required this.elapsedText,
+    this.styleRec,
+    this.style,
+    this.color,
   });
 
   final bool blinkOn;
   final String elapsedText;
+  final TextStyle? styleRec;
+  final TextStyle? style;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
@@ -82,8 +90,8 @@ class CustomerRecordRecordingBadgeContent extends StatelessWidget {
               child: Container(
                 width: 8,
                 height: 8,
-                decoration: const BoxDecoration(
-                  color: Colors.red,
+                decoration: BoxDecoration(
+                  color: color ?? Colors.red,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -91,12 +99,13 @@ class CustomerRecordRecordingBadgeContent extends StatelessWidget {
             const SizedBox(width: 4),
             Text(
               'REC',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onPrimary,
-                fontWeight: FontWeight.w900,
-                fontSize: 10,
-                letterSpacing: 0.5,
-              ),
+              style: styleRec ??
+                  theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onPrimary,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 10,
+                    letterSpacing: 0.5,
+                  ),
             ),
           ],
         ),
@@ -105,11 +114,12 @@ class CustomerRecordRecordingBadgeContent extends StatelessWidget {
           fit: BoxFit.scaleDown,
           child: Text(
             elapsedText,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onPrimary,
-              fontWeight: FontWeight.w800,
-              fontSize: 12,
-            ),
+            style: style ??
+                theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onPrimary,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12,
+                ),
           ),
         ),
       ],
@@ -118,7 +128,10 @@ class CustomerRecordRecordingBadgeContent extends StatelessWidget {
 }
 
 class CustomerRecordUploadBadgeContent extends StatelessWidget {
-  const CustomerRecordUploadBadgeContent({super.key, required this.progress});
+  const CustomerRecordUploadBadgeContent({
+    super.key,
+    required this.progress,
+  });
 
   final double progress;
 
