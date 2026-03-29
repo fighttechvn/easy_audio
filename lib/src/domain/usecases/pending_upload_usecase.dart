@@ -70,7 +70,7 @@ class PendingUploadUsecase {
       return PendingUploadRunResult.notFound(pendingId: id);
     }
 
-    var attempt = latest.retryCount;
+    var attempt = 0;
 
     while (attempt < retryPolicy.maxAttempts) {
       try {
