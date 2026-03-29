@@ -3,11 +3,11 @@ import 'dart:io';
 
 import 'package:record/record.dart';
 
-import '../../../domain/entities/easy_audio_config.dart';
-import '../../../domain/entities/easy_audio_mode.dart';
-import '../../../domain/entities/easy_audio_state.dart';
-import '../../../domain/entities/transcript_result.dart';
-import '../services/easy_audio/easy_audio_service.dart';
+import '../../domain/entities/easy_audio_config.dart';
+import '../../domain/entities/easy_audio_mode.dart';
+import '../../domain/entities/easy_audio_state.dart';
+import '../../domain/entities/transcript_result.dart';
+import '../../integration/audio/easy_audio/easy_audio_service.dart';
 
 class RecordAudioSessionController {
   RecordAudioSessionController({

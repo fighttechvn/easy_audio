@@ -12,11 +12,8 @@ class EmptyHint extends StatelessWidget {
       child: Text(
         text,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.7),
-            ),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+        ),
       ),
     );
   }

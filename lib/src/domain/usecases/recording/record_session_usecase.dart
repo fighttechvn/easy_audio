@@ -1,11 +1,13 @@
+import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 
 import '../../../core/utils/record_session_helper.dart';
-import '../../../features/shared/services/easy_audio/easy_audio_service.dart';
+import '../../../integration/audio/easy_audio/easy_audio_service.dart';
 import '../../entities/easy_audio_config.dart';
 import '../../entities/easy_audio_mode.dart';
 import '../../entities/easy_audio_state.dart';
@@ -18,11 +20,12 @@ class EasyAudioPermissionDeniedException implements Exception {}
 
 @injectable
 class RecordSessionUsecase {
-  RecordSessionUsecase(this._pendingRecordingsUsecase)
-      : _easyAudio = EasyAudioService();
-
   final PendingRecordingsUsecase _pendingRecordingsUsecase;
   final EasyAudioService _easyAudio;
+
+  RecordSessionUsecase(
+    this._pendingRecordingsUsecase,
+  ) : _easyAudio = EasyAudioService();
 
   EasyAudioService get easyAudio => _easyAudio;
 
@@ -96,7 +99,6 @@ class RecordSessionUsecase {
         throw EasyAudioPermissionDeniedException();
       }
     }
-
     await _easyAudio.start();
 
     final filePath = _easyAudio.currentFilePath?.trim() ?? '';
@@ -195,7 +197,12 @@ class RecordSessionUsecase {
   }) async {
     try {
       await _easyAudio.cancel();
-    } catch (_) {}
+    } catch (e, trace) {
+      if (kDebugMode) {
+        print(e);
+        print(trace);
+      }
+    }
 
     if (deletePendingFile && pendingRecordingId != null) {
       try {

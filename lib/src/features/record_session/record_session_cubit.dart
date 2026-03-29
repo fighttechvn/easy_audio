@@ -11,8 +11,9 @@ import '../../domain/entities/record_session.dart';
 import '../../domain/entities/recording_result.dart';
 import '../../domain/entities/transcript_result.dart';
 import '../../domain/usecases/recording/record_session_usecase.dart';
+import '../../integration/audio/easy_audio/easy_audio_service.dart';
+import '../../integration/wakelock/wakelock_integration.dart';
 import '../pending_upload/pending_upload_bloc.dart';
-import '../shared/services/easy_audio/easy_audio_service.dart';
 
 part 'record_session_state.dart';
 
@@ -21,13 +22,15 @@ enum RecordSessionStartResult { started, resumed, permissionDenied, failed }
 @lazySingleton
 class RecordSessionCubit extends Cubit<RecordSessionState>
     with WidgetsBindingObserver {
-  RecordSessionCubit(this._recordSessionUsecase, this._pendingUploadCubit)
-      : super(const RecordSessionState()) {
-    WidgetsBinding.instance.addObserver(this);
-  }
-
   final RecordSessionUsecase _recordSessionUsecase;
   final PendingUploadBloc _pendingUploadCubit;
+
+  RecordSessionCubit(
+    this._recordSessionUsecase,
+    this._pendingUploadCubit,
+  ) : super(const RecordSessionState()) {
+    WidgetsBinding.instance.addObserver(this);
+  }
 
   EasyAudioService get easyAudio => _recordSessionUsecase.easyAudio;
 
@@ -59,6 +62,7 @@ class RecordSessionCubit extends Cubit<RecordSessionState>
     _cancelSessionSubscriptions();
     _elapsedTicker?.cancel();
     _elapsedTicker = null;
+
     return super.close();
   }
 
@@ -140,6 +144,9 @@ class RecordSessionCubit extends Cubit<RecordSessionState>
       unawaited(_recordSessionUsecase.saveSessionToCache(state.session!));
 
       _requestOpenSheet();
+
+      unawaited(enableWakelock(enable: true));
+
       return RecordSessionStartResult.started;
     } on EasyAudioPermissionDeniedException {
       await _cancelAndEnd(deletePendingFile: false);
@@ -149,6 +156,7 @@ class RecordSessionCubit extends Cubit<RecordSessionState>
         print(e);
         print(trace);
       }
+
       await _cancelAndEnd(deletePendingFile: false);
       return RecordSessionStartResult.failed;
     }
@@ -280,6 +288,8 @@ class RecordSessionCubit extends Cubit<RecordSessionState>
         print(trace);
       }
     } finally {
+      unawaited(enableWakelock(enable: false));
+
       _endSession();
     }
   }

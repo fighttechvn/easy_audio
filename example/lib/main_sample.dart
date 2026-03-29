@@ -13,7 +13,9 @@ void main() {
   runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
+
       await configureDependencies();
+
       final pendingUploadOrchestratorBloc = injector
           .get<PendingUploadOrchestratorBloc>();
       final fakeServerStore = injector.get<FakeServerStore>();
