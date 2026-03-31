@@ -5,10 +5,14 @@ class RecordAudioTranscriptCard extends StatefulWidget {
     super.key,
     required this.text,
     this.emptyText = 'The transcript will be displayed here...',
+    this.borderRadius = 20.0,
+    this.backgroundColor,
   });
 
   final String text;
   final String emptyText;
+  final double borderRadius;
+  final Color? backgroundColor;
 
   @override
   State<RecordAudioTranscriptCard> createState() =>
@@ -70,26 +74,30 @@ class _RecordAudioTranscriptCardState extends State<RecordAudioTranscriptCard> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final combined = widget.text.trim();
-    final isEmpty = combined.isEmpty;
+    final ThemeData theme = Theme.of(context);
+    final String combined = widget.text.trim();
+    final bool isEmpty = combined.isEmpty;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(20),
+        color: widget.backgroundColor ?? Colors.grey[200],
+        borderRadius: BorderRadius.circular(widget.borderRadius),
       ),
-      child: SingleChildScrollView(
+      child: Scrollbar(
         controller: _scrollController,
-        child: Text(
-          isEmpty ? widget.emptyText : combined,
-          textAlign: isEmpty ? TextAlign.start : TextAlign.start,
-          style: theme.textTheme.bodyLarge?.copyWith(
-            color: isEmpty
-                ? theme.colorScheme.onSurfaceVariant
-                : theme.colorScheme.onSurface,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.only(right: 6),
+          controller: _scrollController,
+          child: Text(
+            isEmpty ? widget.emptyText : combined,
+            textAlign: isEmpty ? TextAlign.start : TextAlign.start,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: isEmpty
+                  ? theme.colorScheme.onSurfaceVariant
+                  : theme.colorScheme.onSurface,
+            ),
           ),
         ),
       ),

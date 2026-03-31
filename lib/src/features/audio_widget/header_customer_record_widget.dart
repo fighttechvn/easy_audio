@@ -32,7 +32,11 @@ class HeaderCustomerRecordWidget extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final items = listForAppointment(appointmentIdEmr: idEmr!, userId: userId);
+    final items = listForAppointment(
+      appointmentIdEmr: idEmr!,
+      userId: userId,
+    );
+
     if (items.isEmpty) {
       return const SizedBox.shrink();
     }
