@@ -118,6 +118,11 @@ class PendingUploadBloc extends Bloc<PendingUploadEvent, PendingUploadState> {
       await _orchestrator.enqueue(event.id);
       event.completer?.complete();
     } catch (e, trace) {
+      if (kDebugMode) {
+        print(e);
+        print(trace);
+      }
+
       event.completer?.completeError(e, trace);
     }
   }
@@ -180,6 +185,10 @@ class PendingUploadBloc extends Bloc<PendingUploadEvent, PendingUploadState> {
 
       event.completer?.complete();
     } catch (e, trace) {
+      if (kDebugMode) {
+        print(e);
+        print(trace);
+      }
       event.completer?.completeError(e, trace);
     }
   }
