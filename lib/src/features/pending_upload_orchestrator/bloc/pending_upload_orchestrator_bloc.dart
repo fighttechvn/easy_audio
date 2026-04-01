@@ -4,12 +4,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
-import '../../domain/entities/pending_upload_flow.dart';
-import '../../domain/entities/upload_recoding_process_callback.dart';
-import '../../domain/entities/upload_retry_policy.dart';
-import '../../domain/usecases/pending_upload_usecase.dart';
-import 'ui_state/pending_upload_orchestrator_effect.dart';
-import 'ui_state/pending_upload_orchestrator_ui_state.dart';
+import '../../../domain/entities/pending_upload_flow.dart';
+import '../../../domain/entities/upload_recoding_process_callback.dart';
+import '../../../domain/entities/upload_retry_policy.dart';
+import '../../../domain/usecases/pending_upload_usecase.dart';
+import '../entities/pending_upload_orchestrator_effect.dart';
+import '../entities/pending_upload_orchestrator_ui_state.dart';
 
 part 'pending_upload_orchestrator_event.dart';
 part 'pending_upload_orchestrator_state.dart';

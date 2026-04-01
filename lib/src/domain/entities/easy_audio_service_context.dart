@@ -4,10 +4,12 @@ import 'package:audio_session/audio_session.dart';
 import 'package:record/record.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
-import '../../../easy_audio.dart';
 import '../../core/controllers/amplitude_monitor.dart';
 import '../../core/controllers/recorder_state_observer.dart';
 import '../../core/controllers/speech_recognition_controller.dart';
+import 'easy_audio_config.dart';
+import 'easy_audio_state.dart';
+import 'transcript_result.dart';
 
 abstract class EasyAudioServiceContext {
   AudioRecorder? get recorder;

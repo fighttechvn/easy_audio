@@ -5,8 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
 import '../../domain/entities/upload_retry_policy.dart';
-import '../pending_upload_orchestrator/pending_upload_orchestrator_bloc.dart';
-import '../pending_upload_orchestrator/ui_state/pending_upload_orchestrator_effect.dart';
+import '../pending_upload_orchestrator/bloc/pending_upload_orchestrator_bloc.dart';
+import '../pending_upload_orchestrator/entities/pending_upload_orchestrator_effect.dart';
 import 'ui_state/pending_upload_ui_state.dart';
 
 part 'pending_upload_event.dart';
