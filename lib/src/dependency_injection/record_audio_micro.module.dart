@@ -26,8 +26,8 @@ import 'package:easy_audio/src/features/pending_recordings/pending_recordings_bl
     as _i1024;
 import 'package:easy_audio/src/features/pending_upload/pending_upload_bloc.dart'
     as _i585;
-import 'package:easy_audio/src/features/pending_upload_orchestrator/pending_upload_orchestrator_bloc.dart'
-    as _i401;
+import 'package:easy_audio/src/features/pending_upload_orchestrator/bloc/pending_upload_orchestrator_bloc.dart'
+    as _i959;
 import 'package:easy_audio/src/features/record_session/record_session_cubit.dart'
     as _i208;
 import 'package:injectable/injectable.dart' as _i526;
@@ -51,20 +51,20 @@ class EasyAudioPackageModule extends _i526.MicroPackageModule {
         _i1014.RecordSessionUsecase(gh<_i353.PendingRecordingsUsecase>()));
     gh.factory<_i1024.PendingRecordingsBloc>(() =>
         _i1024.PendingRecordingsBloc(gh<_i353.PendingRecordingsUsecase>()));
-    gh.lazySingleton<_i401.PendingUploadOrchestratorBloc>(
-      () => _i401.PendingUploadOrchestratorBloc(
+    gh.lazySingleton<_i959.PendingUploadOrchestratorBloc>(
+      () => _i959.PendingUploadOrchestratorBloc(
           gh<_i1022.PendingUploadUsecase>()),
       dispose: (i) => i.dispose(),
     );
     gh.lazySingleton<_i585.PendingUploadBloc>(() =>
-        _i585.PendingUploadBloc(gh<_i401.PendingUploadOrchestratorBloc>()));
+        _i585.PendingUploadBloc(gh<_i959.PendingUploadOrchestratorBloc>()));
+    gh.lazySingleton<_i208.RecordSessionCubit>(() => _i208.RecordSessionCubit(
+          gh<_i1014.RecordSessionUsecase>(),
+          gh<_i585.PendingUploadBloc>(),
+        ));
     gh.lazySingleton<_i1055.CrashRecoveryBloc>(() => _i1055.CrashRecoveryBloc(
           gh<_i42.CrashRecoveryUsecase>(),
           gh<_i353.PendingRecordingsUsecase>(),
-          gh<_i585.PendingUploadBloc>(),
-        ));
-    gh.lazySingleton<_i208.RecordSessionCubit>(() => _i208.RecordSessionCubit(
-          gh<_i1014.RecordSessionUsecase>(),
           gh<_i585.PendingUploadBloc>(),
         ));
   }
