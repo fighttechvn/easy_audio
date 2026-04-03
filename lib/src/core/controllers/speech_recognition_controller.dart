@@ -52,17 +52,25 @@ class SpeechRecognitionController {
       await speechToText.listen(
         onResult: _onSpeechResult,
         localeId: _localeId,
-        // IMPORTANT: Cái này quan trọng. Với iOS, sau khi speech to text work
+        // IMPORTANT: Cái này quan trọng.
+        // Với iOS, sau khi speech to text work
         // 9phút nó sẽ kết thúc luồng để bắt đầu luồng mới để tránh vượt quá
         // giới hạn thời gian của OS
         // (lỗi error_speech_recognizer_connection_interrupted)
         listenFor: _shouldProactivelyCycle ? const Duration(minutes: 9) : null,
+        // --> https://pub.dev/packages/speech_to_text/changelog#710
+        // listenFor: null,
         listenOptions: SpeechListenOptions(
           partialResults: true,
           cancelOnError: false,
           listenMode: ListenMode.dictation,
         ),
       );
+    } catch (e, trace) {
+      if (kDebugMode) {
+        print(e);
+        print(trace);
+      }
     } finally {
       _starting = false;
     }
