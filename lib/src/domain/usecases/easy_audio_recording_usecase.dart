@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:audio_session/audio_session.dart';
 
@@ -9,7 +10,6 @@ import '../../core/utils/easy_audio_cache_info.dart';
 import '../../core/utils/easy_audio_paths.dart';
 import '../../core/utils/file_utils.dart';
 import '../../core/utils/permission_guards.dart';
-import '../../core/utils/record_config_factory.dart';
 import '../entities/easy_audio_mode.dart';
 import '../entities/easy_audio_service_context.dart';
 import '../entities/easy_audio_state.dart';
@@ -19,7 +19,13 @@ class EasyAudioRecordingUseCase {
   Future<void> start(EasyAudioServiceContext ctx) async {
     ctx.ensureInitialized();
 
-    final isRecording = ctx.currentState == EasyAudioState.recording ||
+    final sttRecord = ctx.sttRecord;
+    if (sttRecord == null) {
+      throw EasyAudioException.notInitialized();
+    }
+
+    final isRecording =
+        ctx.currentState == EasyAudioState.recording ||
         ctx.currentState == EasyAudioState.paused;
 
     if (isRecording) {
@@ -28,8 +34,7 @@ class EasyAudioRecordingUseCase {
 
     await PermissionGuards.ensureCanStart(
       mode: ctx.config.mode,
-      recorder: ctx.recorder!,
-      speechAvailable: ctx.speechAvailable,
+      sttRecord: sttRecord,
     );
 
     ctx.updateState(EasyAudioState.initializing);
@@ -42,24 +47,28 @@ class EasyAudioRecordingUseCase {
       if (ctx.config.mode != EasyAudioMode.speechToTextOnly) {
         ctx.currentFilePath = await EasyAudioPaths.generateFilePath(ctx.config);
 
-        final recordPath = ctx.currentFilePath!;
-
-        await ctx.recorder!.start(
-          RecordConfigFactory.build(ctx.config),
-          path: recordPath,
-        );
-        if (ctx.config.enableCrashRecovery) {
+        if (ctx.config.enableCrashRecovery && ctx.currentFilePath != null) {
+          final targetPath = ctx.currentFilePath!;
           await EasyAudioCacheInfo.save(
             config: ctx.config,
             recordingStartTime: ctx.recordingStartTime,
-            cachePath: recordPath,
-            targetPath: recordPath,
+            cachePath: targetPath,
+            targetPath: targetPath,
           );
         }
+      }
+
+      final localeId = (ctx.config.locale ?? 'vi-VN').trim();
+      await sttRecord.start(
+        localeId: localeId.isEmpty ? 'vi-VN' : localeId,
+        partialResults: ctx.config.mode != EasyAudioMode.recordOnly,
+      );
+
+      if (ctx.config.mode != EasyAudioMode.speechToTextOnly) {
         _startAmplitudeMonitoring(ctx);
       }
 
-      if (ctx.config.mode != EasyAudioMode.recordOnly && ctx.speechAvailable) {
+      if (ctx.config.mode != EasyAudioMode.recordOnly) {
         await _startSpeechRecognition(ctx);
       }
 
@@ -79,15 +88,19 @@ class EasyAudioRecordingUseCase {
   Future<void> pause(EasyAudioServiceContext ctx) async {
     ctx.ensureInitialized();
 
+    final sttRecord = ctx.sttRecord;
+    if (sttRecord == null) {
+      throw EasyAudioException.notInitialized();
+    }
+
     if (ctx.currentState != EasyAudioState.recording) {
       throw EasyAudioException.notRecording();
     }
 
     try {
       ctx.pauseRequestedByUser = true;
-      if (ctx.config.mode != EasyAudioMode.speechToTextOnly) {
-        await ctx.recorder!.pause();
-      }
+
+      await sttRecord.pause();
 
       if (ctx.config.mode != EasyAudioMode.recordOnly) {
         await ctx.speechRecognition?.stop();
@@ -105,6 +118,11 @@ class EasyAudioRecordingUseCase {
   Future<void> resume(EasyAudioServiceContext ctx) async {
     ctx.ensureInitialized();
 
+    final sttRecord = ctx.sttRecord;
+    if (sttRecord == null) {
+      throw EasyAudioException.notInitialized();
+    }
+
     if (ctx.currentState != EasyAudioState.paused) {
       throw const EasyAudioException(
         code: 'NOT_PAUSED',
@@ -114,12 +132,13 @@ class EasyAudioRecordingUseCase {
 
     try {
       ctx.resumeRequestedByUser = true;
+      await sttRecord.resume();
+
       if (ctx.config.mode != EasyAudioMode.speechToTextOnly) {
-        await ctx.recorder!.resume();
         _startAmplitudeMonitoring(ctx);
       }
 
-      if (ctx.config.mode != EasyAudioMode.recordOnly && ctx.speechAvailable) {
+      if (ctx.config.mode != EasyAudioMode.recordOnly) {
         await _startSpeechRecognition(ctx);
       }
 
@@ -135,7 +154,13 @@ class EasyAudioRecordingUseCase {
   Future<RecordingResult> stop(EasyAudioServiceContext ctx) async {
     ctx.ensureInitialized();
 
-    final isRecording = ctx.currentState == EasyAudioState.recording ||
+    final sttRecord = ctx.sttRecord;
+    if (sttRecord == null) {
+      throw EasyAudioException.notInitialized();
+    }
+
+    final isRecording =
+        ctx.currentState == EasyAudioState.recording ||
         ctx.currentState == EasyAudioState.paused;
 
     if (!isRecording) {
@@ -153,19 +178,25 @@ class EasyAudioRecordingUseCase {
     try {
       if (ctx.config.mode != EasyAudioMode.recordOnly) {
         await ctx.speechRecognition?.stop();
-
-        try {
-          await ctx.speechToText?.cancel();
-        } catch (_) {}
       }
 
-      if (ctx.config.mode != EasyAudioMode.speechToTextOnly) {
-        final path = await ctx.recorder!.stop();
+      final stopResult = await sttRecord.stop();
+      final tempPath = stopResult.audioPath;
 
-        finalPath = path;
+      if (ctx.config.mode == EasyAudioMode.speechToTextOnly) {
+        await FileUtils.safeDelete(tempPath);
+        finalPath = null;
+        fileSize = null;
+      } else {
+        final targetPath = ctx.currentFilePath;
+        if (targetPath != null && targetPath.isNotEmpty) {
+          await _moveFile(tempPath, targetPath);
+          finalPath = targetPath;
+        } else {
+          finalPath = tempPath;
+        }
 
         fileSize = await FileUtils.safeLength(finalPath);
-
         await EasyAudioCacheInfo.clear();
       }
 
@@ -198,7 +229,13 @@ class EasyAudioRecordingUseCase {
   Future<void> cancel(EasyAudioServiceContext ctx) async {
     ctx.ensureInitialized();
 
-    final isRecording = ctx.currentState == EasyAudioState.recording ||
+    final sttRecord = ctx.sttRecord;
+    if (sttRecord == null) {
+      throw EasyAudioException.notInitialized();
+    }
+
+    final isRecording =
+        ctx.currentState == EasyAudioState.recording ||
         ctx.currentState == EasyAudioState.paused;
 
     if (!isRecording && ctx.currentState != EasyAudioState.processing) {
@@ -211,18 +248,12 @@ class EasyAudioRecordingUseCase {
     try {
       if (ctx.config.mode != EasyAudioMode.recordOnly) {
         await ctx.speechRecognition?.stop();
-
-        try {
-          await ctx.speechToText?.cancel();
-        } catch (_) {}
       }
 
-      if (ctx.config.mode != EasyAudioMode.speechToTextOnly) {
-        await ctx.recorder!.cancel();
+      await sttRecord.cancel();
 
-        await FileUtils.safeDelete(ctx.currentFilePath);
-        await EasyAudioCacheInfo.clear();
-      }
+      await FileUtils.safeDelete(ctx.currentFilePath);
+      await EasyAudioCacheInfo.clear();
     } finally {
       _cleanup(ctx);
       ctx.pausedByInterruption = false;
@@ -233,30 +264,28 @@ class EasyAudioRecordingUseCase {
   }
 
   Future<void> _startSpeechRecognition(EasyAudioServiceContext ctx) async {
-    final speechToText = ctx.speechToText;
-    if (speechToText == null) {
+    final sttRecord = ctx.sttRecord;
+    if (sttRecord == null) {
       return;
     }
 
     ctx.speechRecognition ??= SpeechRecognitionController(
-      speechToText: speechToText,
+      sttRecord: sttRecord,
       transcriptController: ctx.transcriptController,
       transcriptBuffer: ctx.transcriptBuffer,
-      getCurrentState: () => ctx.currentState,
-      isSpeechAvailable: () => ctx.speechAvailable,
     );
 
-    await ctx.speechRecognition!.start(localeId: ctx.config.locale);
+    await ctx.speechRecognition!.start();
   }
 
   void _startAmplitudeMonitoring(EasyAudioServiceContext ctx) {
-    final recorder = ctx.recorder;
-    if (recorder == null) {
+    final sttRecord = ctx.sttRecord;
+    if (sttRecord == null) {
       return;
     }
 
     ctx.amplitudeMonitor ??= AmplitudeMonitor(
-      recorder: recorder,
+      sttRecord: sttRecord,
       onAmplitude: (normalized) {
         if (!ctx.amplitudeController.isClosed) {
           ctx.amplitudeController.add(normalized);
@@ -284,5 +313,26 @@ class EasyAudioRecordingUseCase {
       final session = await AudioSession.instance;
       await session.setActive(false);
     } catch (_) {}
+  }
+
+  Future<void> _moveFile(String fromPath, String toPath) async {
+    if (fromPath.isEmpty || toPath.isEmpty || fromPath == toPath) {
+      return;
+    }
+
+    final source = File(fromPath);
+    if (!await source.exists()) {
+      return;
+    }
+
+    final target = File(toPath);
+    await target.parent.create(recursive: true);
+
+    try {
+      await source.rename(toPath);
+    } on FileSystemException {
+      await source.copy(toPath);
+      await source.delete();
+    }
   }
 }

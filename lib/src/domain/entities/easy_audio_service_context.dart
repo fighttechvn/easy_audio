@@ -1,8 +1,6 @@
 import 'dart:async';
 
-import 'package:audio_session/audio_session.dart';
-import 'package:record/record.dart';
-import 'package:speech_to_text/speech_to_text.dart';
+import 'package:stt_record/stt_record.dart';
 
 import '../../../easy_audio.dart';
 import '../../core/controllers/amplitude_monitor.dart';
@@ -10,17 +8,11 @@ import '../../core/controllers/recorder_state_observer.dart';
 import '../../core/controllers/speech_recognition_controller.dart';
 
 abstract class EasyAudioServiceContext {
-  AudioRecorder? get recorder;
-  set recorder(AudioRecorder? value);
-
-  SpeechToText? get speechToText;
-  set speechToText(SpeechToText? value);
+  SttRecord? get sttRecord;
+  set sttRecord(SttRecord? value);
 
   RecorderStateObserver? get recorderStateObserver;
   set recorderStateObserver(RecorderStateObserver? value);
-
-  StreamSubscription<AudioInterruptionEvent>? get audioInterruptionSub;
-  set audioInterruptionSub(StreamSubscription<AudioInterruptionEvent>? value);
 
   bool get pauseRequestedByUser;
   set pauseRequestedByUser(bool value);

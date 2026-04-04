@@ -2,12 +2,23 @@
 
 `easy_audio` is a Flutter package that provides a clean, pragmatic API for:
 
-- Recording audio to a file (built on top of `record`)
-- Streaming speech-to-text transcripts (built on top of `speech_to_text`)
+- Recording audio to a file
+- Streaming speech-to-text transcripts in realtime
 - Best-effort realtime mode: record + transcript concurrently
 - Crash recovery (recover an in-progress recording after app crash/kill)
 - Background recording (Android via Foreground Service; iOS via `UIBackgroundModes`)
 - A tiny playback helper (built on top of `just_audio`) to preview recordings in UI
+
+Under the hood, recording + STT is powered by `stt_record` (iOS/Android).
+
+## Important notes (stt_record backend)
+
+- Audio output is always **WAV PCM16** (`.wav`).
+  - `EasyAudioConfig.encoder`, `sampleRate`, `bitRate`, `numChannels` are currently kept for API compatibility and are not applied.
+  - `fileExtension` is honored only when it is `wav`.
+- `TranscriptResult.confidence` and `alternatives` are not provided by `stt_record` (they are emitted as `0.0` and `[]`).
+- Android runs a foreground service while recording (notification text is currently fixed by `stt_record`).
+  - `enableBackgroundRecording` and `AndroidService` are currently no-ops.
 
 Note: speech-to-text while the app is in background depends on OS/device. The package tries to keep STT running when possible, but it cannot guarantee transcripts will always be available in background.
 
@@ -45,13 +56,12 @@ Note: speech-to-text while the app is in background depends on OS/device. The pa
 
 - **Recording**
   - Start / pause / resume / stop / cancel
-  - Multiple codecs via `AudioEncoder` (`aacLc`, `wav`, ...)
   - Realtime amplitude stream (`amplitudeStream`) for waveform/visualizer UI
   - Auto stop via `maxDuration`
   - Custom output directory + file naming (`outputDirectory`, `filePrefix`, `fileExtension`)
 
 - **Speech-to-text**
-  - Realtime transcript stream (`transcriptStream`) including `isFinal`, `confidence`, `alternatives`
+  - Realtime transcript stream (`transcriptStream`) including `isFinal` and `text`
   - List supported locales via `getSupportedLocales()`
 
 - **Crash recovery**
@@ -101,9 +111,8 @@ The package is organized into a few small modules:
 
 - `lib/src/core/utils/`: small helpers used by `EasyAudioService`
   - `PermissionGuards`: pre-start permission/availability checks
-  - `RecordConfigFactory`: builds `RecordConfig` (including Android foreground service config)
   - `RecorderStateObserver`: watches interruptions (calls/audio focus) and auto pause/resume (configurable)
-  - `SpeechToTextUtils` + `SpeechRecognitionController`: STT initialization and lifecycle control
+  - `SpeechRecognitionController`: streams transcripts via `stt_record`
   - `AmplitudeMonitor`: polls recorder amplitude and normalizes it
   - `EasyAudioPaths` + `EasyAudioCacheInfo`: file paths + crash recovery metadata
   - `WavHeaderRepair`, `FileUtils`
@@ -146,19 +155,8 @@ In `android/app/src/main/AndroidManifest.xml`:
 ```xml
 <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 
-<!-- Background recording (Foreground Service) -->
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
-
 <!-- Android 13+ (optional but recommended for foreground-service notification) -->
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-
-<application>
-  <service
-    android:name="com.llfbandit.record.service.AudioRecordingService"
-    android:foregroundServiceType="microphone"
-    android:exported="false" />
-</application>
 ```
 
 Note: On Android 13+ you may need to request runtime permission `POST_NOTIFICATIONS` for the foreground-service notification to appear properly.
@@ -174,7 +172,6 @@ final audio = EasyAudioService();
 
 await audio.initialize(const EasyAudioConfig(
   mode: EasyAudioMode.recordOnly,
-  encoder: AudioEncoder.aacLc,
 ));
 
 await audio.start();
@@ -208,11 +205,6 @@ final audio = EasyAudioService();
 await audio.initialize(const EasyAudioConfig(
   mode: EasyAudioMode.realtime,
   locale: 'vi-VN',
-  enableBackgroundRecording: true,
-  androidService: AndroidService(
-    title: 'Recording in progress',
-    content: 'Tap to return to the app',
-  ),
 ));
 
 final subState = audio.stateStream.listen((s) => print('State: $s'));
@@ -284,20 +276,20 @@ await playback.stop();
 | Option | Type | Default | Description |
 |---|---:|---:|---|
 | `mode` | `EasyAudioMode` | `recordOnly` | Operating mode |
-| `encoder` | `AudioEncoder` | `aacLc` | Audio codec |
-| `sampleRate` | `int` | `44100` | Sample rate |
-| `bitRate` | `int` | `128000` | Bit rate |
-| `numChannels` | `int` | `1` | 1=mono, 2=stereo |
+| `encoder` | `AudioEncoder` | `aacLc` | Kept for API compatibility (WAV output only) |
+| `sampleRate` | `int` | `44100` | Kept for API compatibility (not applied) |
+| `bitRate` | `int` | `128000` | Kept for API compatibility (not applied) |
+| `numChannels` | `int` | `1` | Kept for API compatibility (not applied) |
 | `locale` | `String?` | `null` | STT locale (e.g. `vi-VN`) |
 | `maxDuration` | `Duration?` | `null` | Auto-stop after duration |
 | `enableCrashRecovery` | `bool` | `true` | Enable crash recovery metadata |
 | `pauseOnInterruption` | `bool` | `true` | Auto-pause on system interruption |
 | `autoResumeAfterInterruption` | `bool` | `false` | Auto-resume after interruption (use carefully) |
-| `enableBackgroundRecording` | `bool` | `false` | Android: enable foreground service |
-| `androidService` | `AndroidService?` | `null` | Foreground notification title/content |
+| `enableBackgroundRecording` | `bool` | `false` | Currently a no-op (foreground service is managed by `stt_record`) |
+| `androidService` | `AndroidService?` | `null` | Currently a no-op |
 | `outputDirectory` | `String?` | `null` | Override recordings directory |
 | `filePrefix` | `String` | `easy_audio_` | Prefix for generated file names |
-| `fileExtension` | `String?` | `null` | Override file extension (defaults from encoder) |
+| `fileExtension` | `String?` | `null` | Override file extension (only `wav` is supported) |
 
 ## Modes
 

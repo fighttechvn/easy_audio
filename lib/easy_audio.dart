@@ -1,7 +1,5 @@
 library;
 
-export 'package:record/record.dart' show AudioEncoder, AndroidService;
-
 export 'src/core/constants/easy_audio_locale_display.dart';
 export 'src/core/controllers/elapsed_ticker.dart';
 export 'src/core/errors/easy_audio_exception.dart';
@@ -10,6 +8,8 @@ export 'src/data/datasources/pending_recording_local_datasource.dart';
 export 'src/data/repository/pending_recording_repository.impl.dart';
 export 'src/dependency_injection/record_audio_micro.dart';
 export 'src/dependency_injection/record_audio_micro.module.dart';
+export 'src/domain/entities/android_service.dart';
+export 'src/domain/entities/audio_encoder.dart';
 export 'src/domain/entities/audio_playback_snapshot.dart';
 export 'src/domain/entities/easy_audio_config.dart';
 export 'src/domain/entities/easy_audio_mode.dart';

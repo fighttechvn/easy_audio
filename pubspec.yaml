@@ -1,10 +1,11 @@
 name: easy_audio
-description: Easy record audio file, and friendly convert `speech_to_text`
+description: Record audio (WAV) and stream realtime speech-to-text transcripts.
 version: 2.0.3
 homepage: https://github.com/fighttech-vn/easy_audio
+publish_to: "none"
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
+  sdk: ">=3.10.4 <4.0.0"
   flutter: ">=1.17.0"
 
 dependencies:
@@ -22,8 +23,8 @@ dependencies:
 
   just_audio: ^0.10.5
   audio_session: ^0.2.2
-  record: 6.0.0
-  speech_to_text: 7.0.0
+  stt_record:
+    path: packages/stt_record
 
   injectable: ^2.7.1+4
   get_it: ^9.2.1

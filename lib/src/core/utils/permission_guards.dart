@@ -1,4 +1,4 @@
-import 'package:record/record.dart';
+import 'package:stt_record/stt_record.dart';
 
 import '../../domain/entities/easy_audio_mode.dart';
 import '../errors/easy_audio_exception.dart';
@@ -8,18 +8,11 @@ class PermissionGuards {
 
   static Future<void> ensureCanStart({
     required EasyAudioMode mode,
-    required AudioRecorder recorder,
-    required bool speechAvailable,
+    required SttRecord sttRecord,
   }) async {
-    if (mode != EasyAudioMode.speechToTextOnly) {
-      final hasPermission = await recorder.hasPermission();
-      if (!hasPermission) {
-        throw EasyAudioException.microphonePermissionDenied();
-      }
-    }
-
-    if (mode != EasyAudioMode.recordOnly && !speechAvailable) {
-      throw EasyAudioException.speechPermissionDenied();
+    final hasPermission = await sttRecord.hasPermission();
+    if (!hasPermission) {
+      throw EasyAudioException.microphonePermissionDenied();
     }
   }
 }

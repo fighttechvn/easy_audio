@@ -1,8 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:record/record.dart';
-
+import '../../domain/entities/android_service.dart';
 import '../../domain/entities/easy_audio_config.dart';
 import '../../domain/entities/easy_audio_mode.dart';
 import '../../domain/entities/easy_audio_state.dart';
@@ -45,7 +44,8 @@ class RecordAudioSessionController {
     _started = true;
 
     final initialState = easyAudio.currentState;
-    final wasActiveBefore = initialState == EasyAudioState.recording ||
+    final wasActiveBefore =
+        initialState == EasyAudioState.recording ||
         initialState == EasyAudioState.paused ||
         initialState == EasyAudioState.processing;
 
@@ -68,7 +68,8 @@ class RecordAudioSessionController {
       if (!easyAudio.isInitialized) {
         await easyAudio.initialize(config);
       } else {
-        final canUpdateConfig = initialState == EasyAudioState.idle ||
+        final canUpdateConfig =
+            initialState == EasyAudioState.idle ||
             initialState == EasyAudioState.error;
         if (canUpdateConfig) {
           await easyAudio.updateConfig(config);

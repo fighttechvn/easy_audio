@@ -1,92 +1,59 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
-import 'package:speech_to_text/speech_recognition_result.dart';
-import 'package:speech_to_text/speech_to_text.dart';
+import 'package:stt_record/stt_record.dart';
 
-import '../../domain/entities/easy_audio_state.dart';
 import '../../domain/entities/transcript_result.dart';
 import '../utils/transcript_persistence.dart';
 
 class SpeechRecognitionController {
   SpeechRecognitionController({
-    required this.speechToText,
+    required this.sttRecord,
     required this.transcriptController,
     required this.transcriptBuffer,
-    required this.getCurrentState,
-    required this.isSpeechAvailable,
   });
 
-  final SpeechToText speechToText;
+  final SttRecord sttRecord;
   final StreamController<TranscriptResult> transcriptController;
   final StringBuffer transcriptBuffer;
-  final EasyAudioState Function() getCurrentState;
-  final bool Function() isSpeechAvailable;
-
-  String? _localeId;
-  bool _starting = false;
 
   final TranscriptDeltaAccumulator _deltaAccumulator =
       TranscriptDeltaAccumulator();
+
+  StreamSubscription<SttRecordTranscript>? _sub;
 
   void resetCommittedTranscript() {
     _deltaAccumulator.reset();
   }
 
-  bool get _shouldProactivelyCycle =>
-      !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
-
-  Future<void> start({required String? localeId}) async {
-    _localeId = localeId;
-    if (_starting) {
+  Future<void> start() async {
+    if (_sub != null) {
       return;
     }
 
-    // Avoid re-entering listen() while a session is already active.
-    if (speechToText.isListening) {
-      return;
-    }
-
-    _starting = true;
-    try {
-      await speechToText.listen(
-        onResult: _onSpeechResult,
-        localeId: _localeId,
-        // IMPORTANT: Cái này quan trọng. Với iOS, sau khi speech to text work
-        // 9phút nó sẽ kết thúc luồng để bắt đầu luồng mới để tránh vượt quá
-        // giới hạn thời gian của OS
-        // (lỗi error_speech_recognizer_connection_interrupted)
-        listenFor: _shouldProactivelyCycle ? const Duration(minutes: 9) : null,
-        listenOptions: SpeechListenOptions(
-          partialResults: true,
-          cancelOnError: false,
-          listenMode: ListenMode.dictation,
-        ),
-      );
-    } finally {
-      _starting = false;
-    }
+    _sub = sttRecord.transcripts.listen(
+      _onSttRecordTranscript,
+      onError: (_) {
+        // Best-effort.
+      },
+    );
   }
 
   Future<void> stop() async {
-    try {
-      await speechToText.stop();
-    } catch (_) {
-      // ignore
-    }
+    await _sub?.cancel();
+    _sub = null;
   }
 
-  void _onSpeechResult(SpeechRecognitionResult result) {
-    final recognizedWords = result.recognizedWords.trim();
+  void _onSttRecordTranscript(SttRecordTranscript result) {
+    final recognizedWords = result.text.trim();
     final transcript = TranscriptResult(
       text: recognizedWords,
-      confidence: result.confidence,
-      isFinal: result.finalResult,
+      confidence: 0.0,
+      isFinal: result.isFinal,
       timestamp: DateTime.now(),
-      alternatives: result.alternates.map((a) => a.recognizedWords).toList(),
+      alternatives: const [],
     );
 
-    if (!result.finalResult) {
+    if (!result.isFinal) {
       if (!transcriptController.isClosed) {
         transcriptController.add(transcript);
       }
@@ -100,10 +67,10 @@ class SpeechRecognitionController {
 
     final deltaTranscript = TranscriptResult(
       text: delta,
-      confidence: result.confidence,
+      confidence: 0.0,
       isFinal: true,
       timestamp: transcript.timestamp,
-      alternatives: transcript.alternatives,
+      alternatives: const [],
     );
 
     if (!transcriptController.isClosed) {

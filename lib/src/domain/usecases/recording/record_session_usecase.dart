@@ -4,10 +4,11 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:record/record.dart';
 
 import '../../../core/utils/record_session_helper.dart';
 import '../../../integration/audio/easy_audio/easy_audio_service.dart';
+import '../../entities/android_service.dart';
+import '../../entities/audio_encoder.dart';
 import '../../entities/easy_audio_config.dart';
 import '../../entities/easy_audio_mode.dart';
 import '../../entities/easy_audio_state.dart';
@@ -23,9 +24,8 @@ class RecordSessionUsecase {
   final PendingRecordingsUsecase _pendingRecordingsUsecase;
   final EasyAudioService _easyAudio;
 
-  RecordSessionUsecase(
-    this._pendingRecordingsUsecase,
-  ) : _easyAudio = EasyAudioService();
+  RecordSessionUsecase(this._pendingRecordingsUsecase)
+    : _easyAudio = EasyAudioService();
 
   EasyAudioService get easyAudio => _easyAudio;
 
@@ -45,7 +45,8 @@ class RecordSessionUsecase {
     await _pendingRecordingsUsecase.init();
 
     final initialState = _easyAudio.currentState;
-    final wasActiveBefore = initialState == EasyAudioState.recording ||
+    final wasActiveBefore =
+        initialState == EasyAudioState.recording ||
         initialState == EasyAudioState.paused ||
         initialState == EasyAudioState.processing;
     if (wasActiveBefore) {
@@ -81,7 +82,8 @@ class RecordSessionUsecase {
     if (!_easyAudio.isInitialized) {
       await _easyAudio.initialize(config);
     } else {
-      final canUpdateConfig = initialState == EasyAudioState.idle ||
+      final canUpdateConfig =
+          initialState == EasyAudioState.idle ||
           initialState == EasyAudioState.error;
       if (canUpdateConfig) {
         await _easyAudio.updateConfig(config);
@@ -149,42 +151,44 @@ class RecordSessionUsecase {
     final resolvedContent = content.isNotEmpty
         ? content
         : (existing?.content.trim().isNotEmpty == true)
-            ? existing!.content
-            : content;
+        ? existing!.content
+        : content;
 
-    final id = existing?.id ??
+    final id =
+        existing?.id ??
         pendingRecordingId ??
         RecordSessionHelper.generatePendingRecordingId();
 
     final resolvedFileSizeBytes =
         result.fileSizeBytes ?? await File(filePath).length();
 
-    final next = (existing ??
-            PendingRecording.fromRecordSession(
-              session,
-              id: id,
+    final next =
+        (existing ??
+                PendingRecording.fromRecordSession(
+                  session,
+                  id: id,
+                  userId: userId,
+                  locale: locale,
+                  content: resolvedContent,
+                  filePath: filePath,
+                  fileSizeBytes: resolvedFileSizeBytes,
+                  durationMs: result.duration.inMilliseconds,
+                ))
+            .copyWith(
               userId: userId,
+              appointmentIdEmr: session.appointmentIdEmr,
+              appointmentId: session.appointmentId,
+              clinicName: session.clinicName,
+              patientName: session.patientName,
+              bookingDate: session.bookingDate,
+              bookingTime: session.bookingTime,
               locale: locale,
               content: resolvedContent,
               filePath: filePath,
               fileSizeBytes: resolvedFileSizeBytes,
               durationMs: result.duration.inMilliseconds,
-            ))
-        .copyWith(
-      userId: userId,
-      appointmentIdEmr: session.appointmentIdEmr,
-      appointmentId: session.appointmentId,
-      clinicName: session.clinicName,
-      patientName: session.patientName,
-      bookingDate: session.bookingDate,
-      bookingTime: session.bookingTime,
-      locale: locale,
-      content: resolvedContent,
-      filePath: filePath,
-      fileSizeBytes: resolvedFileSizeBytes,
-      durationMs: result.duration.inMilliseconds,
-      status: PendingRecordingStatus.pending,
-    );
+              status: PendingRecordingStatus.pending,
+            );
 
     await _pendingRecordingsUsecase.upsert(next);
 

@@ -1,5 +1,5 @@
-import 'package:record/record.dart';
-
+import 'android_service.dart';
+import 'audio_encoder.dart';
 import 'easy_audio_mode.dart';
 
 class EasyAudioConfig {
@@ -76,25 +76,16 @@ class EasyAudioConfig {
   }
 
   String get resolvedFileExtension {
-    if (fileExtension != null) {
-      return fileExtension!;
-    }
-    switch (encoder) {
-      case AudioEncoder.wav:
+    final raw = fileExtension?.trim();
+    if (raw != null && raw.isNotEmpty) {
+      final normalized = raw.startsWith('.') ? raw.substring(1) : raw;
+      if (normalized.toLowerCase() == 'wav') {
         return 'wav';
-      case AudioEncoder.aacLc:
-      case AudioEncoder.aacEld:
-      case AudioEncoder.aacHe:
-        return 'm4a';
-      case AudioEncoder.opus:
-        return 'opus';
-      case AudioEncoder.flac:
-        return 'flac';
-      case AudioEncoder.pcm16bits:
-        return 'pcm';
-      default:
-        return 'm4a';
+      }
     }
+
+    // SttRecord always outputs WAV PCM16.
+    return 'wav';
   }
 
   @override

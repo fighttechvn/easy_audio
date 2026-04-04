@@ -1,39 +1,27 @@
-import 'package:speech_to_text/speech_to_text.dart';
-
 import '../entities/easy_audio_mode.dart';
 import '../entities/easy_audio_service_context.dart';
 import '../entities/supported_locale.dart';
 
 class EasyAudioPermissionsUseCase {
-  Future<void> Function()? initSpeechToText;
-
   Future<bool> hasRecordPermission(EasyAudioServiceContext ctx) async {
     ctx.ensureInitialized();
-    return ctx.recorder!.hasPermission();
+    return ctx.sttRecord!.hasPermission();
   }
 
   Future<bool> hasSpeechPermission(EasyAudioServiceContext ctx) async {
-    if (ctx.speechToText == null) {
+    ctx.ensureInitialized();
+    if (ctx.config.mode == EasyAudioMode.recordOnly) {
       return true;
     }
-    return ctx.speechAvailable;
+    return ctx.sttRecord!.hasPermission();
   }
 
   Future<bool> requestPermissions(EasyAudioServiceContext ctx) async {
     ctx.ensureInitialized();
 
-    final bool hasRecord = await ctx.recorder!.hasPermission();
-    if (!hasRecord) {
-      return false;
-    }
-
-    if (ctx.config.mode != EasyAudioMode.recordOnly) {
-      if (!ctx.speechAvailable) {
-        await initSpeechToText?.call();
-      }
-    }
-
-    return true;
+    final ok = await ctx.sttRecord!.requestPermission();
+    ctx.speechAvailable = ok;
+    return ok;
   }
 
   Future<List<SupportedLocale>> getSupportedLocales(
@@ -41,16 +29,7 @@ class EasyAudioPermissionsUseCase {
   ) async {
     ctx.ensureInitialized();
 
-    ctx.speechToText ??= SpeechToText();
-    if (!ctx.speechAvailable) {
-      await initSpeechToText?.call();
-    }
-
-    if (!ctx.speechAvailable) {
-      return const [];
-    }
-
-    final locales = await ctx.speechToText!.locales();
+    final locales = await ctx.sttRecord!.getLocales();
     final result = locales
         .map((l) => SupportedLocale(localeId: l.localeId, name: l.name))
         .toList();

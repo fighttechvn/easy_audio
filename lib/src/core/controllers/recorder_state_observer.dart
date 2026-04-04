@@ -1,42 +1,40 @@
 import 'dart:async';
 
-import 'package:record/record.dart';
+import 'package:stt_record/stt_record.dart';
 
 import '../../domain/entities/easy_audio_state.dart';
 
 class RecorderStateObserver {
   RecorderStateObserver({
-    required this.recorder,
+    required this.sttRecord,
     required this.getCurrentState,
     required this.isInitialized,
     required this.pauseRequestedByUser,
     required this.resumeRequestedByUser,
-    required this.pauseOnInterruption,
     required this.autoResumeAfterInterruption,
     required this.onInterruptedPause,
     required this.onAutoResumeRequested,
   });
 
-  final AudioRecorder recorder;
+  final SttRecord sttRecord;
   final EasyAudioState Function() getCurrentState;
   final bool Function() isInitialized;
 
   final bool Function() pauseRequestedByUser;
   final bool Function() resumeRequestedByUser;
 
-  final bool Function() pauseOnInterruption;
   final bool Function() autoResumeAfterInterruption;
 
   final Future<void> Function() onInterruptedPause;
   final Future<void> Function() onAutoResumeRequested;
 
-  StreamSubscription<RecordState>? _sub;
+  StreamSubscription<SttRecordSessionState>? _sub;
 
   void attach() {
     detach();
-    _sub = recorder.onStateChanged().listen(
+    _sub = sttRecord.sessionStates.listen(
       (state) {
-        unawaited(_onRecorderStateChanged(state));
+        unawaited(_onSessionStateChanged(state));
       },
       onError: (_) {
         // Best-effort: interruption detection is optional.
@@ -49,41 +47,38 @@ class RecorderStateObserver {
     _sub = null;
   }
 
-  Future<void> _onRecorderStateChanged(RecordState state) async {
+  Future<void> _onSessionStateChanged(SttRecordSessionState state) async {
     if (!isInitialized()) {
       return;
     }
 
-    if (state == RecordState.pause && pauseRequestedByUser()) {
+    if (state == SttRecordSessionState.paused && pauseRequestedByUser()) {
       return;
     }
-    if (state == RecordState.record && resumeRequestedByUser()) {
-      return;
-    }
-
-    if (!pauseOnInterruption()) {
+    if (state == SttRecordSessionState.resumed && resumeRequestedByUser()) {
       return;
     }
 
-    // Some platforms (notably iOS during phone call interruptions) may force
-    // the recorder to stop instead of pausing. Treat this as an interruption
-    // so the app can update UI and stop speech-to-text cleanly.
-    if (state == RecordState.stop &&
+    if (state == SttRecordSessionState.paused &&
         getCurrentState() == EasyAudioState.recording) {
       await onInterruptedPause();
       return;
     }
 
-    if (state == RecordState.pause &&
-        getCurrentState() == EasyAudioState.recording) {
-      await onInterruptedPause();
-      return;
-    }
-
-    if (state == RecordState.record &&
-        getCurrentState() == EasyAudioState.paused &&
-        autoResumeAfterInterruption()) {
-      await onAutoResumeRequested();
+    if (state == SttRecordSessionState.resumed &&
+        getCurrentState() == EasyAudioState.paused) {
+      if (autoResumeAfterInterruption()) {
+        await onAutoResumeRequested();
+      } else {
+        // Some native implementations may auto-resume after interruptions.
+        // If the app has auto-resume disabled, best-effort keep the session
+        // paused so UI and audio stay consistent.
+        try {
+          await sttRecord.pause();
+        } catch (_) {
+          // ignore
+        }
+      }
     }
   }
 }

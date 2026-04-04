@@ -1,15 +1,15 @@
 import 'dart:async';
 
-import 'package:record/record.dart';
+import 'package:stt_record/stt_record.dart';
 
 class AmplitudeMonitor {
   AmplitudeMonitor({
-    required this.recorder,
+    required this.sttRecord,
     required this.onAmplitude,
     this.interval = const Duration(milliseconds: 100),
   });
 
-  final AudioRecorder recorder;
+  final SttRecord sttRecord;
   final void Function(double normalized) onAmplitude;
   final Duration interval;
 
@@ -19,8 +19,7 @@ class AmplitudeMonitor {
     stop();
     _timer = Timer.periodic(interval, (_) async {
       try {
-        final amplitude = await recorder.getAmplitude();
-        final normalized = ((amplitude.current + 60) / 60).clamp(0.0, 1.0);
+        final normalized = (await sttRecord.getAmplitude()).clamp(0.0, 1.0);
         onAmplitude(normalized);
       } catch (_) {
         // Best-effort.
