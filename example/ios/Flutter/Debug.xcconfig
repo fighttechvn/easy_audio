@@ -1,2 +1,10 @@
 #include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"
 #include "Generated.xcconfig"
+
+// Override generated build dir settings to avoid mixing simulator/device artifacts.
+// In particular, a fixed CONFIGURATION_BUILD_DIR breaks CocoaPods linking on Simulator
+// and can cause native assets to be reused across platforms.
+CONFIGURATION_BUILD_DIR = $(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)
+
+// Separate Flutter build outputs per platform to avoid native-assets collisions.
+FLUTTER_BUILD_DIR = build_ios$(EFFECTIVE_PLATFORM_NAME)

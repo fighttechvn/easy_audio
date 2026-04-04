@@ -21,6 +21,16 @@ flutter pub get
 flutter run
 ```
 
+## Manual speech-to-text demo
+
+This repo also includes a minimal demo for the `manual_speech_to_text` package (manual start/pause/resume/stop + in-memory history list).
+
+```bash
+cd example
+flutter pub get
+flutter run -t lib/main_manual_stt.dart
+```
+
 ## Platform setup
 
 ### Android (background recording)

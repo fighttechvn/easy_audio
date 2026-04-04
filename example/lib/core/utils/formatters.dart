@@ -25,3 +25,17 @@ String formatDateTime(DateTime dt) {
   final mm = dt.minute.toString().padLeft(2, '0');
   return '$m/$d/$y $hh:$mm';
 }
+
+String formatDateTimeTohhmmss(DateTime t) {
+  final hh = t.hour.toString().padLeft(2, '0');
+  final mm = t.minute.toString().padLeft(2, '0');
+  final ss = t.second.toString().padLeft(2, '0');
+  return '$hh:$mm:$ss';
+}
+
+String formatDurationTohhmmss(Duration d) {
+  final hh = d.inHours.toString().padLeft(2, '0');
+  final mm = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+  final ss = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+  return '$hh:$mm:$ss';
+}
