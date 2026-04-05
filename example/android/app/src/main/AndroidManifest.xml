@@ -13,12 +13,6 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
-        <!-- Background recording service (record package) -->
-        <service
-            android:name="com.llfbandit.record.service.AudioRecordingService"
-            android:foregroundServiceType="microphone"
-            android:exported="false" />
-
         <activity
             android:name=".MainActivity"
             android:exported="true"

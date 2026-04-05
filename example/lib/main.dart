@@ -1,28 +1,74 @@
+import 'dart:async';
+import 'dart:developer';
+
+import 'package:easy_audio/easy_audio.dart';
 import 'package:flutter/material.dart';
 
-import 'presentation/home/home_page.dart';
+import 'core/di/record_flow_injector.dart';
+import 'data/datasources/fake_server_store.dart';
+import 'presentation/record_session_flow/record_floating_overlay_host.dart';
+import 'presentation/record_session_flow/sample_screen.dart';
 
 void main() {
-  runApp(const EasyAudioExampleApp());
+  runZonedGuarded(
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
+
+      await configureDependencies();
+
+      final pendingUploadOrchestratorBloc = injector
+          .get<PendingUploadOrchestratorBloc>();
+      final fakeServerStore = injector.get<FakeServerStore>();
+      pendingUploadOrchestratorBloc.setUploadRecordingProgressCallback(
+        fakeServerStore.uploadAndPersistCopy,
+      );
+
+      runApp(const EasyAudioRecordSessionFlowExampleApp());
+    },
+    (error, trace) {
+      log('------------------------------------');
+      log('[AppDelegate]');
+      log('$error');
+      log('$trace');
+      log('------------------------------------');
+    },
+  );
 }
 
-class EasyAudioExampleApp extends StatelessWidget {
-  const EasyAudioExampleApp({super.key});
+class EasyAudioRecordSessionFlowExampleApp extends StatefulWidget {
+  const EasyAudioRecordSessionFlowExampleApp({super.key});
+
+  @override
+  State<EasyAudioRecordSessionFlowExampleApp> createState() =>
+      _EasyAudioRecordSessionFlowExampleAppState();
+}
+
+class _EasyAudioRecordSessionFlowExampleAppState
+    extends State<EasyAudioRecordSessionFlowExampleApp> {
+  final _navigatorKey = GlobalKey<NavigatorState>();
+  final _fakeServerStore = injector.get<FakeServerStore>();
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    injector.reset(dispose: true);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Easy Audio Demo',
+      navigatorKey: _navigatorKey,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6C5CE7),
-          brightness: Brightness.dark,
-        ),
-        fontFamily: 'SF Pro Display',
+      theme: ThemeData(useMaterial3: true),
+      home: RecordFloatingOverlayHost(
+        navigatorKey: _navigatorKey,
+        child: SampleScreen(serverStore: _fakeServerStore),
       ),
-      home: const HomePage(),
     );
   }
 }

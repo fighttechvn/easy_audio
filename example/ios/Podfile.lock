@@ -9,8 +9,6 @@ PODS:
     - Flutter
   - permission_handler_apple (9.3.0):
     - Flutter
-  - record_ios (1.2.0):
-    - Flutter
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -18,6 +16,8 @@ PODS:
     - Flutter
     - FlutterMacOS
     - Try
+  - stt_record (0.0.1):
+    - Flutter
   - Try (2.1.1)
   - wakelock_plus (0.0.1):
     - Flutter
@@ -28,9 +28,9 @@ DEPENDENCIES:
   - just_audio (from `.symlinks/plugins/just_audio/darwin`)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
-  - record_ios (from `.symlinks/plugins/record_ios/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
   - speech_to_text (from `.symlinks/plugins/speech_to_text/darwin`)
+  - stt_record (from `.symlinks/plugins/stt_record/ios`)
   - wakelock_plus (from `.symlinks/plugins/wakelock_plus/ios`)
 
 SPEC REPOS:
@@ -48,12 +48,12 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/package_info_plus/ios"
   permission_handler_apple:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
-  record_ios:
-    :path: ".symlinks/plugins/record_ios/ios"
   shared_preferences_foundation:
     :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
   speech_to_text:
     :path: ".symlinks/plugins/speech_to_text/darwin"
+  stt_record:
+    :path: ".symlinks/plugins/stt_record/ios"
   wakelock_plus:
     :path: ".symlinks/plugins/wakelock_plus/ios"
 
@@ -63,9 +63,9 @@ SPEC CHECKSUMS:
   just_audio: 4e391f57b79cad2b0674030a00453ca5ce817eed
   package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499
   permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
-  record_ios: 412daca2350b228e698fffcd08f1f94ceb1e3844
   shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
   speech_to_text: 9dc43a5df3cbc2813f8c7cc9bd0fbf94268ed7ac
+  stt_record: 18957c7eb0e694487e905e594ebdc14f13e30dcb
   Try: 5ef669ae832617b3cee58cb2c6f99fb767a4ff96
   wakelock_plus: e29112ab3ef0b318e58cfa5c32326458be66b556
 

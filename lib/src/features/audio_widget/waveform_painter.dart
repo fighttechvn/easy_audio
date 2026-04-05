@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 class WaveformPainter extends CustomPainter {
   WaveformPainter({required List<double> samples, required this.color})
-      : samples = List<double>.unmodifiable(samples);
+    : samples = List<double>.unmodifiable(samples);
 
   final List<double> samples;
   final Color color;
@@ -36,7 +36,10 @@ class WaveformPainter extends CustomPainter {
 
     double x = (size.width - (barCount * (barWidth + gap) - gap)) / 2;
     for (final amp in samples) {
-      final h = (amp * maxBarHeight).clamp(2.0, maxBarHeight);
+      // final h = (amp * maxBarHeight).clamp(2.0, maxBarHeight);
+
+      // tri: improve with new amplitude scaling
+      final h = (amp * maxBarHeight * 10 + 10).clamp(2.0, maxBarHeight);
       final top = centerY - h / 2;
       final r = RRect.fromRectAndRadius(
         Rect.fromLTWH(x, top, barWidth, h),
