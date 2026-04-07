@@ -22,8 +22,8 @@ dependencies:
 
   just_audio: ^0.10.5
   audio_session: ^0.2.2
-  record: 6.0.0
-  speech_to_text: 7.0.0
+  record: ^6.2.0
+  speech_to_text: ^7.3.0
 
   injectable: ^2.7.1+4
   get_it: ^9.2.1
