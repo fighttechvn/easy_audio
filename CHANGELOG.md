@@ -1,3 +1,6 @@
+## 2.0.0
++ Handle new flow record audio support transcript
+
 ## 1.0.2
 + Support resume audio
 
