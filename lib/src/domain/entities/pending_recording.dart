@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../../core/utils/record_session_helper.dart';
+import 'data_record.dart';
 import 'record_session.dart';
 
 typedef NowFn = DateTime Function();
@@ -13,8 +15,7 @@ class PendingRecording {
   const PendingRecording({
     required this.id,
     required this.userId,
-    required this.appointmentIdEmr,
-    required this.appointmentId,
+    required this.dataRecord,
     this.clinicName,
     this.patientName,
     this.bookingDate,
@@ -33,8 +34,7 @@ class PendingRecording {
 
   final String id;
   final int? userId;
-  final String appointmentIdEmr;
-  final int appointmentId;
+  final DataRecord<Map<String, dynamic>> dataRecord;
 
   final String? clinicName;
   final String? patientName;
@@ -96,7 +96,7 @@ class PendingRecording {
         'Patient: ${patientName!.trim()}',
       if ((clinicName ?? '').trim().isNotEmpty) 'Clinic: ${clinicName!.trim()}',
       if (bookingLine != null) bookingLine,
-      appointmentIdEmr,
+      dataRecord.id,
       statusLine,
     ].join('\n');
   }
@@ -120,8 +120,7 @@ class PendingRecording {
 
   PendingRecording copyWith({
     int? userId,
-    String? appointmentIdEmr,
-    int? appointmentId,
+    DataRecord<Map<String, dynamic>>? dataRecord,
     String? clinicName,
     String? patientName,
     String? bookingDate,
@@ -140,8 +139,7 @@ class PendingRecording {
     return PendingRecording(
       id: id,
       userId: userId ?? this.userId,
-      appointmentIdEmr: appointmentIdEmr ?? this.appointmentIdEmr,
-      appointmentId: appointmentId ?? this.appointmentId,
+      dataRecord: dataRecord ?? this.dataRecord,
       clinicName: clinicName ?? this.clinicName,
       patientName: patientName ?? this.patientName,
       bookingDate: bookingDate ?? this.bookingDate,
@@ -175,8 +173,7 @@ class PendingRecording {
     return PendingRecording(
       id: id,
       userId: userId,
-      appointmentIdEmr: session.appointmentIdEmr,
-      appointmentId: session.appointmentId,
+      dataRecord: session.data,
       clinicName: session.clinicName,
       patientName: session.patientName,
       bookingDate: session.bookingDate,
@@ -196,8 +193,10 @@ class PendingRecording {
     return <String, dynamic>{
       'id': id,
       'userId': userId,
-      'appointmentIdEmr': appointmentIdEmr,
-      'appointmentId': appointmentId,
+      'dataRecord': <String, dynamic>{
+        'id': dataRecord.id,
+        'data': dataRecord.data,
+      },
       'clinicName': clinicName,
       'patientName': patientName,
       'bookingDate': bookingDate,
@@ -216,19 +215,20 @@ class PendingRecording {
   }
 
   factory PendingRecording.fromJson(Map<String, dynamic> json) {
-    final statusName =
-        (json['status'] ?? PendingRecordingStatus.pending.name).toString();
+    final statusName = (json['status'] ?? PendingRecordingStatus.pending.name)
+        .toString();
 
     final status = PendingRecordingStatus.values.firstWhere(
       (e) => e.name == statusName,
       orElse: () => PendingRecordingStatus.pending,
     );
 
+    final dataRecord = _parseDataRecord(json);
+
     return PendingRecording(
       id: (json['id'] ?? '').toString(),
       userId: (json['userId'] as num?)?.toInt(),
-      appointmentIdEmr: (json['appointmentIdEmr'] ?? '').toString(),
-      appointmentId: (json['appointmentId'] as num?)?.toInt() ?? 0,
+      dataRecord: dataRecord,
       clinicName: json['clinicName']?.toString(),
       patientName: json['patientName']?.toString(),
       bookingDate: json['bookingDate']?.toString(),
@@ -238,7 +238,8 @@ class PendingRecording {
       filePath: (json['filePath'] ?? '').toString(),
       fileSizeBytes: (json['fileSizeBytes'] as num?)?.toInt() ?? 0,
       durationMs: (json['durationMs'] as num?)?.toInt(),
-      createdAt: DateTime.tryParse((json['createdAt'] ?? '').toString()) ??
+      createdAt:
+          DateTime.tryParse((json['createdAt'] ?? '').toString()) ??
           DateTime.fromMillisecondsSinceEpoch(0),
       status: status,
       retryCount: (json['retryCount'] as num?)?.toInt() ?? 0,
@@ -248,6 +249,45 @@ class PendingRecording {
       lastError: json['lastError']?.toString(),
     );
   }
+}
+
+DataRecord<Map<String, dynamic>> _parseDataRecord(Map<String, dynamic> json) {
+  final raw = json['dataRecord'];
+  if (raw is Map) {
+    final map = raw.cast<String, dynamic>();
+    final id = (map['id'] ?? '').toString();
+    final dataRaw = map['data'];
+    final data = dataRaw is Map
+        ? dataRaw.cast<String, dynamic>()
+        : const <String, dynamic>{};
+
+    return DataRecord<Map<String, dynamic>>(
+      id: id,
+      data: Map<String, dynamic>.from(data),
+    );
+  }
+
+  final filePath = (json['filePath'] ?? '').toString();
+  final parsed = RecordSessionHelper.parsePendingInfoFromRecordingFileName(
+    filePath,
+  );
+
+  final dataIdFromFileName = (parsed?.dataId ?? '').trim();
+  final fallbackId = (json['id'] ?? '').toString().trim();
+  final legacyNumericId = parsed?.legacyNumericId;
+
+  final resolvedDataId = dataIdFromFileName.isNotEmpty
+      ? dataIdFromFileName
+      : (fallbackId.isNotEmpty ? fallbackId : 'unknown');
+
+  return DataRecord<Map<String, dynamic>>(
+    id: resolvedDataId,
+    data: <String, dynamic>{
+      ...?legacyNumericId == null
+          ? null
+          : <String, dynamic>{'legacyNumericId': legacyNumericId},
+    },
+  );
 }
 
 extension PendingRecordingRetryX on PendingRecording {

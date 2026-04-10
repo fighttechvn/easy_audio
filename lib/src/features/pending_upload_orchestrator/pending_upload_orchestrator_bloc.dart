@@ -15,14 +15,18 @@ part 'pending_upload_orchestrator_event.dart';
 part 'pending_upload_orchestrator_state.dart';
 
 @lazySingleton
-class PendingUploadOrchestratorBloc extends Bloc<
-    PendingUploadOrchestratorBlocEvent, PendingUploadOrchestratorState> {
+class PendingUploadOrchestratorBloc
+    extends
+        Bloc<
+          PendingUploadOrchestratorBlocEvent,
+          PendingUploadOrchestratorState
+        > {
   PendingUploadOrchestratorBloc(this._pendingUploadUsecase)
-      : super(
-          const PendingUploadOrchestratorInitial(
-            uiState: PendingUploadOrchestratorUiState(),
-          ),
-        ) {
+    : super(
+        const PendingUploadOrchestratorInitial(
+          uiState: PendingUploadOrchestratorUiState(),
+        ),
+      ) {
     on<PendingUploadOrchestratorEnqueueRequested>(_onEnqueueRequested);
     on<PendingUploadOrchestratorEnqueueManyRequested>(_onEnqueueManyRequested);
     on<PendingUploadOrchestratorEnqueueAllPendingForUserRequested>(
@@ -282,7 +286,7 @@ class PendingUploadOrchestratorBloc extends Bloc<
           PendingUploadFailed(
             pendingId: id,
             error: start.error ?? StateError('File not found'),
-            appointmentIdEmr: start.appointmentIdEmr,
+            id: start.id,
           ),
         );
         return;
@@ -296,7 +300,7 @@ class PendingUploadOrchestratorBloc extends Bloc<
     }
 
     final result = await _pendingUploadUsecase.runUploadRetries(
-      id: id,
+      pendingId: id,
       retryPolicy: state.uiState.retryPolicy,
       onProgress: (p) {
         _safeAddEffect(PendingUploadProgress(id, p));
@@ -309,19 +313,14 @@ class PendingUploadOrchestratorBloc extends Bloc<
         _safeAddEffect(PendingUploadCleared(id));
         return;
       case PendingUploadRunStatus.success:
-        _safeAddEffect(
-          PendingUploadSucceeded(
-            pendingId: id,
-            appointmentIdEmr: result.appointmentIdEmr!,
-          ),
-        );
+        _safeAddEffect(PendingUploadSucceeded(pendingId: id, id: result.id!));
         return;
       case PendingUploadRunStatus.failure:
         _safeAddEffect(
           PendingUploadFailed(
             pendingId: id,
             error: result.error ?? 'Unknown error',
-            appointmentIdEmr: result.appointmentIdEmr,
+            id: result.id,
           ),
         );
         return;

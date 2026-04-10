@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
 import '../../core/utils/transcript_persistence.dart';
+import '../../domain/entities/data_record.dart';
 import '../../domain/entities/easy_audio_state.dart';
 import '../../domain/entities/record_session.dart';
 import '../../domain/entities/recording_result.dart';
@@ -25,10 +26,8 @@ class RecordSessionCubit extends Cubit<RecordSessionState>
   final RecordSessionUsecase _recordSessionUsecase;
   final PendingUploadBloc _pendingUploadCubit;
 
-  RecordSessionCubit(
-    this._recordSessionUsecase,
-    this._pendingUploadCubit,
-  ) : super(const RecordSessionState()) {
+  RecordSessionCubit(this._recordSessionUsecase, this._pendingUploadCubit)
+    : super(const RecordSessionState()) {
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -81,9 +80,8 @@ class RecordSessionCubit extends Cubit<RecordSessionState>
     await _recordSessionUsecase.ensureAudioInitialized();
   }
 
-  Future<RecordSessionStartResult> startOrResumeForAppointment({
-    required String appointmentIdEmr,
-    required int appointmentId,
+  Future<RecordSessionStartResult> startOrResumeForData({
+    required DataRecord<Map<String, dynamic>> data,
     required int? userId,
     required String fallbackLocale,
     String? clinicName,
@@ -107,8 +105,7 @@ class RecordSessionCubit extends Cubit<RecordSessionState>
       emit(
         state.copyWith(
           session: RecordSession(
-            appointmentIdEmr: appointmentIdEmr,
-            appointmentId: appointmentId,
+            data: data,
             clinicName: clinicName,
             patientName: patientName,
             bookingDate: bookingDate,
@@ -162,15 +159,15 @@ class RecordSessionCubit extends Cubit<RecordSessionState>
     }
   }
 
-  bool matchesAppointment(String appointmentIdEmr) {
-    return state.session?.appointmentIdEmr == appointmentIdEmr;
+  bool matchesDataId(String id) {
+    return state.session?.data.id == id;
   }
 
-  Future<void> maybeAutoOpenForAppointment(String appointmentIdEmr) async {
+  Future<void> maybeAutoOpenForDataId(String id) async {
     if (!state.hasSession) {
       return;
     }
-    if (!matchesAppointment(appointmentIdEmr)) {
+    if (!matchesDataId(id)) {
       return;
     }
     if (!state.minimized) {
@@ -191,13 +188,10 @@ class RecordSessionCubit extends Cubit<RecordSessionState>
     _requestOpenSheet();
   }
 
-  void notifyUploadResult({
-    required String appointmentIdEmr,
-    required bool success,
-  }) {
+  void notifyUploadResult({required String id, required bool success}) {
     emit(
       state.copyWith(
-        lastUploadedAppointmentIdEmr: appointmentIdEmr.trim(),
+        lastUploadedDataId: id.trim(),
         lastUploadSuccess: success,
         lastUploadAt: DateTime.now(),
       ),
@@ -267,8 +261,9 @@ class RecordSessionCubit extends Cubit<RecordSessionState>
 
       if (id != null) {
         final filePath = result.filePath?.trim() ?? '';
-        final fileUri =
-            filePath.isNotEmpty ? Uri.file(filePath).toString() : null;
+        final fileUri = filePath.isNotEmpty
+            ? Uri.file(filePath).toString()
+            : null;
 
         emit(
           state.copyWith(
@@ -276,7 +271,7 @@ class RecordSessionCubit extends Cubit<RecordSessionState>
             lastSavedRecordingId: id,
             lastSavedAt: DateTime.now(),
             lastSavedFilePath: fileUri,
-            lastSavedAppointmentIdEmr: session.appointmentIdEmr,
+            lastSavedDataId: session.data.id,
             lastSavedContent: normalizedResult.transcript,
           ),
         );
@@ -306,7 +301,8 @@ class RecordSessionCubit extends Cubit<RecordSessionState>
   }
 
   void _updateElapsedTicker() {
-    final shouldTick = state.hasSession &&
+    final shouldTick =
+        state.hasSession &&
         state.minimized &&
         state.audioState == EasyAudioState.recording;
 
@@ -428,8 +424,9 @@ class RecordSessionCubit extends Cubit<RecordSessionState>
       if (result.isFinal) {
         final text = result.text.trim();
         if (text.isNotEmpty) {
-          _finalTranscript =
-              _finalTranscript.isEmpty ? text : '$_finalTranscript $text';
+          _finalTranscript = _finalTranscript.isEmpty
+              ? text
+              : '$_finalTranscript $text';
         }
         _liveTranscript = '';
         return;

@@ -15,13 +15,13 @@ part 'pending_upload_state.dart';
 @lazySingleton
 class PendingUploadBloc extends Bloc<PendingUploadEvent, PendingUploadState> {
   PendingUploadBloc(this._orchestrator)
-      : super(
-          PendingUploadInitial(
-            uiState: PendingUploadUiState(
-              retryPolicy: _orchestrator.state.uiState.retryPolicy,
-            ),
+    : super(
+        PendingUploadInitial(
+          uiState: PendingUploadUiState(
+            retryPolicy: _orchestrator.state.uiState.retryPolicy,
           ),
-        ) {
+        ),
+      ) {
     on<PendingUploadSubscriptionRequested>(_onSubscriptionRequested);
     on<PendingUploadEnqueueRequested>(_onEnqueueRequested);
     on<PendingUploadEnqueueManyRequested>(_onEnqueueManyRequested);
@@ -200,24 +200,11 @@ class PendingUploadBloc extends Bloc<PendingUploadEvent, PendingUploadState> {
       case PendingUploadProgress(:final pendingId, :final progress):
         emit(_reduceProgress(state, pendingId, progress));
         return;
-      case PendingUploadSucceeded(:final pendingId, :final appointmentIdEmr):
-        emit(
-          _reduceSuccess(state, pendingId, appointmentIdEmr: appointmentIdEmr),
-        );
+      case PendingUploadSucceeded(:final pendingId, :final id):
+        emit(_reduceSuccess(state, pendingId, dataId: id));
         return;
-      case PendingUploadFailed(
-          :final pendingId,
-          :final error,
-          :final appointmentIdEmr,
-        ):
-        emit(
-          _reduceFailure(
-            state,
-            pendingId,
-            error: error,
-            appointmentIdEmr: appointmentIdEmr,
-          ),
-        );
+      case PendingUploadFailed(:final pendingId, :final error, :final id):
+        emit(_reduceFailure(state, pendingId, error: error, dataId: id));
         return;
       case PendingUploadCleared(:final pendingId):
         emit(_reduceCleared(state, pendingId));
@@ -276,11 +263,12 @@ class PendingUploadBloc extends Bloc<PendingUploadEvent, PendingUploadState> {
 
   PendingUploadState _reduceSuccess(
     PendingUploadState current,
-    String id, {
-    required String appointmentIdEmr,
+    String pendingId, {
+    required String dataId,
   }) {
-    final isActive = current.activeUploadId == id;
-    final next = Map<String, PendingUploadItem>.from(current.items)..remove(id);
+    final isActive = current.activeUploadId == pendingId;
+    final next = Map<String, PendingUploadItem>.from(current.items)
+      ..remove(pendingId);
 
     return PendingUploadInitial(
       uiState: current.uiState.copyWith(
@@ -288,8 +276,8 @@ class PendingUploadBloc extends Bloc<PendingUploadEvent, PendingUploadState> {
         activeUploadId: isActive ? null : current.activeUploadId,
         activeProgress: isActive ? 0.0 : current.activeProgress,
         lastResult: PendingUploadResult(
-          pendingId: id,
-          appointmentIdEmr: appointmentIdEmr,
+          pendingId: pendingId,
+          id: dataId,
           success: true,
           at: DateTime.now(),
         ),
@@ -299,14 +287,14 @@ class PendingUploadBloc extends Bloc<PendingUploadEvent, PendingUploadState> {
 
   PendingUploadState _reduceFailure(
     PendingUploadState current,
-    String id, {
+    String pendingId, {
     required Object error,
-    String? appointmentIdEmr,
+    String? dataId,
   }) {
-    final isActive = current.activeUploadId == id;
+    final isActive = current.activeUploadId == pendingId;
     final next = Map<String, PendingUploadItem>.from(current.items);
 
-    next[id] = (next[id] ?? const PendingUploadItem()).copyWith(
+    next[pendingId] = (next[pendingId] ?? const PendingUploadItem()).copyWith(
       status: PendingUploadStatus.failure,
       error: error.toString(),
       updatedAt: DateTime.now(),
@@ -317,11 +305,11 @@ class PendingUploadBloc extends Bloc<PendingUploadEvent, PendingUploadState> {
         items: next,
         activeUploadId: isActive ? null : current.activeUploadId,
         activeProgress: isActive ? 0.0 : current.activeProgress,
-        lastResult: appointmentIdEmr == null
+        lastResult: dataId == null
             ? current.lastResult
             : PendingUploadResult(
-                pendingId: id,
-                appointmentIdEmr: appointmentIdEmr,
+                pendingId: pendingId,
+                id: dataId,
                 success: false,
                 at: DateTime.now(),
               ),

@@ -104,12 +104,12 @@ class CrashRecoveryBloc extends Bloc<CrashRecoveryEvent, CrashRecoveryState> {
   ) async {
     try {
       final record = event.record;
-      final appt = record.appointmentIdEmr.trim();
-      if (appt.isEmpty || appt == 'recovered') {
+      final dataId = record.dataRecord.id.trim();
+      if (dataId.isEmpty || dataId == 'recovered') {
         _emitEffect(
           emit,
           CrashRecoveryEffect.showToast(
-            message: 'Recovered recording found, but missing appointment info.',
+            message: 'Recovered recording found, but missing context info.',
             type: RecordAudioToastType.warning,
           ),
         );

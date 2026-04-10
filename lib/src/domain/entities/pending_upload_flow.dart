@@ -7,31 +7,31 @@ class PendingUploadStartResult {
     required this.status,
     this.recording,
     this.error,
-    this.appointmentIdEmr,
+    this.id,
   });
 
   const PendingUploadStartResult.ok(PendingRecording recording)
-      : this._(status: PendingUploadStartStatus.ok, recording: recording);
+    : this._(status: PendingUploadStartStatus.ok, recording: recording);
 
   const PendingUploadStartResult.notFound()
-      : this._(status: PendingUploadStartStatus.notFound);
+    : this._(status: PendingUploadStartStatus.notFound);
 
   const PendingUploadStartResult.alreadyUploading()
-      : this._(status: PendingUploadStartStatus.alreadyUploading);
+    : this._(status: PendingUploadStartStatus.alreadyUploading);
 
   const PendingUploadStartResult.fileMissing({
     required Object error,
-    required String appointmentIdEmr,
+    required String id,
   }) : this._(
-          status: PendingUploadStartStatus.fileMissing,
-          error: error,
-          appointmentIdEmr: appointmentIdEmr,
-        );
+         status: PendingUploadStartStatus.fileMissing,
+         error: error,
+         id: id,
+       );
 
   final PendingUploadStartStatus status;
   final PendingRecording? recording;
   final Object? error;
-  final String? appointmentIdEmr;
+  final String? id;
 }
 
 enum PendingUploadRunStatus { success, failure, notFound }
@@ -40,35 +40,35 @@ class PendingUploadRunResult {
   const PendingUploadRunResult._({
     required this.status,
     required this.pendingId,
-    this.appointmentIdEmr,
+    this.id,
     this.error,
   });
 
   const PendingUploadRunResult.success({
     required String pendingId,
-    required String appointmentIdEmr,
+    required String id,
   }) : this._(
-          status: PendingUploadRunStatus.success,
-          pendingId: pendingId,
-          appointmentIdEmr: appointmentIdEmr,
-        );
+         status: PendingUploadRunStatus.success,
+         pendingId: pendingId,
+         id: id,
+       );
 
   const PendingUploadRunResult.failure({
     required String pendingId,
     required Object error,
-    String? appointmentIdEmr,
+    String? id,
   }) : this._(
-          status: PendingUploadRunStatus.failure,
-          pendingId: pendingId,
-          appointmentIdEmr: appointmentIdEmr,
-          error: error,
-        );
+         status: PendingUploadRunStatus.failure,
+         pendingId: pendingId,
+         id: id,
+         error: error,
+       );
 
   const PendingUploadRunResult.notFound({required String pendingId})
-      : this._(status: PendingUploadRunStatus.notFound, pendingId: pendingId);
+    : this._(status: PendingUploadRunStatus.notFound, pendingId: pendingId);
 
   final PendingUploadRunStatus status;
   final String pendingId;
-  final String? appointmentIdEmr;
+  final String? id;
   final Object? error;
 }

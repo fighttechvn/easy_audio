@@ -31,29 +31,26 @@ final class PendingUploadProgress extends PendingUploadOrchestratorEffect {
 }
 
 final class PendingUploadSucceeded extends PendingUploadOrchestratorEffect {
-  const PendingUploadSucceeded({
-    required this.pendingId,
-    required this.appointmentIdEmr,
-  });
+  const PendingUploadSucceeded({required this.pendingId, required this.id});
 
   @override
   final String pendingId;
 
-  final String appointmentIdEmr;
+  final String id;
 }
 
 final class PendingUploadFailed extends PendingUploadOrchestratorEffect {
   const PendingUploadFailed({
     required this.pendingId,
     required this.error,
-    this.appointmentIdEmr,
+    this.id,
   });
 
   @override
   final String pendingId;
 
   final Object error;
-  final String? appointmentIdEmr;
+  final String? id;
 }
 
 final class PendingUploadCleared extends PendingUploadOrchestratorEffect {

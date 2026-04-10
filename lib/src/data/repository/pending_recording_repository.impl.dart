@@ -61,15 +61,15 @@ class PendingRecordingRepositoryImpl implements PendingRecordingRepository {
   }
 
   @override
-  List<PendingRecording> listForAppointment({
-    required String appointmentIdEmr,
+  List<PendingRecording> listForDataId({
+    required String dataId,
     required int? userId,
   }) {
     _ensureInitialized();
 
-    final key = appointmentIdEmr.trim();
+    final key = dataId.trim();
     return _items
-        .where((e) => e.appointmentIdEmr.trim() == key)
+        .where((e) => e.dataRecord.id.trim() == key)
         .where((e) => userId == null || e.userId == null || e.userId == userId)
         .toList(growable: false);
   }

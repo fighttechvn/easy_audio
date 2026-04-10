@@ -37,13 +37,13 @@ class PendingUploadItem {
 class PendingUploadResult {
   const PendingUploadResult({
     required this.pendingId,
-    required this.appointmentIdEmr,
+    required this.id,
     required this.success,
     required this.at,
   });
 
   final String pendingId;
-  final String appointmentIdEmr;
+  final String id;
   final bool success;
   final DateTime at;
 }

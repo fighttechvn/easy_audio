@@ -11,6 +11,7 @@ export 'src/dependency_injection/record_audio_micro.module.dart';
 export 'src/domain/entities/android_service.dart';
 export 'src/domain/entities/audio_encoder.dart';
 export 'src/domain/entities/audio_playback_snapshot.dart';
+export 'src/domain/entities/data_record.dart';
 export 'src/domain/entities/easy_audio_config.dart';
 export 'src/domain/entities/easy_audio_mode.dart';
 export 'src/domain/entities/easy_audio_state.dart';

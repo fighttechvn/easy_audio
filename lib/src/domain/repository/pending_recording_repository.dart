@@ -9,8 +9,8 @@ abstract class PendingRecordingRepository {
 
   File fileFor(String fileName);
   List<PendingRecording> listForUser(int? userId);
-  List<PendingRecording> listForAppointment({
-    required String appointmentIdEmr,
+  List<PendingRecording> listForDataId({
+    required String dataId,
     required int? userId,
   });
   PendingRecording? getById(String id);

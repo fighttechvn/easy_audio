@@ -11,13 +11,13 @@ class RecordSessionState {
     this.elapsed = Duration.zero,
     this.openSheetRequestId = 0,
     this.maxSamples = 60,
-    this.lastUploadedAppointmentIdEmr,
+    this.lastUploadedDataId,
     this.lastUploadSuccess,
     this.lastUploadAt,
     this.lastSavedRecordingId,
     this.lastSavedAt,
     this.lastSavedFilePath,
-    this.lastSavedAppointmentIdEmr,
+    this.lastSavedDataId,
     this.lastSavedContent,
   });
 
@@ -30,13 +30,13 @@ class RecordSessionState {
   final int openSheetRequestId;
   final int maxSamples;
 
-  final String? lastUploadedAppointmentIdEmr;
+  final String? lastUploadedDataId;
   final bool? lastUploadSuccess;
   final DateTime? lastUploadAt;
   final String? lastSavedRecordingId;
   final DateTime? lastSavedAt;
   final String? lastSavedFilePath;
-  final String? lastSavedAppointmentIdEmr;
+  final String? lastSavedDataId;
   final String? lastSavedContent;
 
   bool get hasSession => session != null;
@@ -56,13 +56,13 @@ class RecordSessionState {
     Duration? elapsed,
     int? openSheetRequestId,
     int? maxSamples,
-    String? lastUploadedAppointmentIdEmr,
+    String? lastUploadedDataId,
     bool? lastUploadSuccess,
     DateTime? lastUploadAt,
     String? lastSavedRecordingId,
     DateTime? lastSavedAt,
     String? lastSavedFilePath,
-    String? lastSavedAppointmentIdEmr,
+    String? lastSavedDataId,
     String? lastSavedContent,
   }) {
     return RecordSessionState(
@@ -74,15 +74,13 @@ class RecordSessionState {
       elapsed: elapsed ?? this.elapsed,
       openSheetRequestId: openSheetRequestId ?? this.openSheetRequestId,
       maxSamples: maxSamples ?? this.maxSamples,
-      lastUploadedAppointmentIdEmr:
-          lastUploadedAppointmentIdEmr ?? this.lastUploadedAppointmentIdEmr,
+      lastUploadedDataId: lastUploadedDataId ?? this.lastUploadedDataId,
       lastUploadSuccess: lastUploadSuccess ?? this.lastUploadSuccess,
       lastUploadAt: lastUploadAt ?? this.lastUploadAt,
       lastSavedRecordingId: lastSavedRecordingId ?? this.lastSavedRecordingId,
       lastSavedAt: lastSavedAt ?? this.lastSavedAt,
       lastSavedFilePath: lastSavedFilePath ?? this.lastSavedFilePath,
-      lastSavedAppointmentIdEmr:
-          lastSavedAppointmentIdEmr ?? this.lastSavedAppointmentIdEmr,
+      lastSavedDataId: lastSavedDataId ?? this.lastSavedDataId,
       lastSavedContent: lastSavedContent ?? this.lastSavedContent,
     );
   }

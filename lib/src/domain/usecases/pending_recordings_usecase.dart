@@ -23,14 +23,11 @@ class PendingRecordingsUsecase {
     return _repository.listForUser(userId);
   }
 
-  List<PendingRecording> listForAppointment({
-    required String appointmentIdEmr,
+  List<PendingRecording> listForDataId({
+    required String dataId,
     required int? userId,
   }) {
-    return _repository.listForAppointment(
-      appointmentIdEmr: appointmentIdEmr,
-      userId: userId,
-    );
+    return _repository.listForDataId(dataId: dataId, userId: userId);
   }
 
   PendingRecording? getById(String id) => _repository.getById(id);
@@ -53,8 +50,7 @@ class PendingRecordingsUsecase {
     final recordFile = File(recording.filePath);
 
     return uploadRecordingProgress(
-      appointmentIdEmr: recording.appointmentIdEmr,
-      appointmentId: recording.appointmentId,
+      data: recording.dataRecord,
       record: recordFile,
       locale: recording.locale,
       content: recording.content,

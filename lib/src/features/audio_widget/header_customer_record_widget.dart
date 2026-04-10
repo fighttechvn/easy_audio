@@ -3,36 +3,37 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/pending_recording.dart';
 import 'pending_record_card_widget.dart';
 
-typedef ListForAppoinmentFn = List<PendingRecording> Function({
-  required String appointmentIdEmr,
-  required int? userId,
-});
+typedef ListForContextIdFn =
+    List<PendingRecording> Function({
+      required String contextId,
+      required int? userId,
+    });
 
 class HeaderCustomerRecordWidget extends StatelessWidget {
   const HeaderCustomerRecordWidget({
     super.key,
-    required this.idEmr,
+    required this.contextId,
     required this.progressFor,
     required this.enqueueUpload,
     required this.deletePendingRecording,
-    required this.listForAppointment,
+    required this.listForContextId,
     required this.userId,
   });
 
-  final String? idEmr;
+  final String? contextId;
   final int? userId;
   final ProgressForFn progressFor;
   final EnqueueUploadFn enqueueUpload;
   final DeletePendingRecordingFn deletePendingRecording;
-  final ListForAppoinmentFn listForAppointment;
+  final ListForContextIdFn listForContextId;
 
   @override
   Widget build(BuildContext context) {
-    if (idEmr == null || idEmr!.isEmpty) {
+    if (contextId == null || contextId!.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    final items = listForAppointment(appointmentIdEmr: idEmr!, userId: userId);
+    final items = listForContextId(contextId: contextId!, userId: userId);
     if (items.isEmpty) {
       return const SizedBox.shrink();
     }

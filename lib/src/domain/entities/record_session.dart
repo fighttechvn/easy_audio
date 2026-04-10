@@ -1,7 +1,8 @@
+import 'data_record.dart';
+
 class RecordSession {
   const RecordSession({
-    required this.appointmentIdEmr,
-    required this.appointmentId,
+    required this.data,
     this.clinicName,
     this.patientName,
     this.bookingDate,
@@ -10,8 +11,7 @@ class RecordSession {
     required this.startedAt,
   });
 
-  final String appointmentIdEmr;
-  final int appointmentId;
+  final DataRecord<Map<String, dynamic>> data;
 
   final String? clinicName;
   final String? patientName;

@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../domain/entities/data_record.dart';
 import '../../domain/entities/pending_recording.dart';
 import '../../domain/entities/record_session.dart';
 
@@ -139,9 +140,12 @@ class PendingRecordingLocalDataSource {
   Future<void> saveSessionToCache(RecordSession session) async {
     try {
       await init();
+      final sessionData = session.data;
       final data = <String, dynamic>{
-        'appointmentIdEmr': session.appointmentIdEmr,
-        'appointmentId': session.appointmentId,
+        'dataRecord': <String, dynamic>{
+          'id': sessionData.id,
+          'data': sessionData.data,
+        },
         'clinicName': session.clinicName,
         'patientName': session.patientName,
         'bookingDate': session.bookingDate,
@@ -168,20 +172,47 @@ class PendingRecordingLocalDataSource {
         return null;
       }
 
-      final data = jsonDecode(json) as Map<String, dynamic>;
+      final rawData = jsonDecode(json) as Map<String, dynamic>;
+
+      final data = _parseDataFromSessionCache(rawData);
+
       return RecordSession(
-        appointmentIdEmr: data['appointmentIdEmr'] as String? ?? '',
-        appointmentId: data['appointmentId'] as int? ?? 0,
-        clinicName: data['clinicName'] as String?,
-        patientName: data['patientName'] as String?,
-        bookingDate: data['bookingDate'] as String?,
-        bookingTime: data['bookingTime'] as String?,
-        localeId: data['localeId'] as String?,
-        startedAt: DateTime.tryParse(data['startedAt'] as String? ?? '') ??
+        data: data,
+        clinicName: rawData['clinicName'] as String?,
+        patientName: rawData['patientName'] as String?,
+        bookingDate: rawData['bookingDate'] as String?,
+        bookingTime: rawData['bookingTime'] as String?,
+        localeId: rawData['localeId'] as String?,
+        startedAt:
+            DateTime.tryParse(rawData['startedAt'] as String? ?? '') ??
             DateTime.now(),
       );
     } catch (_) {
       return null;
     }
   }
+}
+
+DataRecord<Map<String, dynamic>> _parseDataFromSessionCache(
+  Map<String, dynamic> data,
+) {
+  final raw = data['dataRecord'];
+  if (raw is Map) {
+    final map = raw.cast<String, dynamic>();
+    final id = (map['id'] ?? '').toString();
+    final rawData = map['data'];
+    final jsonMap = rawData is Map
+        ? rawData.cast<String, dynamic>()
+        : const <String, dynamic>{};
+
+    return DataRecord<Map<String, dynamic>>(
+      id: id,
+      data: Map<String, dynamic>.from(jsonMap),
+    );
+  }
+
+  return const DataRecord<Map<String, dynamic>>(
+    id: '',
+    data: <String, dynamic>{},
+  );
 }

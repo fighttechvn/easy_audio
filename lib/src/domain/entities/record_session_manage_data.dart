@@ -14,7 +14,7 @@ class RecordSessionManageData {
 
   final String? pendingRecordingId;
 
-  final String? lastUploadedAppointmentIdEmr;
+  final String? lastUploadedContextId;
   final bool? lastUploadSuccess;
   final DateTime? lastUploadAt;
 
@@ -28,7 +28,7 @@ class RecordSessionManageData {
     this.minimized = false,
     this.sheetOpen = false,
     this.pendingRecordingId,
-    this.lastUploadedAppointmentIdEmr,
+    this.lastUploadedContextId,
     this.lastUploadSuccess,
     this.lastUploadAt,
   }) : amplitudeHistory = List<double>.unmodifiable(amplitudeHistory);
@@ -37,7 +37,7 @@ class RecordSessionManageData {
     List<double>? amplitudeHistory,
     RecordSession? session,
     String? pendingRecordingId,
-    String? lastUploadedAppointmentIdEmr,
+    String? lastUploadedContextId,
     bool? lastUploadSuccess,
     DateTime? lastUploadAt,
     bool? minimized,
@@ -51,8 +51,8 @@ class RecordSessionManageData {
       amplitudeHistory: amplitudeHistory ?? this.amplitudeHistory,
       session: session ?? this.session,
       pendingRecordingId: pendingRecordingId ?? this.pendingRecordingId,
-      lastUploadedAppointmentIdEmr:
-          lastUploadedAppointmentIdEmr ?? this.lastUploadedAppointmentIdEmr,
+      lastUploadedContextId:
+          lastUploadedContextId ?? this.lastUploadedContextId,
       lastUploadSuccess: lastUploadSuccess ?? this.lastUploadSuccess,
       lastUploadAt: lastUploadAt ?? this.lastUploadAt,
       minimized: minimized ?? this.minimized,
@@ -71,7 +71,7 @@ class RecordSessionManageData {
       pendingRecordingId: null,
       minimized: false,
       sheetOpen: false,
-      lastUploadedAppointmentIdEmr: lastUploadedAppointmentIdEmr,
+      lastUploadedContextId: lastUploadedContextId,
       lastUploadSuccess: lastUploadSuccess,
       lastUploadAt: lastUploadAt,
       state: state,

@@ -6,7 +6,8 @@ class RecordSessionHelper {
   static String sanitizeForFilePrefix(String input) {
     final buffer = StringBuffer();
     for (final codeUnit in input.codeUnits) {
-      final isAlphaNum = (codeUnit >= 48 && codeUnit <= 57) ||
+      final isAlphaNum =
+          (codeUnit >= 48 && codeUnit <= 57) ||
           (codeUnit >= 65 && codeUnit <= 90) ||
           (codeUnit >= 97 && codeUnit <= 122);
       buffer.write(isAlphaNum ? String.fromCharCode(codeUnit) : '_');
@@ -16,18 +17,17 @@ class RecordSessionHelper {
 
   static String buildRecordingFilePrefix({
     required int userIdFallback,
-    required String appointmentIdEmr,
-    required int appointmentId,
+    required String contextId,
     Random? random,
     DateTime? now,
   }) {
     final resolvedRandom = random ?? Random();
     final resolvedNow = now ?? DateTime.now();
 
-    final appointmentKey = sanitizeForFilePrefix(appointmentIdEmr);
+    final contextKey = sanitizeForFilePrefix(contextId);
     final rand = resolvedRandom.nextInt(1 << 32);
-    return 'record_${userIdFallback}_${appointmentId}_'
-        '${appointmentKey}_${resolvedNow.millisecondsSinceEpoch}_${rand}_';
+    return 'record_${userIdFallback}_ctx_${contextKey}_'
+        '${resolvedNow.millisecondsSinceEpoch}_${rand}_';
   }
 
   static String generatePendingRecordingId({Random? random, DateTime? now}) {
@@ -37,8 +37,8 @@ class RecordSessionHelper {
     return 'pr_${resolvedNow.microsecondsSinceEpoch}_$idRand';
   }
 
-  static ({int appointmentId, String appointmentIdEmr})?
-      parsePendingInfoFromRecordingFileName(String filePath) {
+  static ({String dataId, int? legacyNumericId})?
+  parsePendingInfoFromRecordingFileName(String filePath) {
     try {
       final base = p.basenameWithoutExtension(filePath);
       final parts = base.split('_');
@@ -51,17 +51,28 @@ class RecordSessionHelper {
         return null;
       }
 
-      final appointmentId = int.tryParse(parts[2]);
-      if (appointmentId == null) {
+      // New format: record_{userId}_ctx_{contextKey}_{millis}_{rand}_
+      if (parts[2] == 'ctx') {
+        final dataId = parts.sublist(3, parts.length - 3).join('_');
+        if (dataId.trim().isEmpty) {
+          return null;
+        }
+        return (dataId: dataId, legacyNumericId: null);
+      }
+
+      // Legacy format:
+      // record_{userId}_{legacyNumericId}_{dataId}_{millis}_{rand}_
+      final legacyNumericId = int.tryParse(parts[2]);
+      if (legacyNumericId == null) {
         return null;
       }
 
-      final appointmentIdEmr = parts.sublist(3, parts.length - 3).join('_');
-      if (appointmentIdEmr.trim().isEmpty) {
+      final dataId = parts.sublist(3, parts.length - 3).join('_');
+      if (dataId.trim().isEmpty) {
         return null;
       }
 
-      return (appointmentId: appointmentId, appointmentIdEmr: appointmentIdEmr);
+      return (dataId: dataId, legacyNumericId: legacyNumericId);
     } catch (_) {
       return null;
     }

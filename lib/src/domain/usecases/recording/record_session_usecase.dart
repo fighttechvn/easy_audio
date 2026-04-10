@@ -58,8 +58,7 @@ class RecordSessionUsecase {
 
     final prefix = RecordSessionHelper.buildRecordingFilePrefix(
       userIdFallback: userId ?? 0,
-      appointmentIdEmr: session.appointmentIdEmr,
-      appointmentId: session.appointmentId,
+      contextId: session.data.id,
     );
 
     final config = EasyAudioConfig(
@@ -176,8 +175,7 @@ class RecordSessionUsecase {
                 ))
             .copyWith(
               userId: userId,
-              appointmentIdEmr: session.appointmentIdEmr,
-              appointmentId: session.appointmentId,
+              dataRecord: session.data,
               clinicName: session.clinicName,
               patientName: session.patientName,
               bookingDate: session.bookingDate,

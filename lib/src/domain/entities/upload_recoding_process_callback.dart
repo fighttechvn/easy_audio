@@ -1,10 +1,12 @@
 import 'dart:io';
 
-typedef UploadRecordingProgressCallback = Future<void> Function({
-  required String appointmentIdEmr,
-  String? content,
-  required int appointmentId,
-  required File record,
-  required String locale,
-  void Function(int sentBytes, int totalBytes)? onSendProgress,
-});
+import 'data_record.dart';
+
+typedef UploadRecordingProgressCallback =
+    Future<void> Function({
+      required DataRecord<Map<String, dynamic>> data,
+      String? content,
+      required File record,
+      required String locale,
+      void Function(int sentBytes, int totalBytes)? onSendProgress,
+    });

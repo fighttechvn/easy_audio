@@ -7,29 +7,29 @@ String resolveTranscriptForPersistence({
   final finalText = finalTranscript.trim();
   final liveText = liveTranscript.trim();
 
-  String uiText() {
-    if (finalText.isEmpty) {
-      return liveText;
-    }
-    if (liveText.isEmpty) {
-      return finalText;
-    }
-    return '$finalText\n\n$liveText';
-  }
+  final baseText = resultText.isNotEmpty ? resultText : finalText;
 
-  if (resultText.isEmpty) {
-    return uiText();
+  if (baseText.isEmpty) {
+    return liveText;
   }
-
   if (liveText.isEmpty) {
-    return resultText;
+    return baseText;
   }
 
-  if (resultText.contains(liveText)) {
-    return resultText;
+  if (baseText.contains(liveText)) {
+    return baseText;
   }
 
-  return '$resultText\n\n$liveText';
+  final deltaAccumulator = TranscriptDeltaAccumulator();
+
+  deltaAccumulator.commitFinal(baseText);
+  final delta = deltaAccumulator.commitFinal(liveText).trim();
+
+  if (delta.isEmpty) {
+    return baseText;
+  }
+
+  return '$baseText $delta';
 }
 
 class TranscriptDeltaAccumulator {
@@ -93,8 +93,9 @@ class TranscriptDeltaAccumulator {
     required List<String> committed,
     required List<String> incoming,
   }) {
-    final max =
-        committed.length < incoming.length ? committed.length : incoming.length;
+    final max = committed.length < incoming.length
+        ? committed.length
+        : incoming.length;
 
     for (var k = max; k >= 1; k--) {
       var ok = true;

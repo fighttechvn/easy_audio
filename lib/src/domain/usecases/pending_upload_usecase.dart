@@ -32,10 +32,6 @@ class PendingUploadUsecase {
       return const PendingUploadStartResult.notFound();
     }
 
-    if (current.status == PendingRecordingStatus.uploading) {
-      return const PendingUploadStartResult.alreadyUploading();
-    }
-
     final file = File(current.filePath);
     if (!await file.exists()) {
       await _pendingRecordingsUsecase.upsert(
@@ -47,7 +43,7 @@ class PendingUploadUsecase {
 
       return PendingUploadStartResult.fileMissing(
         error: const FileSystemException('File not found'),
-        appointmentIdEmr: current.appointmentIdEmr.trim(),
+        id: current.dataRecord.id.trim(),
       );
     }
 
@@ -58,25 +54,25 @@ class PendingUploadUsecase {
   }
 
   Future<PendingUploadRunResult> runUploadRetries({
-    required String id,
+    required String pendingId,
     required UploadRetryPolicy retryPolicy,
     required UploadRecordingProgressCallback uploadRecordingProgress,
     required void Function(double progress) onProgress,
   }) async {
     await _pendingRecordingsUsecase.init();
 
-    var latest = _pendingRecordingsUsecase.getById(id);
+    var latest = _pendingRecordingsUsecase.getById(pendingId);
     if (latest == null) {
-      return PendingUploadRunResult.notFound(pendingId: id);
+      return PendingUploadRunResult.notFound(pendingId: pendingId);
     }
 
     var attempt = 0;
 
     while (attempt < retryPolicy.maxAttempts) {
       try {
-        latest = _pendingRecordingsUsecase.getById(id);
+        latest = _pendingRecordingsUsecase.getById(pendingId);
         if (latest == null) {
-          return PendingUploadRunResult.notFound(pendingId: id);
+          return PendingUploadRunResult.notFound(pendingId: pendingId);
         }
 
         await _pendingRecordingsUsecase.upload(
@@ -85,18 +81,18 @@ class PendingUploadUsecase {
           uploadRecordingProgress: uploadRecordingProgress,
         );
 
-        await _pendingRecordingsUsecase.deleteById(id, deleteFile: true);
+        await _pendingRecordingsUsecase.deleteById(pendingId, deleteFile: true);
 
         return PendingUploadRunResult.success(
-          pendingId: id,
-          appointmentIdEmr: latest.appointmentIdEmr.trim(),
+          pendingId: pendingId,
+          id: latest.dataRecord.id.trim(),
         );
       } catch (e) {
         attempt += 1;
 
-        latest = _pendingRecordingsUsecase.getById(id);
+        latest = _pendingRecordingsUsecase.getById(pendingId);
         if (latest == null) {
-          return PendingUploadRunResult.notFound(pendingId: id);
+          return PendingUploadRunResult.notFound(pendingId: pendingId);
         }
 
         final isLast = attempt >= retryPolicy.maxAttempts;
@@ -111,9 +107,9 @@ class PendingUploadUsecase {
 
         if (isLast) {
           return PendingUploadRunResult.failure(
-            pendingId: id,
+            pendingId: pendingId,
             error: e,
-            appointmentIdEmr: latest.appointmentIdEmr.trim(),
+            id: latest.dataRecord.id.trim(),
           );
         }
 
@@ -122,9 +118,9 @@ class PendingUploadUsecase {
     }
 
     return PendingUploadRunResult.failure(
-      pendingId: id,
+      pendingId: pendingId,
       error: StateError('Upload attempts exhausted unexpectedly'),
-      appointmentIdEmr: latest?.appointmentIdEmr.trim(),
+      id: latest?.dataRecord.id.trim(),
     );
   }
 }

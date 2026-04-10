@@ -5,6 +5,7 @@ import 'package:injectable/injectable.dart';
 import '../../../core/constants/easy_audio_locale_display.dart';
 import '../../../core/utils/record_session_helper.dart';
 import '../../../integration/audio/easy_audio/easy_audio_service.dart';
+import '../../entities/data_record.dart';
 import '../../entities/easy_audio_config.dart';
 import '../../entities/pending_recording.dart';
 import '../../entities/recording_result.dart';
@@ -114,17 +115,18 @@ class CrashRecoveryUsecase {
       filePath,
     );
 
-    final cachedSession =
-        await _pendingRecordingsUsecase.loadSessionFromCache();
+    final cachedSession = await _pendingRecordingsUsecase
+        .loadSessionFromCache();
 
     final locale = (recovered.localeId?.trim().isNotEmpty == true)
         ? recovered.localeId!.trim()
         : (existing?.locale.trim().isNotEmpty == true)
-            ? existing!.locale.trim()
-            : cachedSession?.localeId ?? fallbackLocale;
+        ? existing!.locale.trim()
+        : cachedSession?.localeId ?? fallbackLocale;
 
     final createdAt = recovered.startTime;
-    final fileSize = recovered.fileSizeBytes ??
+    final fileSize =
+        recovered.fileSizeBytes ??
         (existing?.fileSizeBytes ?? await file.length());
     final durationMs = recovered.duration.inMilliseconds;
     final transcript = recovered.transcript?.trim() ?? '';
@@ -132,15 +134,30 @@ class CrashRecoveryUsecase {
     if (existing == null) {
       final id = RecordSessionHelper.generatePendingRecordingId();
 
+      final cachedContext = cachedSession?.data;
+      final contextId = (cachedContext?.id.trim().isNotEmpty == true)
+          ? cachedContext!.id
+          : (parsed?.dataId ?? 'recovered');
+
+      final legacyNumericId = parsed?.legacyNumericId;
+      final contextData =
+          cachedContext?.data ??
+          <String, dynamic>{
+            ...?legacyNumericId == null
+                ? null
+                : <String, dynamic>{'legacyNumericId': legacyNumericId},
+          };
+
+      final data = DataRecord<Map<String, dynamic>>(
+        id: contextId,
+        data: Map<String, dynamic>.from(contextData),
+      );
+
       await _pendingRecordingsUsecase.upsert(
         PendingRecording(
           id: id,
           userId: userId,
-          appointmentIdEmr: parsed?.appointmentIdEmr ??
-              cachedSession?.appointmentIdEmr ??
-              'recovered',
-          appointmentId:
-              parsed?.appointmentId ?? cachedSession?.appointmentId ?? 0,
+          dataRecord: data,
           clinicName: cachedSession?.clinicName,
           patientName: cachedSession?.patientName,
           bookingDate: cachedSession?.bookingDate,
@@ -162,11 +179,27 @@ class CrashRecoveryUsecase {
     }
 
     final nextSize = recovered.fileSizeBytes ?? existing.fileSizeBytes;
+
+    DataRecord<Map<String, dynamic>>? nextContext;
+    if (cachedSession?.data.id.trim().isNotEmpty == true) {
+      nextContext = cachedSession!.data;
+    } else if (parsed != null) {
+      final legacyNumericId = parsed.legacyNumericId;
+      final data = <String, dynamic>{
+        ...?legacyNumericId == null
+            ? null
+            : <String, dynamic>{'legacyNumericId': legacyNumericId},
+      };
+      nextContext = DataRecord<Map<String, dynamic>>(
+        id: parsed.dataId,
+        data: Map<String, dynamic>.from(data),
+      );
+    }
+
     final updated = existing.copyWith(
       userId: userId,
       fileSizeBytes: nextSize,
-      appointmentIdEmr: parsed?.appointmentIdEmr,
-      appointmentId: parsed?.appointmentId,
+      dataRecord: nextContext,
       clinicName: cachedSession?.clinicName ?? existing.clinicName,
       patientName: cachedSession?.patientName ?? existing.patientName,
       bookingDate: cachedSession?.bookingDate ?? existing.bookingDate,

@@ -85,7 +85,7 @@ class _RecordAudioTranscriptCardState extends State<RecordAudioTranscriptCard> {
         controller: _scrollController,
         child: Text(
           isEmpty ? widget.emptyText : combined,
-          textAlign: isEmpty ? TextAlign.start : TextAlign.start,
+          textAlign: isEmpty ? TextAlign.center : TextAlign.start,
           style: theme.textTheme.bodyLarge?.copyWith(
             color: isEmpty
                 ? theme.colorScheme.onSurfaceVariant

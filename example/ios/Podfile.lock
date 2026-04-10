@@ -12,13 +12,8 @@ PODS:
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
-  - speech_to_text (0.0.1):
-    - Flutter
-    - FlutterMacOS
-    - Try
   - stt_record (0.0.1):
     - Flutter
-  - Try (2.1.1)
   - wakelock_plus (0.0.1):
     - Flutter
 
@@ -29,13 +24,8 @@ DEPENDENCIES:
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
-  - speech_to_text (from `.symlinks/plugins/speech_to_text/darwin`)
   - stt_record (from `.symlinks/plugins/stt_record/ios`)
   - wakelock_plus (from `.symlinks/plugins/wakelock_plus/ios`)
-
-SPEC REPOS:
-  trunk:
-    - Try
 
 EXTERNAL SOURCES:
   audio_session:
@@ -50,8 +40,6 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
   shared_preferences_foundation:
     :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
-  speech_to_text:
-    :path: ".symlinks/plugins/speech_to_text/darwin"
   stt_record:
     :path: ".symlinks/plugins/stt_record/ios"
   wakelock_plus:
@@ -64,9 +52,7 @@ SPEC CHECKSUMS:
   package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499
   permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
   shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
-  speech_to_text: 9dc43a5df3cbc2813f8c7cc9bd0fbf94268ed7ac
-  stt_record: 18957c7eb0e694487e905e594ebdc14f13e30dcb
-  Try: 5ef669ae832617b3cee58cb2c6f99fb767a4ff96
+  stt_record: 90d1ec061fd70f3f89b267f7e1542a07c1618b4e
   wakelock_plus: e29112ab3ef0b318e58cfa5c32326458be66b556
 
 PODFILE CHECKSUM: 50c8757596707b264b444bce9b29ab7dd7fedb99
