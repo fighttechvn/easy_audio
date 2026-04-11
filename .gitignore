@@ -33,3 +33,7 @@ build/
 example/windows/flutter/generated_plugin_registrant.cc
 example/windows/flutter/generated_plugin_registrant.h
 example/windows/flutter/generated_plugins.cmake
+example/macos/Podfile
+example/macos/Flutter/GeneratedPluginRegistrant.swift
+example/macos/Flutter/ephemeral/Flutter-Generated.xcconfig
+example/macos/Flutter/ephemeral/flutter_export_environment.sh

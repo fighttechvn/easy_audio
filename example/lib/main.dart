@@ -1,19 +1,28 @@
 import 'package:flutter/material.dart';
 
-import 'src/easy_audio_screen.dart';
+import 'presentation/home/home_page.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const EasyAudioExampleApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class EasyAudioExampleApp extends StatelessWidget {
+  const EasyAudioExampleApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      title: 'Easy Audio',
-      home: EasyAudioExampleScreen(),
+    return MaterialApp(
+      title: 'Easy Audio Demo',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF6C5CE7),
+          brightness: Brightness.dark,
+        ),
+        fontFamily: 'SF Pro Display',
+      ),
+      home: const HomePage(),
     );
   }
 }

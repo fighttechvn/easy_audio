@@ -1,50 +1,129 @@
-name: Pipeline Build Verify Compile
- 
+name: Verify Compile
+
 on:
   workflow_dispatch:
- 
+
+# Cancel các workflow cũ khi có build mới
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build_apk:
     runs-on: ubuntu-latest
     steps:
-      - name: 1. Checkout
+      - name: 1. Checkout (Optimized)
         uses: actions/checkout@v4
-
-      - name: 2. Test folder current
-        shell: bash
-        run: echo '${{env.pathProject}}'
-
-      - name: 3. ☕️ Setup Java
-        uses: actions/setup-java@v4
         with:
-          java-version: "17"
-          distribution: "temurin"
-          cache: gradle
+          fetch-depth: 1
 
-      - name: 4. Build apk
+      - name: 1.5. Clean up runner disk space 🧹
+        run: |
+          echo "Disk space before cleanup:"
+          df -h
+
+          # Xóa các gói cài đặt sẵn không cần thiết (song song để nhanh hơn)
+          sudo rm -rf /usr/share/dotnet &
+          sudo rm -rf /opt/ghc &
+          sudo rm -rf /usr/local/lib/android/sdk/build-tools/30.0.3 &
+          wait
+
+          # Dọn dẹp cache
+          sudo apt-get clean
+          docker system prune -a -f
+
+          echo "Disk space after cleanup:"
+          df -h
+
+      - name: 2. Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
-          cache-key: flutter
-        working-directory: ./example
-      - run: flutter build apk --debug
-  
+
+      - name: 3. Cache Pub Dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            ${{ github.workspace }}/.dart_tool
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: 4. Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            android/.gradle
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: 5. Get Flutter dependencies
+        run: flutter pub get & flutter doctor
+
+      - name: 6. Build APK
+        run: flutter build apk
+
   build_ios:
     runs-on: macos-latest
     steps:
       - name: 1. Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
-      - name: 2. Test folder current
-        shell: bash
-        run: echo '${{env.pathProject}}'
-
-      - name: 3. Build ios no-codesign
+      - name: 2. Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: stable
           cache: true
-          cache-key: flutter
-        working-directory: ./example
-      - run: flutter build ios --no-codesign
+
+      - name: 3. Cache Pub Dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            ${{ github.workspace }}/.dart_tool
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: 4. Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: |
+            ios/Pods
+            ~/Library/Caches/CocoaPods
+            ~/.cocoapods
+          key: ${{ runner.os }}-pods-${{ hashFiles('**/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-
+
+      - name: 5. Cache iOS Build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ios/build
+            ~/Library/Developer/Xcode/DerivedData
+          key: ${{ runner.os }}-ios-build-${{ hashFiles('**/Podfile.lock', '**/*.pbxproj') }}
+          restore-keys: |
+            ${{ runner.os }}-ios-build-
+
+      - name: 6. Get Flutter dependencies
+        run: flutter pub get & flutter doctor
+
+      - name: 7. Pod Install (if needed)
+        working-directory: ios
+        run: |
+          if [ ! -d "Pods" ]; then
+            pod install --repo-update
+          else
+            echo "Pods cached, skipping pod install"
+          fi
+
+      - name: 8. Build iOS
+        run: flutter build ios --no-codesign
