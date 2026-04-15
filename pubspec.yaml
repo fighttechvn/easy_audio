@@ -1,6 +1,6 @@
 name: easy_audio
 description: Record audio (WAV) and stream realtime speech-to-text transcripts.
-version: 2.0.3
+version: 3.0.0
 homepage: https://github.com/fighttech-vn/easy_audio
 publish_to: "none"
 
