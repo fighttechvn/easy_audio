@@ -80,7 +80,8 @@ extension RecordCoordinator on BuildContext {
       barrierDismissible: true,
       builder: (previewContext) {
         final previewTheme = Theme.of(previewContext);
-        final previewBg = previewTheme.dialogTheme.backgroundColor ??
+        final previewBg =
+            previewTheme.dialogTheme.backgroundColor ??
             previewTheme.colorScheme.surface;
         final maxHeight = MediaQuery.of(previewContext).size.height * 0.55;
 

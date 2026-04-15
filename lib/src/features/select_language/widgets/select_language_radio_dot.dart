@@ -26,10 +26,7 @@ class SelectLanguageRadioDot extends StatelessWidget {
         color: selected ? accentColor : Colors.transparent,
         border: selected
             ? null
-            : Border.all(
-                color: unselectedBorderColor,
-                width: borderWidth,
-              ),
+            : Border.all(color: unselectedBorderColor, width: borderWidth),
       ),
     );
   }

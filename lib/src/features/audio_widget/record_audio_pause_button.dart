@@ -32,8 +32,8 @@ class RecordAudioPauseButton extends StatelessWidget {
               borderRadius: BorderRadius.circular(26),
               color: enabled
                   ? isPaused
-                      ? Colors.blueAccent
-                      : const Color(0xFFE53935)
+                        ? Colors.blueAccent
+                        : const Color(0xFFE53935)
                   : const Color(0xFFE53935).withValues(alpha: 0.4),
             ),
             alignment: Alignment.center,

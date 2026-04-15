@@ -91,8 +91,9 @@ class _RecordAudioBottomSheetWidgetState
 
     final initial = widget.initialAmplitudeHistory;
     if (initial != null && initial.isNotEmpty) {
-      final startIndex =
-          initial.length > _maxSamples ? initial.length - _maxSamples : 0;
+      final startIndex = initial.length > _maxSamples
+          ? initial.length - _maxSamples
+          : 0;
       _amplitudeHistory.addAll(
         initial
             .skip(startIndex)

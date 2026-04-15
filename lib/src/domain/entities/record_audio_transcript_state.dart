@@ -4,8 +4,8 @@ class RecordAudioTranscriptState {
   RecordAudioTranscriptState({
     String initialFinal = '',
     String initialLive = '',
-  })  : _finalTranscript = initialFinal,
-        _liveTranscript = initialLive;
+  }) : _finalTranscript = initialFinal,
+       _liveTranscript = initialLive;
 
   String _finalTranscript;
   String _liveTranscript;

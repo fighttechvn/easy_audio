@@ -87,17 +87,19 @@ class _RecordAudioPreviewWidgetState extends State<RecordAudioPreviewWidget> {
         final isPlaying = isActive && snap.isPlaying;
         final isLoading = isActive && snap.isLoading;
 
-        final duration =
-            isActive ? (snap.duration ?? Duration.zero) : Duration.zero;
-        final position =
-            isActive ? (_dragPosition ?? snap.position) : Duration.zero;
+        final duration = isActive
+            ? (snap.duration ?? Duration.zero)
+            : Duration.zero;
+        final position = isActive
+            ? (_dragPosition ?? snap.position)
+            : Duration.zero;
 
         final maxMs = duration.inMilliseconds.toDouble();
         final sliderMax = maxMs > 0 ? maxMs : 1.0;
         final sliderValue = maxMs > 0
             ? position.inMilliseconds
-                .clamp(0, duration.inMilliseconds)
-                .toDouble()
+                  .clamp(0, duration.inMilliseconds)
+                  .toDouble()
             : 0.0;
 
         final subtitleParts = <String>[];

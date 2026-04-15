@@ -14,9 +14,9 @@ part 'pending_recordings_state.dart';
 class PendingRecordingsBloc
     extends Bloc<PendingRecordingsEvent, PendingRecordingsState> {
   PendingRecordingsBloc(this._usecase)
-      : super(
-          const PendingRecordingsInitial(uiState: PendingRecordingsUiState()),
-        ) {
+    : super(
+        const PendingRecordingsInitial(uiState: PendingRecordingsUiState()),
+      ) {
     on<PendingRecordingsInitRequested>(_onInit);
     on<PendingRecordingsRefreshRequested>(_onRefresh);
     on<PendingRecordingsDeleteRequested>(_onDeleteById);

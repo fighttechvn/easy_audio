@@ -50,9 +50,7 @@ class CustomerRecordFloatingBadge extends StatelessWidget {
       child: InkWell(
         customBorder: shape ?? const CircleBorder(),
         onTap: onTap,
-        child: Center(
-          child: child,
-        ),
+        child: Center(child: child),
       ),
     );
   }
@@ -99,7 +97,8 @@ class CustomerRecordRecordingBadgeContent extends StatelessWidget {
             const SizedBox(width: 4),
             Text(
               'REC',
-              style: styleRec ??
+              style:
+                  styleRec ??
                   theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.onPrimary,
                     fontWeight: FontWeight.w900,
@@ -114,7 +113,8 @@ class CustomerRecordRecordingBadgeContent extends StatelessWidget {
           fit: BoxFit.scaleDown,
           child: Text(
             elapsedText,
-            style: style ??
+            style:
+                style ??
                 theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.onPrimary,
                   fontWeight: FontWeight.w800,
@@ -128,10 +128,7 @@ class CustomerRecordRecordingBadgeContent extends StatelessWidget {
 }
 
 class CustomerRecordUploadBadgeContent extends StatelessWidget {
-  const CustomerRecordUploadBadgeContent({
-    super.key,
-    required this.progress,
-  });
+  const CustomerRecordUploadBadgeContent({super.key, required this.progress});
 
   final double progress;
 

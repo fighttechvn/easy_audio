@@ -5,8 +5,8 @@ class ElapsedTicker {
     required void Function(Duration elapsed) onTick,
     Duration initialElapsed = Duration.zero,
     this.interval = const Duration(milliseconds: 30),
-  })  : _onTick = onTick,
-        _base = initialElapsed;
+  }) : _onTick = onTick,
+       _base = initialElapsed;
 
   final void Function(Duration elapsed) _onTick;
   final Duration interval;

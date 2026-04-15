@@ -33,39 +33,55 @@ import 'package:easy_audio/src/features/record_session/record_session_cubit.dart
 import 'package:injectable/injectable.dart' as _i526;
 
 class EasyAudioPackageModule extends _i526.MicroPackageModule {
-// initializes the registration of main-scope dependencies inside of GetIt
+  // initializes the registration of main-scope dependencies inside of GetIt
   @override
   _i687.FutureOr<void> init(_i526.GetItHelper gh) {
     gh.lazySingleton<_i212.PendingRecordingLocalDataSource>(
-        () => _i212.PendingRecordingLocalDataSource());
-    gh.lazySingleton<_i199.PendingRecordingRepository>(() =>
-        _i389.PendingRecordingRepositoryImpl(
-            local: gh<_i212.PendingRecordingLocalDataSource>()));
-    gh.factory<_i353.PendingRecordingsUsecase>(() =>
-        _i353.PendingRecordingsUsecase(gh<_i199.PendingRecordingRepository>()));
-    gh.factory<_i1022.PendingUploadUsecase>(() =>
-        _i1022.PendingUploadUsecase(gh<_i353.PendingRecordingsUsecase>()));
+      () => _i212.PendingRecordingLocalDataSource(),
+    );
+    gh.lazySingleton<_i199.PendingRecordingRepository>(
+      () => _i389.PendingRecordingRepositoryImpl(
+        local: gh<_i212.PendingRecordingLocalDataSource>(),
+      ),
+    );
+    gh.factory<_i353.PendingRecordingsUsecase>(
+      () => _i353.PendingRecordingsUsecase(
+        gh<_i199.PendingRecordingRepository>(),
+      ),
+    );
+    gh.factory<_i1022.PendingUploadUsecase>(
+      () => _i1022.PendingUploadUsecase(gh<_i353.PendingRecordingsUsecase>()),
+    );
     gh.factory<_i42.CrashRecoveryUsecase>(
-        () => _i42.CrashRecoveryUsecase(gh<_i353.PendingRecordingsUsecase>()));
-    gh.factory<_i1014.RecordSessionUsecase>(() =>
-        _i1014.RecordSessionUsecase(gh<_i353.PendingRecordingsUsecase>()));
-    gh.factory<_i1024.PendingRecordingsBloc>(() =>
-        _i1024.PendingRecordingsBloc(gh<_i353.PendingRecordingsUsecase>()));
+      () => _i42.CrashRecoveryUsecase(gh<_i353.PendingRecordingsUsecase>()),
+    );
+    gh.factory<_i1014.RecordSessionUsecase>(
+      () => _i1014.RecordSessionUsecase(gh<_i353.PendingRecordingsUsecase>()),
+    );
+    gh.factory<_i1024.PendingRecordingsBloc>(
+      () => _i1024.PendingRecordingsBloc(gh<_i353.PendingRecordingsUsecase>()),
+    );
     gh.lazySingleton<_i401.PendingUploadOrchestratorBloc>(
       () => _i401.PendingUploadOrchestratorBloc(
-          gh<_i1022.PendingUploadUsecase>()),
+        gh<_i1022.PendingUploadUsecase>(),
+      ),
       dispose: (i) => i.dispose(),
     );
-    gh.lazySingleton<_i585.PendingUploadBloc>(() =>
-        _i585.PendingUploadBloc(gh<_i401.PendingUploadOrchestratorBloc>()));
-    gh.lazySingleton<_i1055.CrashRecoveryBloc>(() => _i1055.CrashRecoveryBloc(
-          gh<_i42.CrashRecoveryUsecase>(),
-          gh<_i353.PendingRecordingsUsecase>(),
-          gh<_i585.PendingUploadBloc>(),
-        ));
-    gh.lazySingleton<_i208.RecordSessionCubit>(() => _i208.RecordSessionCubit(
-          gh<_i1014.RecordSessionUsecase>(),
-          gh<_i585.PendingUploadBloc>(),
-        ));
+    gh.lazySingleton<_i585.PendingUploadBloc>(
+      () => _i585.PendingUploadBloc(gh<_i401.PendingUploadOrchestratorBloc>()),
+    );
+    gh.lazySingleton<_i1055.CrashRecoveryBloc>(
+      () => _i1055.CrashRecoveryBloc(
+        gh<_i42.CrashRecoveryUsecase>(),
+        gh<_i353.PendingRecordingsUsecase>(),
+        gh<_i585.PendingUploadBloc>(),
+      ),
+    );
+    gh.lazySingleton<_i208.RecordSessionCubit>(
+      () => _i208.RecordSessionCubit(
+        gh<_i1014.RecordSessionUsecase>(),
+        gh<_i585.PendingUploadBloc>(),
+      ),
+    );
   }
 }

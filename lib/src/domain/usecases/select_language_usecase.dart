@@ -40,9 +40,7 @@ class SelectLanguageUseCase {
       );
 
       if (index == -1) {
-        index = locales.indexWhere(
-          (l) => l.localeId.startsWith('en'),
-        );
+        index = locales.indexWhere((l) => l.localeId.startsWith('en'));
 
         if (index == -1) {
           index = 0;

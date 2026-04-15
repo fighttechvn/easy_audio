@@ -5,8 +5,8 @@ import '../../domain/entities/pending_recording.dart';
 
 typedef ProgressForFn = double? Function(String id);
 typedef EnqueueUploadFn = void Function(String id);
-typedef DeletePendingRecordingFn = Future<void> Function(String id,
-    {bool deleteFile});
+typedef DeletePendingRecordingFn =
+    Future<void> Function(String id, {bool deleteFile});
 
 class PendingRecordCardWidget extends StatelessWidget {
   const PendingRecordCardWidget({
@@ -31,14 +31,16 @@ class PendingRecordCardWidget extends StatelessWidget {
       PendingRecordingStatus.failed => 'Failed',
     };
 
-    final retrySuffix =
-        record.retryCount > 0 ? ' (retry ${record.retryCount}/3)' : '';
+    final retrySuffix = record.retryCount > 0
+        ? ' (retry ${record.retryCount}/3)'
+        : '';
     final sizeLine = record.fileSizeText;
     final progressSuffix =
         record.status == PendingRecordingStatus.uploading && progress != null
-            ? ' ${(progress * 100).round()}%'
-            : '';
-    final statusLine = '$statusText$progressSuffix$retrySuffix'
+        ? ' ${(progress * 100).round()}%'
+        : '';
+    final statusLine =
+        '$statusText$progressSuffix$retrySuffix'
         '${sizeLine.isNotEmpty ? ' - $sizeLine' : ''}';
 
     return Card(

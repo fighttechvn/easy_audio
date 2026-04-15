@@ -10,9 +10,9 @@ class SelectLanguageCubit extends Cubit<SelectLanguageState> {
   SelectLanguageCubit({
     required SelectLanguageUseCase useCase,
     required EasyAudioService easyAudio,
-  })  : _useCase = useCase,
-        _easyAudio = easyAudio,
-        super(SelectLanguageState.initial());
+  }) : _useCase = useCase,
+       _easyAudio = easyAudio,
+       super(SelectLanguageState.initial());
 
   final SelectLanguageUseCase _useCase;
   final EasyAudioService _easyAudio;
@@ -74,8 +74,9 @@ class SelectLanguageCubit extends Cubit<SelectLanguageState> {
           l.localeId.toLowerCase().contains(q);
     }
 
-    final recentMatched =
-        current.recentLocales.where(matches).toList(growable: false);
+    final recentMatched = current.recentLocales
+        .where(matches)
+        .toList(growable: false);
     final recentIdSet = recentMatched.map((e) => e.localeId).toSet();
     final othersMatched = current.allLocales
         .where((e) => !recentIdSet.contains(e.localeId))

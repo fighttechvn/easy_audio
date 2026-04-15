@@ -85,8 +85,8 @@ class SelectLanguageDialogWidget extends StatelessWidget {
                             ),
                             onChanged: (value) {
                               context.read<SelectLanguageCubit>().applyFilter(
-                                    value,
-                                  );
+                                value,
+                              );
                             },
                           ),
                           const SizedBox(height: 12),
@@ -115,7 +115,8 @@ class SelectLanguageDialogWidget extends StatelessWidget {
                                       for (final l in state.filteredRecent)
                                         SelectLanguageRow(
                                           locale: l,
-                                          selected: l.localeId ==
+                                          selected:
+                                              l.localeId ==
                                               state.selectedLocaleId,
                                           loading: state.loading,
                                           accentColor: _kAccentColor,
@@ -132,7 +133,8 @@ class SelectLanguageDialogWidget extends StatelessWidget {
                                           !recentIdSet.contains(l.localeId))
                                         SelectLanguageRow(
                                           locale: l,
-                                          selected: l.localeId ==
+                                          selected:
+                                              l.localeId ==
                                               state.selectedLocaleId,
                                           loading: state.loading,
                                           accentColor: _kAccentColor,
