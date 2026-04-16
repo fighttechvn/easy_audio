@@ -1,0 +1,2 @@
+ - Dictation use Flutter web wasm compile
+- https://fighttechvn.github.io/easy_audio/
