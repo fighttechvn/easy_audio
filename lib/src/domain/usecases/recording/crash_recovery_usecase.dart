@@ -37,9 +37,9 @@ class CrashRecoveryUsecase {
 
     final easyAudio = EasyAudioService();
     if (!easyAudio.isInitialized) {
-      await easyAudio.initialize(const EasyAudioConfig(
-        mode: EasyAudioMode.realtime,
-      ));
+      await easyAudio.initialize(
+        const EasyAudioConfig(mode: EasyAudioMode.realtime),
+      );
     }
 
     final recovered = await easyAudio.recoverLastRecording();

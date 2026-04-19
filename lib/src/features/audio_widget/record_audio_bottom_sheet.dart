@@ -69,7 +69,7 @@ class _RecordAudioBottomSheetWidgetState
   bool get _canShowTranscript => widget.audioMode == null
       ? _isIOS
       : (widget.audioMode != EasyAudioMode.recordOnly);
-  
+
   bool get _isRecording => _state == EasyAudioState.recording;
   bool get _isPaused => _state == EasyAudioState.paused;
   bool get _isActiveSession =>
