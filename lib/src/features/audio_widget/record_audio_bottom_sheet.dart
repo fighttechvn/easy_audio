@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/easy_audio_locale_display.dart';
 import '../../core/controllers/elapsed_ticker.dart';
 import '../../core/utils/duration_ext.dart';
+import '../../domain/entities/easy_audio_mode.dart';
 import '../../domain/entities/easy_audio_state.dart';
 import '../../domain/entities/record_audio_transcript_state.dart';
 import '../../domain/entities/transcript_result.dart';
@@ -22,6 +23,7 @@ class RecordAudioBottomSheetWidget extends StatefulWidget {
     required this.easyAudio,
     required this.localeId,
     required this.enableAndroidBackgroundRecording,
+    this.audioMode = EasyAudioMode.realtime,
     this.initialAmplitudeHistory,
     this.initialFinalTranscript,
     this.initialLiveTranscript,
@@ -34,7 +36,7 @@ class RecordAudioBottomSheetWidget extends StatefulWidget {
   final EasyAudioService easyAudio;
   final String? localeId;
   final bool enableAndroidBackgroundRecording;
-
+  final EasyAudioMode? audioMode;
   final List<double>? initialAmplitudeHistory;
   final String? initialFinalTranscript;
   final String? initialLiveTranscript;
@@ -64,7 +66,10 @@ class _RecordAudioBottomSheetWidgetState
   late final RecordAudioTranscriptState _transcriptState;
 
   bool get _isIOS => Platform.isIOS;
-  bool get _canShowTranscript => _isIOS;
+  bool get _canShowTranscript => widget.audioMode == null
+      ? _isIOS
+      : (widget.audioMode != EasyAudioMode.recordOnly);
+  
   bool get _isRecording => _state == EasyAudioState.recording;
   bool get _isPaused => _state == EasyAudioState.paused;
   bool get _isActiveSession =>
@@ -120,7 +125,7 @@ class _RecordAudioBottomSheetWidgetState
       onInitFailed: _onInitFailed,
     );
 
-    _controller.initAndStart();
+    _controller.initAndStart(modeAudio: widget.audioMode);
   }
 
   void _onEasyAudioState(EasyAudioState s) {

@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:easy_audio/easy_audio.dart';
 import 'package:flutter/material.dart';
 
-import '../../core/utils/datetime_utils.dart';
+import '../core/datetime_utils.dart';
 import 'widgets/record_bottom_bar.dart';
 import 'widgets/recording_detail_sheet.dart';
 
@@ -76,11 +76,7 @@ class _SampleScreenState extends State<SampleScreen> {
       if (!easyAudio.isInitialized) {
         try {
           await easyAudio.initialize(
-            EasyAudioConfig(
-              mode: Platform.isIOS
-                  ? EasyAudioMode.realtime
-                  : EasyAudioMode.recordOnly,
-            ),
+            const EasyAudioConfig(mode: EasyAudioMode.realtime),
           );
 
           if (!mounted) {
