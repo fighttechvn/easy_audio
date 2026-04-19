@@ -56,7 +56,8 @@ class RecordSessionUsecase {
     }
 
     final isIOS = Platform.isIOS;
-    final mode = isIOS ? EasyAudioMode.realtime : EasyAudioMode.recordOnly;
+    // final mode = isIOS ? EasyAudioMode.realtime : EasyAudioMode.recordOnly;
+    const mode = EasyAudioMode.realtime;
 
     final prefix = RecordSessionHelper.buildRecordingFilePrefix(
       userIdFallback: userId ?? 0,
