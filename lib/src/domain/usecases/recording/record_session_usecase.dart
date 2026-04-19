@@ -34,7 +34,9 @@ class RecordSessionUsecase {
       return;
     }
 
-    await _easyAudio.initialize(const EasyAudioConfig());
+    await _easyAudio.initialize(
+      const EasyAudioConfig(mode: EasyAudioMode.realtime),
+    );
   }
 
   Future<String?> prepareAndStartRecording({

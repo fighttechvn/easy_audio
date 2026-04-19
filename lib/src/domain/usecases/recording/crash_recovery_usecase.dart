@@ -7,6 +7,7 @@ import '../../../core/utils/record_session_helper.dart';
 import '../../../integration/audio/easy_audio/easy_audio_service.dart';
 import '../../entities/data_record.dart';
 import '../../entities/easy_audio_config.dart';
+import '../../entities/easy_audio_mode.dart';
 import '../../entities/pending_recording.dart';
 import '../../entities/recording_result.dart';
 import '../pending_recordings_usecase.dart';
@@ -36,7 +37,9 @@ class CrashRecoveryUsecase {
 
     final easyAudio = EasyAudioService();
     if (!easyAudio.isInitialized) {
-      await easyAudio.initialize(const EasyAudioConfig());
+      await easyAudio.initialize(const EasyAudioConfig(
+        mode: EasyAudioMode.realtime,
+      ));
     }
 
     final recovered = await easyAudio.recoverLastRecording();
