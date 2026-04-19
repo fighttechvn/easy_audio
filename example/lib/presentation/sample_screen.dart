@@ -164,8 +164,8 @@ class _SampleScreenState extends State<SampleScreen> {
                 padding: const EdgeInsets.only(bottom: 110),
                 itemCount: _items.length,
                 itemBuilder: (context, index) {
-                  final item = _items[index];
-                  final transcript = item.transcript?.trim() ?? '';
+                  final RecordingResult item = _items[index];
+                  final String transcript = item.transcript?.trim() ?? '';
 
                   final metaParts = <String>[item.formattedDuration];
                   final fileSize = item.formattedFileSize;
