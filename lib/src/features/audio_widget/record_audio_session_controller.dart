@@ -37,7 +37,7 @@ class RecordAudioSessionController {
 
   bool _started = false;
 
-  Future<void> initAndStart() async {
+  Future<void> initAndStart({EasyAudioMode? modeAudio}) async {
     if (_started) {
       return;
     }
@@ -50,7 +50,9 @@ class RecordAudioSessionController {
         initialState == EasyAudioState.processing;
 
     final isIOS = Platform.isIOS;
-    final mode = isIOS ? EasyAudioMode.realtime : EasyAudioMode.recordOnly;
+    final mode =
+        modeAudio ??
+        (isIOS ? EasyAudioMode.realtime : EasyAudioMode.recordOnly);
     final config = EasyAudioConfig(
       mode: mode,
       locale: localeId,

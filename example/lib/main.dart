@@ -3,7 +3,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 
-import 'presentation/record_session_flow/sample_screen.dart';
+import 'presentation/sample_screen.dart';
 
 void main() {
   runZonedGuarded(
