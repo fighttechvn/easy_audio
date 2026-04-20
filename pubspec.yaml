@@ -23,7 +23,7 @@ dependencies:
 
   just_audio: ^0.10.5
   audio_session: ^0.2.2
-  stt_record: ^0.0.5
+  stt_record: ^0.0.6
 
   injectable: ^2.7.1+4
   get_it: ^9.2.1
