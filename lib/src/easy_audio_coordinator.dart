@@ -11,9 +11,9 @@ extension EasyAudioCoordinator on BuildContext {
   Future<LanguageSelection?> openSelectLanguages(
     EasyAudioService easyAudioService,
   ) async {
-    return showDialog<LanguageSelection>(
+    return showGeneralDialog<LanguageSelection>(
       context: this,
-      builder: (context) => BlocProvider<SelectLanguageCubit>(
+      pageBuilder: (_, _, _) => BlocProvider<SelectLanguageCubit>(
         create: (context) => SelectLanguageCubit(
           useCase: SelectLanguageUseCase(),
           easyAudio: easyAudioService,

@@ -888,10 +888,10 @@ packages:
     dependency: transitive
     description:
       name: stt_record
-      sha256: affc090f35b9137f820410ea1d348499b9ef6ddd147698b52bb60d6afdbb09dc
+      sha256: b420d92aca0e76bb6edba6b5795ea7dbc9cd19be622cc1a163c9951f25f1fd36
       url: "https://pub.dev"
     source: hosted
-    version: "0.0.2"
+    version: "0.0.6"
   synchronized:
     dependency: transitive
     description:

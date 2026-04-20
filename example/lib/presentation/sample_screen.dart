@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:easy_audio/easy_audio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../core/datetime_utils.dart';
@@ -16,36 +17,11 @@ class SampleScreen extends StatefulWidget {
 }
 
 class _SampleScreenState extends State<SampleScreen> {
+  final easyAudio = EasyAudioService();
+  late String? localeCurrent = 'VN-vi';
+
   final List<RecordingResult> _items = <RecordingResult>[];
   bool _openingSheet = false;
-
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    unawaited(() async {
-      try {
-        await AudioPlaybackManager.instance.stop(clearUrl: true);
-      } catch (_) {}
-
-      for (final item in _items) {
-        final filePath = item.filePath?.trim() ?? '';
-        if (filePath.isEmpty) {
-          continue;
-        }
-        try {
-          await File(filePath).delete();
-        } catch (_) {
-          // best-effort
-        }
-      }
-    }());
-
-    super.dispose();
-  }
 
   Future<void> _openRecordingDetail(RecordingResult item) async {
     if (!mounted) {
@@ -60,6 +36,28 @@ class _SampleScreenState extends State<SampleScreen> {
     );
   }
 
+  Future<void> _initialAudio() async {
+    if (!easyAudio.isInitialized) {
+      try {
+        await easyAudio.initialize(
+          EasyAudioConfig(mode: EasyAudioMode.realtime, locale: localeCurrent),
+        );
+
+        if (!mounted) {
+          return;
+        }
+      } catch (_) {
+        if (!mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cannot initialize audio recorder.')),
+        );
+        return;
+      }
+    }
+  }
+
   Future<void> _onTapRecordButton() async {
     if (_openingSheet) {
       return;
@@ -70,28 +68,9 @@ class _SampleScreenState extends State<SampleScreen> {
     });
 
     try {
-      final easyAudio = EasyAudioService();
       final fallbackLocaleId = Localizations.localeOf(context).toLanguageTag();
 
-      if (!easyAudio.isInitialized) {
-        try {
-          await easyAudio.initialize(
-            const EasyAudioConfig(mode: EasyAudioMode.realtime),
-          );
-
-          if (!mounted) {
-            return;
-          }
-        } catch (_) {
-          if (!mounted) {
-            return;
-          }
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Cannot initialize audio recorder.')),
-          );
-          return;
-        }
-      }
+      await _initialAudio();
 
       String? selectedLocaleId;
 
@@ -147,11 +126,71 @@ class _SampleScreenState extends State<SampleScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+
+    _initialAudio();
+  }
+
+  @override
+  void dispose() {
+    unawaited(() async {
+      try {
+        await AudioPlaybackManager.instance.stop(clearUrl: true);
+      } catch (e, trace) {
+        if (kDebugMode) {
+          print(e);
+          print(trace);
+        }
+      }
+
+      for (final item in _items) {
+        final filePath = item.filePath?.trim() ?? '';
+        if (filePath.isEmpty) {
+          continue;
+        }
+        try {
+          await File(filePath).delete();
+        } catch (_) {
+          // best-effort
+        }
+      }
+    }());
+
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Recordings')),
+      appBar: AppBar(
+        title: Text('Recordings ($localeCurrent)'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.all(10.0),
+            child: ElevatedButton(
+              onPressed: () {
+                context.openSelectLanguages(easyAudio).then((v) {
+                  if (v != null) {
+                    easyAudio.updateConfig(
+                      EasyAudioConfig(
+                        mode: EasyAudioMode.realtime,
+                        locale: localeCurrent,
+                      ),
+                    );
+                    setState(() {
+                      localeCurrent = v.localeId;
+                    });
+                  }
+                });
+              },
+              child: const Icon(Icons.language),
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: _items.isEmpty
             ? Center(
