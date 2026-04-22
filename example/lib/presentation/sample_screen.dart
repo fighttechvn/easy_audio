@@ -18,7 +18,7 @@ class SampleScreen extends StatefulWidget {
 
 class _SampleScreenState extends State<SampleScreen> {
   final easyAudio = EasyAudioService();
-  late String? localeCurrent = 'VN-vi';
+  String? selectedLocaleId;
 
   final List<RecordingResult> _items = <RecordingResult>[];
   bool _openingSheet = false;
@@ -40,23 +40,27 @@ class _SampleScreenState extends State<SampleScreen> {
     if (!easyAudio.isInitialized) {
       try {
         await easyAudio.initialize(
-          EasyAudioConfig(mode: EasyAudioMode.realtime, locale: localeCurrent),
+          EasyAudioConfig(
+            mode: EasyAudioMode.realtime,
+            locale: selectedLocaleId ?? fallbackLocaleId,
+          ),
         );
 
         if (!mounted) {
           return;
         }
       } catch (_) {
-        if (!mounted) {
-          return;
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Cannot initialize audio recorder.')),
+          );
         }
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cannot initialize audio recorder.')),
-        );
-        return;
       }
     }
   }
+
+  String get fallbackLocaleId =>
+      Localizations.localeOf(context).toLanguageTag();
 
   Future<void> _onTapRecordButton() async {
     if (_openingSheet) {
@@ -68,25 +72,20 @@ class _SampleScreenState extends State<SampleScreen> {
     });
 
     try {
-      final fallbackLocaleId = Localizations.localeOf(context).toLanguageTag();
-
       await _initialAudio();
 
-      String? selectedLocaleId;
-
-      if (Platform.isIOS) {
-        if (!mounted) {
-          return;
-        }
-        final selection = await context.openSelectLanguages(easyAudio);
-        if (!mounted) {
-          return;
-        }
-        if (selection == null) {
-          return;
-        }
-        selectedLocaleId = selection.localeId;
+      if (!mounted) {
+        return;
       }
+
+      final selection = await context.openSelectLanguages(easyAudio);
+      if (!mounted) {
+        return;
+      }
+      if (selection == null) {
+        return;
+      }
+      selectedLocaleId = selection.localeId;
 
       final localeId = selectedLocaleId ?? fallbackLocaleId;
 
@@ -166,7 +165,7 @@ class _SampleScreenState extends State<SampleScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Recordings ($localeCurrent)'),
+        title: Text('Recordings ($selectedLocaleId)'),
         actions: [
           Padding(
             padding: const EdgeInsets.all(10.0),
@@ -174,15 +173,17 @@ class _SampleScreenState extends State<SampleScreen> {
               onPressed: () {
                 context.openSelectLanguages(easyAudio).then((v) {
                   if (v != null) {
-                    easyAudio.updateConfig(
-                      EasyAudioConfig(
-                        mode: EasyAudioMode.realtime,
-                        locale: localeCurrent,
-                      ),
-                    );
-                    setState(() {
-                      localeCurrent = v.localeId;
-                    });
+                    selectedLocaleId = v.localeId;
+                    easyAudio
+                        .updateConfig(
+                          EasyAudioConfig(
+                            mode: EasyAudioMode.realtime,
+                            locale: selectedLocaleId,
+                          ),
+                        )
+                        .then((_) {
+                          setState(() {});
+                        });
                   }
                 });
               },
@@ -239,7 +240,9 @@ class _SampleScreenState extends State<SampleScreen> {
                 },
               ),
       ),
-      bottomNavigationBar: RecordBottomBar(onTapRecord: _onTapRecordButton),
+      bottomNavigationBar: RecordBottomBar(
+        onTapRecord: _onTapRecordButton,
+      ),
     );
   }
 }

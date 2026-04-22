@@ -62,6 +62,9 @@ class EasyAudioRecordingUseCase {
       await sttRecord.start(
         localeId: localeId.isEmpty ? 'vi-VN' : localeId,
         partialResults: ctx.config.mode != EasyAudioMode.recordOnly,
+        enableSystemNotification: true,
+        enableSystemNotificationActionPause: false,
+        enableSystemNotificationActionStop: false,
       );
 
       if (ctx.config.mode != EasyAudioMode.speechToTextOnly) {
