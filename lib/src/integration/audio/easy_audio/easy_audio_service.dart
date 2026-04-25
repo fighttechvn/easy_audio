@@ -149,7 +149,7 @@ class EasyAudioService
 
   @override
   Future<RecordingResult> stop() async {
-    await pause();
+    // await pause();
     return _recordingUseCase.stop(this);
   }
 
