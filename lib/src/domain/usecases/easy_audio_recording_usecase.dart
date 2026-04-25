@@ -159,6 +159,10 @@ class EasyAudioRecordingUseCase {
       ctx.pausedByInterruption = false;
       ctx.updateState(EasyAudioState.recording);
     } catch (e, stack) {
+      if (kDebugMode) {
+        print(e);
+        print(stack);
+      }
       throw EasyAudioException.unknown(e, stack);
     } finally {
       ctx.resumeRequestedByUser = false;
@@ -216,15 +220,23 @@ class EasyAudioRecordingUseCase {
       // final transcriptText = await ctx.currentState.
       // print(transcriptText.text);
       final text = ctx.transcriptBuffer.toString().trim();
+      final DateTime? startTime = ctx.recordingStartTime;
+
       if (kDebugMode) {
+        print('[EasyAudioRecordUsecase] startTime: $startTime');
         print('[EasyAudioRecordUsecase] text: $text');
       }
+
+      if (startTime == null) {
+        throw Exception('Nedd check startTime');
+      }
+
       final result = RecordingResult(
         filePath: finalPath,
-        duration: endTime.difference(ctx.recordingStartTime!),
+        duration: endTime.difference(startTime),
         transcript: text,
         wasRecovered: false,
-        startTime: ctx.recordingStartTime!,
+        startTime: startTime,
         endTime: endTime,
         fileSizeBytes: fileSize,
         localeId: ctx.config.locale,
@@ -236,6 +248,10 @@ class EasyAudioRecordingUseCase {
 
       return result;
     } catch (e, stack) {
+      if (kDebugMode) {
+        print(e);
+        print(stack);
+      }
       _cleanup(ctx);
       ctx.pausedByInterruption = false;
       ctx.updateState(EasyAudioState.error);
