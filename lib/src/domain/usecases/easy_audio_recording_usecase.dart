@@ -194,12 +194,14 @@ class EasyAudioRecordingUseCase {
     int? fileSize;
 
     try {
+      final stopResult = await sttRecord.stop();
+      final tempPath = stopResult.audioPath;
+
+      await Future<void>.delayed(Duration.zero);
+
       if (ctx.config.mode != EasyAudioMode.recordOnly) {
         await ctx.speechRecognition?.stop();
       }
-
-      final stopResult = await sttRecord.stop();
-      final tempPath = stopResult.audioPath;
 
       if (ctx.config.mode == EasyAudioMode.speechToTextOnly) {
         await FileUtils.safeDelete(tempPath);

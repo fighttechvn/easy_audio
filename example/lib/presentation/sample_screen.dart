@@ -138,7 +138,11 @@ class _SampleScreenState extends State<SampleScreen> {
   void initState() {
     super.initState();
 
-    _initialAudio();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _initialAudio();
+      }
+    });
   }
 
   @override
