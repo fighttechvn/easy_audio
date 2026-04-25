@@ -39,6 +39,9 @@ class _SampleScreenState extends State<SampleScreen> {
   Future<void> _initialAudio() async {
     if (!easyAudio.isInitialized) {
       try {
+        final String fallbackLocaleId = Localizations.localeOf(
+          context,
+        ).toLanguageTag();
         await easyAudio.initialize(
           EasyAudioConfig(
             mode: EasyAudioMode.realtime,
@@ -49,7 +52,11 @@ class _SampleScreenState extends State<SampleScreen> {
         if (!mounted) {
           return;
         }
-      } catch (_) {
+      } catch (e, trace) {
+        if (kDebugMode) {
+          print(e);
+          print(trace);
+        }
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Cannot initialize audio recorder.')),
@@ -58,9 +65,6 @@ class _SampleScreenState extends State<SampleScreen> {
       }
     }
   }
-
-  String get fallbackLocaleId =>
-      Localizations.localeOf(context).toLanguageTag();
 
   Future<void> _onTapRecordButton() async {
     if (_openingSheet) {
@@ -86,7 +90,9 @@ class _SampleScreenState extends State<SampleScreen> {
         return;
       }
       selectedLocaleId = selection.localeId;
-
+      final String fallbackLocaleId = Localizations.localeOf(
+        context,
+      ).toLanguageTag();
       final localeId = selectedLocaleId ?? fallbackLocaleId;
 
       if (!mounted) {
@@ -107,6 +113,10 @@ class _SampleScreenState extends State<SampleScreen> {
           );
         },
       );
+
+      if (kDebugMode) {
+        print('[RecordSample] record: result $result');
+      }
 
       if (!mounted || result == null) {
         return;

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:audio_session/audio_session.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../core/controllers/amplitude_monitor.dart';
 import '../../core/controllers/speech_recognition_controller.dart';
@@ -83,6 +84,11 @@ class EasyAudioRecordingUseCase {
 
       ctx.updateState(EasyAudioState.recording);
     } catch (e, stack) {
+      if (kDebugMode) {
+        print(e);
+        print(stack);
+      }
+
       ctx.updateState(EasyAudioState.error);
       throw EasyAudioException.unknown(e, stack);
     }
@@ -112,6 +118,11 @@ class EasyAudioRecordingUseCase {
       _stopAmplitudeMonitoring(ctx);
       ctx.updateState(EasyAudioState.paused);
     } catch (e, stack) {
+      if (kDebugMode) {
+        print(e);
+        print(stack);
+      }
+
       throw EasyAudioException.unknown(e, stack);
     } finally {
       ctx.pauseRequestedByUser = false;
@@ -202,11 +213,16 @@ class EasyAudioRecordingUseCase {
         fileSize = await FileUtils.safeLength(finalPath);
         await EasyAudioCacheInfo.clear();
       }
-
+      // final transcriptText = await ctx.currentState.
+      // print(transcriptText.text);
+      final text = ctx.transcriptBuffer.toString().trim();
+      if (kDebugMode) {
+        print('[EasyAudioRecordUsecase] text: $text');
+      }
       final result = RecordingResult(
         filePath: finalPath,
         duration: endTime.difference(ctx.recordingStartTime!),
-        transcript: ctx.transcriptBuffer.toString().trim(),
+        transcript: text,
         wasRecovered: false,
         startTime: ctx.recordingStartTime!,
         endTime: endTime,
