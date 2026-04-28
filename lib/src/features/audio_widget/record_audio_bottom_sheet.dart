@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/constants/easy_audio_locale_display.dart';
@@ -242,7 +243,12 @@ class _RecordAudioBottomSheetWidgetState
         return;
       }
       Navigator.of(context).pop(result);
-    } catch (_) {
+    } catch (e, trace) {
+      if (kDebugMode) {
+        print(e);
+        print(trace);
+      }
+
       if (!mounted) {
         return;
       }

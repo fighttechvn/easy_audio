@@ -18,7 +18,7 @@ class SampleScreen extends StatefulWidget {
 
 class _SampleScreenState extends State<SampleScreen> {
   final easyAudio = EasyAudioService();
-  late String? localeCurrent = 'VN-vi';
+  String? selectedLocaleId;
 
   final List<RecordingResult> _items = <RecordingResult>[];
   bool _openingSheet = false;
@@ -39,21 +39,29 @@ class _SampleScreenState extends State<SampleScreen> {
   Future<void> _initialAudio() async {
     if (!easyAudio.isInitialized) {
       try {
+        final String fallbackLocaleId = Localizations.localeOf(
+          context,
+        ).toLanguageTag();
         await easyAudio.initialize(
-          EasyAudioConfig(mode: EasyAudioMode.realtime, locale: localeCurrent),
+          EasyAudioConfig(
+            mode: EasyAudioMode.realtime,
+            locale: selectedLocaleId ?? fallbackLocaleId,
+          ),
         );
 
         if (!mounted) {
           return;
         }
-      } catch (_) {
-        if (!mounted) {
-          return;
+      } catch (e, trace) {
+        if (kDebugMode) {
+          print(e);
+          print(trace);
         }
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cannot initialize audio recorder.')),
-        );
-        return;
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Cannot initialize audio recorder.')),
+          );
+        }
       }
     }
   }
@@ -68,26 +76,23 @@ class _SampleScreenState extends State<SampleScreen> {
     });
 
     try {
-      final fallbackLocaleId = Localizations.localeOf(context).toLanguageTag();
-
       await _initialAudio();
 
-      String? selectedLocaleId;
-
-      if (Platform.isIOS) {
-        if (!mounted) {
-          return;
-        }
-        final selection = await context.openSelectLanguages(easyAudio);
-        if (!mounted) {
-          return;
-        }
-        if (selection == null) {
-          return;
-        }
-        selectedLocaleId = selection.localeId;
+      if (!mounted) {
+        return;
       }
 
+      final selection = await context.openSelectLanguages(easyAudio);
+      if (!mounted) {
+        return;
+      }
+      if (selection == null) {
+        return;
+      }
+      selectedLocaleId = selection.localeId;
+      final String fallbackLocaleId = Localizations.localeOf(
+        context,
+      ).toLanguageTag();
       final localeId = selectedLocaleId ?? fallbackLocaleId;
 
       if (!mounted) {
@@ -109,6 +114,10 @@ class _SampleScreenState extends State<SampleScreen> {
         },
       );
 
+      if (kDebugMode) {
+        print('[RecordSample] record: result $result');
+      }
+
       if (!mounted || result == null) {
         return;
       }
@@ -129,7 +138,11 @@ class _SampleScreenState extends State<SampleScreen> {
   void initState() {
     super.initState();
 
-    _initialAudio();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _initialAudio();
+      }
+    });
   }
 
   @override
@@ -166,7 +179,7 @@ class _SampleScreenState extends State<SampleScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Recordings ($localeCurrent)'),
+        title: Text('Recordings ($selectedLocaleId)'),
         actions: [
           Padding(
             padding: const EdgeInsets.all(10.0),
@@ -174,15 +187,17 @@ class _SampleScreenState extends State<SampleScreen> {
               onPressed: () {
                 context.openSelectLanguages(easyAudio).then((v) {
                   if (v != null) {
-                    easyAudio.updateConfig(
-                      EasyAudioConfig(
-                        mode: EasyAudioMode.realtime,
-                        locale: localeCurrent,
-                      ),
-                    );
-                    setState(() {
-                      localeCurrent = v.localeId;
-                    });
+                    selectedLocaleId = v.localeId;
+                    easyAudio
+                        .updateConfig(
+                          EasyAudioConfig(
+                            mode: EasyAudioMode.realtime,
+                            locale: selectedLocaleId,
+                          ),
+                        )
+                        .then((_) {
+                          setState(() {});
+                        });
                   }
                 });
               },
@@ -239,7 +254,9 @@ class _SampleScreenState extends State<SampleScreen> {
                 },
               ),
       ),
-      bottomNavigationBar: RecordBottomBar(onTapRecord: _onTapRecordButton),
+      bottomNavigationBar: RecordBottomBar(
+        onTapRecord: _onTapRecordButton,
+      ),
     );
   }
 }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:audio_session/audio_session.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../core/controllers/amplitude_monitor.dart';
 import '../../core/controllers/speech_recognition_controller.dart';
@@ -62,6 +63,9 @@ class EasyAudioRecordingUseCase {
       await sttRecord.start(
         localeId: localeId.isEmpty ? 'vi-VN' : localeId,
         partialResults: ctx.config.mode != EasyAudioMode.recordOnly,
+        enableSystemNotification: true,
+        enableSystemNotificationActionPause: false,
+        enableSystemNotificationActionStop: false,
       );
 
       if (ctx.config.mode != EasyAudioMode.speechToTextOnly) {
@@ -80,6 +84,11 @@ class EasyAudioRecordingUseCase {
 
       ctx.updateState(EasyAudioState.recording);
     } catch (e, stack) {
+      if (kDebugMode) {
+        print(e);
+        print(stack);
+      }
+
       ctx.updateState(EasyAudioState.error);
       throw EasyAudioException.unknown(e, stack);
     }
@@ -109,6 +118,11 @@ class EasyAudioRecordingUseCase {
       _stopAmplitudeMonitoring(ctx);
       ctx.updateState(EasyAudioState.paused);
     } catch (e, stack) {
+      if (kDebugMode) {
+        print(e);
+        print(stack);
+      }
+
       throw EasyAudioException.unknown(e, stack);
     } finally {
       ctx.pauseRequestedByUser = false;
@@ -145,6 +159,10 @@ class EasyAudioRecordingUseCase {
       ctx.pausedByInterruption = false;
       ctx.updateState(EasyAudioState.recording);
     } catch (e, stack) {
+      if (kDebugMode) {
+        print(e);
+        print(stack);
+      }
       throw EasyAudioException.unknown(e, stack);
     } finally {
       ctx.resumeRequestedByUser = false;
@@ -176,12 +194,14 @@ class EasyAudioRecordingUseCase {
     int? fileSize;
 
     try {
+      final stopResult = await sttRecord.stop();
+      final tempPath = stopResult.audioPath;
+
+      await Future<void>.delayed(Duration.zero);
+
       if (ctx.config.mode != EasyAudioMode.recordOnly) {
         await ctx.speechRecognition?.stop();
       }
-
-      final stopResult = await sttRecord.stop();
-      final tempPath = stopResult.audioPath;
 
       if (ctx.config.mode == EasyAudioMode.speechToTextOnly) {
         await FileUtils.safeDelete(tempPath);
@@ -199,13 +219,26 @@ class EasyAudioRecordingUseCase {
         fileSize = await FileUtils.safeLength(finalPath);
         await EasyAudioCacheInfo.clear();
       }
+      // final transcriptText = await ctx.currentState.
+      // print(transcriptText.text);
+      final text = ctx.transcriptBuffer.toString().trim();
+      final DateTime? startTime = ctx.recordingStartTime;
+
+      if (kDebugMode) {
+        print('[EasyAudioRecordUsecase] startTime: $startTime');
+        print('[EasyAudioRecordUsecase] text: $text');
+      }
+
+      if (startTime == null) {
+        throw Exception('Nedd check startTime');
+      }
 
       final result = RecordingResult(
         filePath: finalPath,
-        duration: endTime.difference(ctx.recordingStartTime!),
-        transcript: ctx.transcriptBuffer.toString().trim(),
+        duration: endTime.difference(startTime),
+        transcript: text,
         wasRecovered: false,
-        startTime: ctx.recordingStartTime!,
+        startTime: startTime,
         endTime: endTime,
         fileSizeBytes: fileSize,
         localeId: ctx.config.locale,
@@ -217,6 +250,10 @@ class EasyAudioRecordingUseCase {
 
       return result;
     } catch (e, stack) {
+      if (kDebugMode) {
+        print(e);
+        print(stack);
+      }
       _cleanup(ctx);
       ctx.pausedByInterruption = false;
       ctx.updateState(EasyAudioState.error);

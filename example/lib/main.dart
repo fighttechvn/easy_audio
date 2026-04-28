@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'presentation/sample_screen.dart';
@@ -19,11 +20,13 @@ void main() {
       );
     },
     (error, trace) {
-      log('------------------------------------');
-      log('[AppDelegate]');
-      log('$error');
-      log('$trace');
-      log('------------------------------------');
+      if (kDebugMode) {
+        log('------------------------------------');
+        log('[AppDelegate]');
+        print(error);
+        print(trace);
+        log('------------------------------------');
+      }
     },
   );
 }

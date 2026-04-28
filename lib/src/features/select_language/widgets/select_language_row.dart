@@ -22,6 +22,7 @@ class SelectLanguageRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
+      borderRadius: BorderRadius.circular(8),
       onTap: loading ? null : () => onSelected(locale.localeId),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
