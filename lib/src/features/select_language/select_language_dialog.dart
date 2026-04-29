@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -6,9 +8,12 @@ import 'cubit/select_language_state.dart';
 import 'widgets/select_language_row.dart';
 
 class SelectLanguageDialogWidget extends StatelessWidget {
-  const SelectLanguageDialogWidget({super.key});
+  final Color accentColor;
 
-  static const _kAccentColor = Color(0xFFF5A623);
+  const SelectLanguageDialogWidget({
+    super.key,
+    this.accentColor = const Color(0xFFF5A623),
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +28,10 @@ class SelectLanguageDialogWidget extends StatelessWidget {
         return Material(
           color: Colors.transparent,
           child: Center(
-            child: Padding(
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth: max(500, MediaQuery.sizeOf(context).width * 0.92),
+              ),
               padding: const EdgeInsets.symmetric(
                 horizontal: 16,
               ).copyWith(bottom: keyboardSize),
@@ -36,7 +44,7 @@ class SelectLanguageDialogWidget extends StatelessWidget {
                     constraints: BoxConstraints(
                       maxHeight:
                           MediaQuery.of(context).size.height *
-                          (keyboardSize.toInt() == 0 ? 0.72 : 0.47),
+                          (keyboardSize.toInt() == 0 ? 0.72 : 0.45),
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -124,7 +132,7 @@ class SelectLanguageDialogWidget extends StatelessWidget {
                                             l.localeId ==
                                             state.selectedLocaleId,
                                         loading: state.loading,
-                                        accentColor: _kAccentColor,
+                                        accentColor: accentColor,
                                         onSelected: (id) {
                                           context
                                               .read<SelectLanguageCubit>()
@@ -142,7 +150,7 @@ class SelectLanguageDialogWidget extends StatelessWidget {
                                             l.localeId ==
                                             state.selectedLocaleId,
                                         loading: state.loading,
-                                        accentColor: _kAccentColor,
+                                        accentColor: accentColor,
                                         onSelected: (id) {
                                           context
                                               .read<SelectLanguageCubit>()
@@ -166,7 +174,7 @@ class SelectLanguageDialogWidget extends StatelessWidget {
                                   }
                                 },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: _kAccentColor,
+                            backgroundColor: accentColor,
                             foregroundColor: Colors.white,
                             elevation: 0,
                             shape: RoundedRectangleBorder(

@@ -9,16 +9,19 @@ import 'integration/audio/easy_audio/easy_audio_service.dart';
 
 extension EasyAudioCoordinator on BuildContext {
   Future<LanguageSelection?> openSelectLanguages(
-    EasyAudioService easyAudioService,
-  ) async {
+    EasyAudioService easyAudioService, {
+    Color? accentColor,
+  }) async {
     return showGeneralDialog<LanguageSelection>(
       context: this,
-      pageBuilder: (_, _, _) => BlocProvider<SelectLanguageCubit>(
+      pageBuilder: (context, _, _) => BlocProvider<SelectLanguageCubit>(
         create: (context) => SelectLanguageCubit(
           useCase: SelectLanguageUseCase(),
           easyAudio: easyAudioService,
         )..loadLocales(),
-        child: const SelectLanguageDialogWidget(),
+        child: SelectLanguageDialogWidget(
+          accentColor: accentColor ?? Theme.of(context).primaryColor,
+        ),
       ),
     );
   }
