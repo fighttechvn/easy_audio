@@ -23,7 +23,6 @@ migrate_working_dir/
 
 # Flutter/Dart/Pub related
 # Libraries should not include pubspec.lock, per https://dart.dev/guides/libraries/private-files#pubspeclock.
-/pubspec.lock
 **/doc/api/
 .dart_tool/
 .packages
@@ -33,3 +32,7 @@ build/
 example/windows/flutter/generated_plugin_registrant.cc
 example/windows/flutter/generated_plugin_registrant.h
 example/windows/flutter/generated_plugins.cmake
+example/macos/Podfile
+example/macos/Flutter/GeneratedPluginRegistrant.swift
+example/macos/Flutter/ephemeral/Flutter-Generated.xcconfig
+example/macos/Flutter/ephemeral/flutter_export_environment.sh

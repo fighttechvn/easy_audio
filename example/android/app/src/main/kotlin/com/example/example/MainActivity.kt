@@ -1,5 +1,7 @@
 package com.example.example
 
-import io.flutter.embedding.android.FlutterActivity
+import com.ryanheise.audioservice.AudioServiceActivity
 
-class MainActivity : FlutterActivity()
+// Required by EasyAudioBackground: audio_service owns the FlutterEngine so the
+// media notification outlives this activity.
+class MainActivity : AudioServiceActivity()

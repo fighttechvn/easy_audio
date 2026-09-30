@@ -1,19 +1,36 @@
+import 'dart:async';
+import 'dart:developer';
+
+import 'package:easy_audio/easy_audio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import 'src/easy_audio_screen.dart';
+import 'presentation/sample_screen.dart';
 
 void main() {
-  runApp(const MyApp());
-}
+  runZonedGuarded(
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+      // Must run before the first AudioPlayer is created.
+      await EasyAudioBackground.init();
 
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      title: 'Easy Audio',
-      home: EasyAudioExampleScreen(),
-    );
-  }
+      runApp(
+        MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData(useMaterial3: true),
+          home: const SampleScreen(),
+        ),
+      );
+    },
+    (error, trace) {
+      if (kDebugMode) {
+        log('------------------------------------');
+        log('[AppDelegate]');
+        print(error);
+        print(trace);
+        log('------------------------------------');
+      }
+    },
+  );
 }
