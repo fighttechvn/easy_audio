@@ -40,6 +40,7 @@ class EasyAudioRecordingUseCase {
 
     ctx.updateState(EasyAudioState.initializing);
     ctx.recordingStartTime = DateTime.now();
+    ctx.recordingClock.reset();
     ctx.transcriptBuffer.clear();
     ctx.speechRecognition?.resetCommittedTranscript();
     ctx.pausedByInterruption = false;
@@ -110,6 +111,7 @@ class EasyAudioRecordingUseCase {
       ctx.pauseRequestedByUser = true;
 
       await sttRecord.pause();
+      ctx.recordingClock.pause();
 
       if (ctx.config.mode != EasyAudioMode.recordOnly) {
         await ctx.speechRecognition?.stop();
@@ -147,6 +149,7 @@ class EasyAudioRecordingUseCase {
     try {
       ctx.resumeRequestedByUser = true;
       await sttRecord.resume();
+      ctx.recordingClock.resume();
 
       if (ctx.config.mode != EasyAudioMode.speechToTextOnly) {
         _startAmplitudeMonitoring(ctx);
@@ -235,7 +238,9 @@ class EasyAudioRecordingUseCase {
 
       final result = RecordingResult(
         filePath: finalPath,
-        duration: endTime.difference(startTime),
+        // What was recorded, not how long the sheet was open: a paused
+        // session writes nothing.
+        duration: ctx.recordingClock.activeBetween(startTime, endTime),
         transcript: text,
         wasRecovered: false,
         startTime: startTime,
@@ -339,6 +344,7 @@ class EasyAudioRecordingUseCase {
 
   void _cleanup(EasyAudioServiceContext ctx) {
     ctx.recordingStartTime = null;
+    ctx.recordingClock.reset();
     ctx.currentFilePath = null;
     ctx.transcriptBuffer.clear();
     ctx.maxDurationTimer?.cancel();

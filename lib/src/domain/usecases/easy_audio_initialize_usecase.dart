@@ -67,6 +67,7 @@ class EasyAudioInitializeUseCase {
           ctx.pausedByInterruption && ctx.config.autoResumeAfterInterruption,
       onInterruptedPause: () async {
         ctx.pausedByInterruption = true;
+        ctx.recordingClock.pause();
 
         ctx.amplitudeMonitor?.stop();
         ctx.updateState(EasyAudioState.paused);

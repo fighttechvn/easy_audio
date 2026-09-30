@@ -6,6 +6,7 @@ import '../../../core/controllers/amplitude_monitor.dart';
 import '../../../core/controllers/recorder_state_observer.dart';
 import '../../../core/controllers/speech_recognition_controller.dart';
 import '../../../core/errors/easy_audio_exception.dart';
+import '../../../core/utils/recording_clock.dart';
 import '../../../core/utils/recording_recovery.dart';
 import '../../../domain/entities/easy_audio_config.dart';
 import '../../../domain/entities/easy_audio_service_context.dart';
@@ -47,6 +48,7 @@ class EasyAudioService
   bool _speechAvailable = false;
 
   DateTime? _recordingStartTime;
+  final RecordingClock _recordingClock = RecordingClock();
   String? _currentFilePath;
   final StringBuffer _transcriptBuffer = StringBuffer();
 
@@ -237,6 +239,9 @@ class EasyAudioService
 
   @override
   set recordingStartTime(DateTime? value) => _recordingStartTime = value;
+
+  @override
+  RecordingClock get recordingClock => _recordingClock;
 
   @override
   set currentFilePath(String? value) => _currentFilePath = value;

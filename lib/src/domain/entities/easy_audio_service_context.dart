@@ -6,6 +6,7 @@ import '../../../easy_audio.dart';
 import '../../core/controllers/amplitude_monitor.dart';
 import '../../core/controllers/recorder_state_observer.dart';
 import '../../core/controllers/speech_recognition_controller.dart';
+import '../../core/utils/recording_clock.dart';
 
 abstract class EasyAudioServiceContext {
   SttRecord? get sttRecord;
@@ -36,6 +37,8 @@ abstract class EasyAudioServiceContext {
 
   DateTime? get recordingStartTime;
   set recordingStartTime(DateTime? value);
+
+  RecordingClock get recordingClock;
 
   String? get currentFilePath;
   set currentFilePath(String? value);
