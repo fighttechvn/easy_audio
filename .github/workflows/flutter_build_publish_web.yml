@@ -1,0 +1,33 @@
+name: Flutter Web
+on:
+  push:
+    branches:
+      - uat
+jobs:
+  build:
+    name: Build Web
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+      
+      - run: flutter pub get
+        working-directory: ./example
+      - run: flutter build web --release --base-href="/image_widget/"
+        working-directory: ./example
+      - run: |
+          cd build/web
+          git init
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git status
+          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          git checkout -b gh-pages
+          git add --all
+          git commit -m "Deploy to gh-pages"
+          git push origin gh-pages -f
+        working-directory: ./example

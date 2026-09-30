@@ -66,7 +66,7 @@ jobs:
         run: flutter pub get & flutter doctor
 
       - name: 6. Build APK
-        run: flutter build apk
+        run: cd example && flutter build apk
 
   build_ios:
     runs-on: macos-latest
@@ -92,38 +92,5 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pub-
 
-      - name: 4. Cache CocoaPods
-        uses: actions/cache@v4
-        with:
-          path: |
-            ios/Pods
-            ~/Library/Caches/CocoaPods
-            ~/.cocoapods
-          key: ${{ runner.os }}-pods-${{ hashFiles('**/Podfile.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pods-
-
-      - name: 5. Cache iOS Build
-        uses: actions/cache@v4
-        with:
-          path: |
-            ios/build
-            ~/Library/Developer/Xcode/DerivedData
-          key: ${{ runner.os }}-ios-build-${{ hashFiles('**/Podfile.lock', '**/*.pbxproj') }}
-          restore-keys: |
-            ${{ runner.os }}-ios-build-
-
-      - name: 6. Get Flutter dependencies
-        run: flutter pub get & flutter doctor
-
-      - name: 7. Pod Install (if needed)
-        working-directory: ios
-        run: |
-          if [ ! -d "Pods" ]; then
-            pod install --repo-update
-          else
-            echo "Pods cached, skipping pod install"
-          fi
-
-      - name: 8. Build iOS
-        run: flutter build ios --no-codesign
+      - name: 4. Build iOS
+        run: cd example && flutter build ios --no-codesign
